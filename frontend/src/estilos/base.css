@@ -1,0 +1,113 @@
+/** Restablecimiento minimo y estilos de documento. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--c-fondo);
+  color: var(--c-texto);
+  font-family: var(--f-base);
+  font-size: var(--t-base);
+  line-height: var(--i-normal);
+  -webkit-font-smoothing: antialiased;
+  /* Ningun ancho de pantalla debe producir desplazamiento horizontal. */
+  overflow-x: hidden;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+  color: var(--c-marino-titulo);
+  line-height: var(--i-ajustado);
+  font-weight: var(--p-bold);
+}
+
+p {
+  margin: 0;
+}
+
+ul,
+ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+a {
+  color: var(--c-marino-medio);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+/* Foco visible y uniforme en todo lo que se puede alcanzar con el teclado. */
+:focus-visible {
+  outline: 2px solid var(--c-turquesa-fuerte);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+/* Enlace de salto para llegar al contenido sin recorrer la navegacion. */
+.saltar-al-contenido {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+  padding: var(--s-3) var(--s-4);
+  background: var(--c-marino);
+  color: var(--c-texto-inverso);
+  border-radius: 0 0 var(--r-md) 0;
+}
+
+.saltar-al-contenido:focus {
+  left: 0;
+}
+
+/* Texto solo para lectores de pantalla. */
+.solo-lectores {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,100 @@
+/**
+ * Sistema de diseno de IKernell.
+ *
+ * Valores extraidos de los dos mockups aprobados y alineados con la paleta
+ * corporativa indicada: blanco, gris muy claro, azul marino y acentos
+ * turquesa/cian. Ningun componente define colores, espacios ni radios propios:
+ * todos consumen estas variables.
+ */
+:root {
+  /* --- Color: superficies --- */
+  --c-fondo: #f8fafc;
+  --c-fondo-franja: #eef2f6;
+  --c-superficie: #ffffff;
+  --c-superficie-tenue: #eaf7fa;
+
+  /* --- Color: marca --- */
+  --c-marino: #0f172a;
+  --c-marino-medio: #1c3557;
+  --c-marino-titulo: #14385c;
+  --c-turquesa: #7dd3dc;
+  --c-turquesa-fuerte: #22b8cf;
+  --c-cian-claro: #c9eef3;
+
+  /* --- Color: texto --- */
+  --c-texto: #334155;
+  --c-texto-tenue: #64748b;
+  --c-texto-inverso: #ffffff;
+
+  /* --- Color: estado --- */
+  --c-exito: #16a34a;
+  --c-alerta: #f59e0b;
+  --c-error: #dc2626;
+  --c-info: #0284c7;
+  --c-neutro: #94a3b8;
+
+  /* Fondos suaves para los mensajes de estado */
+  --c-exito-fondo: #f0fdf4;
+  --c-alerta-fondo: #fffbeb;
+  --c-error-fondo: #fef2f2;
+  --c-info-fondo: #f0f9ff;
+
+  /* --- Bordes --- */
+  --c-borde: #e2e8f0;
+  --c-borde-tarjeta: #7dd3dc;
+  --c-borde-campo: #cbd5e1;
+
+  /* --- Tipografia --- */
+  --f-base: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  --t-xs: 0.75rem;
+  --t-sm: 0.8125rem;
+  --t-base: 0.9375rem;
+  --t-md: 1.0625rem;
+  --t-lg: 1.375rem;
+  --t-xl: 1.75rem;
+  --t-2xl: 2.25rem;
+
+  --p-normal: 400;
+  --p-medio: 500;
+  --p-semi: 600;
+  --p-bold: 700;
+
+  --i-ajustado: 1.25;
+  --i-normal: 1.6;
+  --e-titulo: 0.04em;
+  --e-nav: 0.06em;
+
+  /* --- Espaciado (escala de 4px) --- */
+  --s-1: 0.25rem;
+  --s-2: 0.5rem;
+  --s-3: 0.75rem;
+  --s-4: 1rem;
+  --s-5: 1.5rem;
+  --s-6: 2rem;
+  --s-7: 3rem;
+  --s-8: 4rem;
+
+  /* --- Radios --- */
+  --r-sm: 4px;
+  --r-md: 6px;
+  --r-lg: 8px;
+  --r-full: 999px;
+
+  /* --- Sombras --- */
+  --b-sutil: 0 1px 3px rgb(15 23 42 / 0.08);
+  --b-media: 0 4px 12px rgb(15 23 42 / 0.1);
+  --b-elevada: 0 12px 32px rgb(15 23 42 / 0.16);
+
+  /* --- Foco visible (accesibilidad) --- */
+  --anillo-foco: 0 0 0 3px rgb(34 184 207 / 0.45);
+
+  /* --- Transiciones --- */
+  --tr-rapida: 120ms ease;
+  --tr-normal: 180ms ease;
+
+  /* --- Disposicion --- */
+  --ancho-contenido: 1180px;
+  --alto-encabezado: 64px;
+  --ancho-banda-lateral: 28px;
+}
