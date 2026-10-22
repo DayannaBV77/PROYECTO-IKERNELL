@@ -1,0 +1,34 @@
+.pagina {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  /* Deja sitio a la banda marina del borde izquierdo de los mockups. */
+  padding-inline-start: var(--ancho-banda-lateral);
+  position: relative;
+}
+
+/* Banda vertical marina con remate cian, como en los dos mockups. */
+.banda {
+  position: fixed;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: var(--ancho-banda-lateral);
+  background: linear-gradient(180deg, var(--c-marino) 0%, var(--c-marino) 55%, var(--c-turquesa-fuerte) 100%);
+  z-index: 30;
+  pointer-events: none;
+}
+
+.contenido {
+  flex: 1;
+}
+
+@media (max-width: 720px) {
+  /* En movil la banda roba ancho util; se reduce a un filo. */
+  .pagina {
+    padding-inline-start: 6px;
+  }
+
+  .banda {
+    width: 6px;
+  }
+}

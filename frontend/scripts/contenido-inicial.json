@@ -1,0 +1,51 @@
+{
+  "LINEAMIENTO": [
+    {
+      "titulo": "Misión",
+      "cuerpo": "Desarrollar soluciones de software que ayuden a las organizaciones a optimizar sus procesos, gestionar su información y responder a sus necesidades tecnológicas mediante herramientas funcionales y confiables.",
+      "orden": 1
+    },
+    {
+      "titulo": "Visión",
+      "cuerpo": "Consolidarse como una empresa reconocida por la calidad de sus soluciones de software, su capacidad de innovación y su compromiso con la transformación digital de las organizaciones.",
+      "orden": 2
+    },
+    {
+      "titulo": "Valores corporativos",
+      "cuerpo": "Responsabilidad: cumplir los compromisos y cuidar la información.\nInnovación: buscar alternativas tecnológicas útiles.\nCalidad: desarrollar soluciones mantenibles y confiables.\nTrabajo en equipo: promover la colaboración y el conocimiento compartido.\nIntegridad: actuar con transparencia y respeto.",
+      "orden": 3
+    }
+  ],
+  "PORTAFOLIO_SERVICIO": [
+    {
+      "titulo": "Desarrollo de software a medida",
+      "cuerpo": "Aplicaciones diseñadas según los procesos y necesidades de cada organización: sistemas de gestión, plataformas web y herramientas empresariales.",
+      "orden": 1
+    },
+    {
+      "titulo": "Soluciones y servicios en la nube",
+      "cuerpo": "Aplicaciones y servicios que aprovechan la infraestructura en la nube para facilitar el acceso y la gestión de la información.",
+      "orden": 2
+    },
+    {
+      "titulo": "Inteligencia artificial y automatización",
+      "cuerpo": "Herramientas para apoyar tareas, procesar información y optimizar actividades repetitivas.",
+      "orden": 3
+    },
+    {
+      "titulo": "Seguridad informática",
+      "cuerpo": "Buenas prácticas y soluciones orientadas a proteger aplicaciones, accesos y datos.",
+      "orden": 4
+    },
+    {
+      "titulo": "Consultoría y acompañamiento tecnológico",
+      "cuerpo": "Orientación para analizar necesidades, definir requerimientos y seleccionar alternativas de software.",
+      "orden": 5
+    },
+    {
+      "titulo": "Mantenimiento y evolución de software",
+      "cuerpo": "Corrección de errores, mejoras funcionales y actualización de aplicaciones existentes.",
+      "orden": 6
+    }
+  ]
+}

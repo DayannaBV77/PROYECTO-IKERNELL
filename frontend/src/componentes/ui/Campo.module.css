@@ -1,0 +1,74 @@
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.etiqueta {
+  font-size: var(--t-sm);
+  font-weight: var(--p-semi);
+  color: var(--c-marino-titulo);
+}
+
+.obligatorio {
+  color: var(--c-error);
+  margin-inline-start: var(--s-1);
+}
+
+.pista {
+  font-size: var(--t-xs);
+  color: var(--c-texto-tenue);
+}
+
+.control {
+  width: 100%;
+  padding: var(--s-3) var(--s-4);
+  border: 1px solid var(--c-borde-campo);
+  border-radius: var(--r-md);
+  background: var(--c-superficie);
+  font-size: var(--t-base);
+  transition:
+    border-color var(--tr-rapida),
+    box-shadow var(--tr-rapida);
+}
+
+.control::placeholder {
+  color: var(--c-neutro);
+}
+
+.control:hover:not(:disabled) {
+  border-color: var(--c-turquesa);
+}
+
+.control:focus {
+  outline: none;
+  border-color: var(--c-turquesa-fuerte);
+  box-shadow: var(--anillo-foco);
+}
+
+.control:disabled {
+  background: var(--c-fondo-franja);
+  cursor: not-allowed;
+}
+
+.conError {
+  border-color: var(--c-error);
+}
+
+.conError:focus {
+  border-color: var(--c-error);
+  box-shadow: 0 0 0 3px rgb(220 38 38 / 0.25);
+}
+
+.area {
+  min-height: 130px;
+  resize: vertical;
+}
+
+.error {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--t-sm);
+  color: var(--c-error);
+}

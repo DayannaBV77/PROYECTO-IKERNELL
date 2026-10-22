@@ -1,0 +1,140 @@
+.lista {
+  display: grid;
+  gap: var(--s-5);
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.fecha {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--t-xs);
+  letter-spacing: var(--e-nav);
+  text-transform: uppercase;
+  color: var(--c-turquesa-fuerte);
+  font-weight: var(--p-semi);
+}
+
+.enlaces {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.enlace {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+  padding: var(--s-4) var(--s-5);
+  background: var(--c-superficie);
+  border: 1px solid var(--c-borde-tarjeta);
+  border-radius: var(--r-lg);
+  color: var(--c-marino-titulo);
+  font-weight: var(--p-medio);
+  transition:
+    border-color var(--tr-rapida),
+    background-color var(--tr-rapida);
+}
+
+.enlace:hover {
+  background: var(--c-superficie-tenue);
+  border-color: var(--c-turquesa-fuerte);
+  text-decoration: none;
+}
+
+.enlaceTexto {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+}
+
+.enlaceDetalle {
+  font-size: var(--t-sm);
+  font-weight: var(--p-normal);
+  color: var(--c-texto-tenue);
+}
+
+/* --- Preguntas frecuentes --- */
+.pregunta {
+  border: 1px solid var(--c-borde-tarjeta);
+  border-radius: var(--r-lg);
+  background: var(--c-superficie);
+  overflow: hidden;
+}
+
+.pregunta + .pregunta {
+  margin-top: var(--s-3);
+}
+
+.resumen {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+  padding: var(--s-4) var(--s-5);
+  cursor: pointer;
+  font-weight: var(--p-semi);
+  color: var(--c-marino-titulo);
+  list-style: none;
+}
+
+.resumen::-webkit-details-marker {
+  display: none;
+}
+
+.resumen:hover {
+  background: var(--c-superficie-tenue);
+}
+
+.flecha {
+  flex-shrink: 0;
+  color: var(--c-turquesa-fuerte);
+  transition: transform var(--tr-normal);
+}
+
+.pregunta[open] .flecha {
+  transform: rotate(90deg);
+}
+
+.respuesta {
+  padding: 0 var(--s-5) var(--s-5);
+  color: var(--c-texto);
+  white-space: pre-line;
+}
+
+/* --- Contacto --- */
+.contactos {
+  display: grid;
+  gap: var(--s-4);
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.contacto {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-3);
+  padding: var(--s-5);
+  background: var(--c-superficie);
+  border: 1px solid var(--c-borde-tarjeta);
+  border-radius: var(--r-lg);
+}
+
+.contactoIcono {
+  flex-shrink: 0;
+  color: var(--c-turquesa-fuerte);
+}
+
+.contactoEtiqueta {
+  font-size: var(--t-xs);
+  letter-spacing: var(--e-nav);
+  text-transform: uppercase;
+  color: var(--c-texto-tenue);
+  font-weight: var(--p-semi);
+}
+
+.contactoDato {
+  color: var(--c-marino-titulo);
+  font-weight: var(--p-medio);
+  overflow-wrap: anywhere;
+}

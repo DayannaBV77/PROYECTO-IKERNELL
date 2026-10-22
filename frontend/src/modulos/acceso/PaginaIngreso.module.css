@@ -1,0 +1,132 @@
+.pantalla {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--s-8) var(--s-4);
+  min-height: 70vh;
+}
+
+.caja {
+  width: 100%;
+  max-width: 420px;
+  padding: var(--s-6);
+  background: var(--c-superficie);
+  border: 1px solid var(--c-borde-tarjeta);
+  border-radius: var(--r-lg);
+  box-shadow: var(--b-media);
+}
+
+.titulo {
+  font-size: var(--t-lg);
+  letter-spacing: var(--e-titulo);
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.introduccion {
+  margin: var(--s-3) 0 var(--s-5);
+  font-size: var(--t-sm);
+  color: var(--c-texto-tenue);
+  text-align: center;
+}
+
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-3);
+  margin-bottom: var(--s-4);
+  padding: var(--s-4);
+  border-radius: var(--r-md);
+  font-size: var(--t-sm);
+  background: var(--c-error-fondo);
+  border: 1px solid var(--c-error);
+  color: #7f1d1d;
+}
+
+.iconoAviso {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* --- Sesion abierta --- */
+.sesion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.identidad {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  padding-bottom: var(--s-4);
+  border-bottom: 1px solid var(--c-borde);
+}
+
+.iniciales {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: var(--r-full);
+  background: var(--c-marino);
+  color: var(--c-texto-inverso);
+  font-weight: var(--p-bold);
+}
+
+.nombre {
+  font-weight: var(--p-bold);
+  color: var(--c-marino-titulo);
+}
+
+.detalle {
+  font-size: var(--t-sm);
+  color: var(--c-texto-tenue);
+  overflow-wrap: anywhere;
+}
+
+.rol {
+  display: inline-block;
+  margin-top: var(--s-2);
+  padding: 2px var(--s-3);
+  border-radius: var(--r-full);
+  background: var(--c-superficie-tenue);
+  border: 1px solid var(--c-borde-tarjeta);
+  font-size: var(--t-xs);
+  font-weight: var(--p-semi);
+  letter-spacing: var(--e-nav);
+  text-transform: uppercase;
+  color: var(--c-marino-titulo);
+}
+
+.listaServicios {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  font-size: var(--t-sm);
+}
+
+.rotulo {
+  font-size: var(--t-xs);
+  letter-spacing: var(--e-nav);
+  text-transform: uppercase;
+  font-weight: var(--p-semi);
+  color: var(--c-texto-tenue);
+}
+
+.pendiente {
+  padding: var(--s-4);
+  border-radius: var(--r-md);
+  background: var(--c-info-fondo);
+  border: 1px solid var(--c-info);
+  font-size: var(--t-sm);
+  color: #0c4a6e;
+}

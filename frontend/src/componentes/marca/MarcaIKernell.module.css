@@ -1,0 +1,50 @@
+.marca {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-3);
+  /* Altura reservada para el logotipo definitivo: al sustituir el provisional
+     por el archivo real no cambia la maquetacion del encabezado. */
+  height: 34px;
+  text-decoration: none;
+}
+
+.marca:hover {
+  text-decoration: none;
+}
+
+.logotipo {
+  height: 34px;
+  width: auto;
+}
+
+/* --- Provisional, mientras no se entrega el logotipo oficial --- */
+.provisional {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.sigla {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--r-md);
+  background: var(--c-marino);
+  color: var(--c-texto-inverso);
+  font-size: var(--t-md);
+  font-weight: var(--p-bold);
+  letter-spacing: -0.02em;
+}
+
+.sigla span {
+  color: var(--c-turquesa-fuerte);
+}
+
+.nombre {
+  font-size: var(--t-md);
+  font-weight: var(--p-bold);
+  color: var(--c-marino-titulo);
+  letter-spacing: -0.01em;
+}

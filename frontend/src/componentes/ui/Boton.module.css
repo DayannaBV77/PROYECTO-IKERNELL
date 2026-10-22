@@ -1,0 +1,76 @@
+.boton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  padding: var(--s-3) var(--s-5);
+  border: 1px solid transparent;
+  border-radius: var(--r-md);
+  font-size: var(--t-sm);
+  font-weight: var(--p-semi);
+  letter-spacing: var(--e-nav);
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    background-color var(--tr-rapida),
+    border-color var(--tr-rapida),
+    color var(--tr-rapida);
+  text-decoration: none;
+}
+
+.boton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.boton:hover:not(:disabled) {
+  text-decoration: none;
+}
+
+/* Relleno marino: la accion principal de cada pantalla. */
+.primario {
+  background: var(--c-marino);
+  border-color: var(--c-marino);
+  color: var(--c-texto-inverso);
+}
+
+.primario:hover:not(:disabled) {
+  background: var(--c-marino-medio);
+  border-color: var(--c-marino-medio);
+}
+
+/* Contorno turquesa: acciones de apoyo. */
+.secundario {
+  background: var(--c-superficie);
+  border-color: var(--c-borde-tarjeta);
+  color: var(--c-marino-titulo);
+}
+
+.secundario:hover:not(:disabled) {
+  background: var(--c-superficie-tenue);
+  border-color: var(--c-turquesa-fuerte);
+}
+
+.texto {
+  background: transparent;
+  color: var(--c-marino-medio);
+  padding-inline: var(--s-2);
+}
+
+.texto:hover:not(:disabled) {
+  color: var(--c-turquesa-fuerte);
+}
+
+.peligro {
+  background: var(--c-superficie);
+  border-color: var(--c-error);
+  color: var(--c-error);
+}
+
+.peligro:hover:not(:disabled) {
+  background: var(--c-error-fondo);
+}
+
+.completo {
+  width: 100%;
+}
