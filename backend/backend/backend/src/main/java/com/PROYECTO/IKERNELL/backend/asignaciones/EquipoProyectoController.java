@@ -16,8 +16,10 @@ import com.PROYECTO.IKERNELL.backend.asignaciones.dto.AsignacionEquipoRequest;
 import com.PROYECTO.IKERNELL.backend.asignaciones.dto.AsignacionResponse;
 import com.PROYECTO.IKERNELL.backend.asignaciones.dto.ResultadoAsignacionEquipoResponse;
 import com.PROYECTO.IKERNELL.backend.auth.TrabajadorAutenticado;
+import com.PROYECTO.IKERNELL.backend.shared.dto.ListaResponse;
 import com.PROYECTO.IKERNELL.backend.trabajadores.ServicioTrabajadores;
 import com.PROYECTO.IKERNELL.backend.trabajadores.domain.Trabajador;
+import com.PROYECTO.IKERNELL.backend.trabajadores.dto.TrabajadorResumenResponse;
 
 import jakarta.validation.Valid;
 
@@ -67,6 +69,23 @@ public class EquipoProyectoController {
 	@GetMapping
 	public List<AsignacionResponse> consultarEquipo(@PathVariable Long proyectoId) {
 		return servicio.equipoDeProyecto(proyectoId).stream().map(AsignacionResponse::de).toList();
+	}
+
+	/**
+	 * RF-009, HU-10 C01: desarrolladores disponibles para asignar.
+	 *
+	 * <p>La asignacion exige enviar identificadores de desarrollador, y la
+	 * busqueda de perfiles esta reservada al coordinador (RNF-001): sin este
+	 * endpoint el lider tendria que conocerlos de memoria. Entrega lo justo para
+	 * elegir -lo mismo que ya muestra la lista del equipo- sin abrir el registro
+	 * completo de trabajadores, que es lo que decidiria la ambiguedad A-03.
+	 */
+	@GetMapping("/candidatos")
+	public ListaResponse<TrabajadorResumenResponse> candidatos(@PathVariable Long proyectoId) {
+		List<TrabajadorResumenResponse> lista = servicio.candidatosParaEquipo(proyectoId).stream()
+				.map(TrabajadorResumenResponse::de).toList();
+		return ListaResponse.de(lista,
+				"No hay desarrolladores habilitados disponibles para asignar a este proyecto.");
 	}
 
 }

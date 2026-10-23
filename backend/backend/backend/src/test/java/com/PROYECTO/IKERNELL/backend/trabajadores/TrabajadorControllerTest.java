@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -144,6 +145,37 @@ class TrabajadorControllerTest {
 				.file(foto).with(csrf()))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.tieneFotografia").value(true));
+	}
+
+	@Test
+	@WithMockUser(roles = "COORDINADOR")
+	@DisplayName("HU-04 C04: la fotografia adjuntada se puede ver en el perfil")
+	void devuelveLaFotografiaDelPerfil() throws Exception {
+		Trabajador trabajador = registrarDirecto("4000000010", "Ana", "Perez", "Ingenieria",
+				TipoTrabajador.DESARROLLADOR);
+		MockMultipartFile foto = new MockMultipartFile("fotografia", "perfil.jpg", "image/jpeg", JPEG_VALIDO);
+		mockMvc.perform(multipart("/api/trabajadores/" + trabajador.getId() + "/fotografia")
+				.file(foto).with(csrf()))
+				.andExpect(status().isOk());
+
+		// El criterio no se conforma con adjuntarla: pide que se pueda ver. Se
+		// recupera con el tipo con que se valido y con el mismo contenido.
+		mockMvc.perform(get("/api/trabajadores/" + trabajador.getId() + "/fotografia"))
+				.andExpect(status().isOk())
+				.andExpect(content().contentType(MediaType.IMAGE_JPEG))
+				.andExpect(content().bytes(JPEG_VALIDO));
+	}
+
+	@Test
+	@WithMockUser(roles = "COORDINADOR")
+	@DisplayName("RF-002: un perfil sin fotografia lo informa, en lugar de devolver una imagen vacia")
+	void perfilSinFotografiaNoDevuelveImagen() throws Exception {
+		Trabajador trabajador = registrarDirecto("4000000011", "Ana", "Perez", "Ingenieria",
+				TipoTrabajador.DESARROLLADOR);
+
+		mockMvc.perform(get("/api/trabajadores/" + trabajador.getId() + "/fotografia"))
+				.andExpect(status().isNotFound())
+				.andExpect(jsonPath("$.mensaje").value("El perfil no tiene una fotografia adjunta."));
 	}
 
 	@Test

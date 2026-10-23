@@ -1,48 +1,38 @@
 import { useState } from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
 import { LogIn, TriangleAlert } from 'lucide-react';
 
-import {
-  ETIQUETA_SERVICIO,
-  ETIQUETA_TIPO,
-  cerrarSesion,
-  iniciarSesion,
-} from '../../api/autenticacion.js';
+import EstadoCarga from '../../componentes/estados/EstadoCarga.jsx';
 import Boton from '../../componentes/ui/Boton.jsx';
 import Campo from '../../componentes/ui/Campo.jsx';
+import { useSesion } from '../../sesion/contexto.js';
 import estilos from './PaginaIngreso.module.css';
 
 const VACIO = { correoCorporativo: '', password: '' };
-
-function iniciales(nombreCompleto) {
-  return (nombreCompleto || '')
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((parte) => parte[0].toUpperCase())
-    .join('');
-}
 
 /**
  * Inicio de sesion de los trabajadores (RF-027, HU-03).
  *
  * Cubre los cinco criterios: abre la sesion con credenciales correctas (C01),
- * muestra los servicios comunes que devuelve el servidor (C02), repite el mismo
- * mensaje generico para credenciales incorrectas y para cuentas inhabilitadas
- * -el backend no distingue entre ambos a proposito- (C03 y C04) y exige los dos
- * datos antes de intentar el acceso (C05).
+ * repite el mismo mensaje generico para credenciales incorrectas y para cuentas
+ * inhabilitadas -el backend no distingue entre ambos a proposito- (C03 y C04) y
+ * exige los dos datos antes de intentar el acceso (C05). Los servicios comunes
+ * de C02 se muestran ya dentro, en el panel.
  *
- * Se adelanto a esta etapa para comprobar de extremo a extremo la parte mas
- * delicada de la integracion: la cookie de sesion y el token CSRF.
- *
- * Las funciones propias de cada tipo de trabajador llegan en las etapas
- * siguientes; hasta entonces esta pantalla no las anuncia como disponibles.
+ * Quien llega aqui con la sesion abierta no ve el formulario: se le lleva a su
+ * destino. Si la guarda lo mando aqui desde una ruta privada, ese destino es la
+ * ruta que pedia, para no obligarle a buscarla de nuevo.
  */
 export default function PaginaIngreso() {
+  const { sesion, comprobando, entrar } = useSesion();
+  const ubicacion = useLocation();
+
   const [valores, setValores] = useState(VACIO);
   const [errores, setErrores] = useState({});
   const [fallo, setFallo] = useState(null);
-  const [sesion, setSesion] = useState(null);
   const [enviando, setEnviando] = useState(false);
+
+  const destino = ubicacion.state?.destino || '/app';
 
   function alCambiar(evento) {
     const { name, value } = evento.target;
@@ -57,9 +47,11 @@ export default function PaginaIngreso() {
     setErrores({});
 
     try {
-      setSesion(await iniciarSesion(valores));
+      await entrar(valores);
       setValores(VACIO);
     } catch (error) {
+      // `campos` llega solo en los errores de validacion y permite marcar cada
+      // campo sin descartar lo que la persona ya escribio (RN-13).
       if (error.campos) {
         setErrores(error.campos);
       }
@@ -69,53 +61,12 @@ export default function PaginaIngreso() {
     }
   }
 
-  async function alSalir() {
-    try {
-      await cerrarSesion();
-    } finally {
-      setSesion(null);
-    }
+  if (comprobando) {
+    return <EstadoCarga mensaje="Comprobando la sesion..." />;
   }
 
   if (sesion) {
-    return (
-      <div className={estilos.pantalla}>
-        <div className={estilos.caja}>
-          <div className={estilos.sesion}>
-            <div className={estilos.identidad}>
-              <span className={estilos.iniciales} aria-hidden="true">
-                {iniciales(sesion.nombreCompleto)}
-              </span>
-              <div>
-                <p className={estilos.nombre}>{sesion.nombreCompleto}</p>
-                <p className={estilos.detalle}>{sesion.correoCorporativo}</p>
-                <span className={estilos.rol}>
-                  {ETIQUETA_TIPO[sesion.tipoTrabajador] || sesion.tipoTrabajador}
-                </span>
-              </div>
-            </div>
-
-            <div>
-              <p className={estilos.rotulo}>Servicios comunes</p>
-              <ul className={estilos.listaServicios}>
-                {(sesion.serviciosComunes || []).map((servicio) => (
-                  <li key={servicio}>{ETIQUETA_SERVICIO[servicio] || servicio}</li>
-                ))}
-              </ul>
-            </div>
-
-            <p className={estilos.pendiente}>
-              Su sesion esta abierta. Las pantallas de gestion correspondientes a su tipo de
-              trabajador se incorporan en las siguientes etapas de desarrollo.
-            </p>
-
-            <Boton variante="secundario" onClick={alSalir} completo>
-              Cerrar sesion
-            </Boton>
-          </div>
-        </div>
-      </div>
-    );
+    return <Navigate to={destino} replace />;
   }
 
   return (

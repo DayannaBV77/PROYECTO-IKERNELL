@@ -1,0 +1,229 @@
+/**
+ * Estilos de las pantallas de gestion.
+ *
+ * Las pantallas de gestion -trabajadores, proyectos y las que vendran- tienen
+ * la misma forma: una barra de acciones, un buscador por criterios, una tabla
+ * de resultados paginada y una ficha de detalle. Compartir la hoja evita que
+ * cada modulo repita la misma tabla con pequenas diferencias involuntarias.
+ *
+ * Lo propio de un componente concreto vive en su propio modulo, no aqui.
+ */
+
+.barraSuperior {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--s-5);
+}
+
+/* --- Buscador y formularios --- */
+.buscador,
+.formulario {
+  padding: var(--s-5);
+  margin-bottom: var(--s-6);
+  background: var(--c-superficie);
+  border: 1px solid var(--c-borde);
+  border-radius: var(--r-lg);
+  box-shadow: var(--b-sutil);
+}
+
+/*
+ * Rejilla que se adapta al ancho disponible: con siete criterios, columnas
+ * fijas obligarian a desplazamiento lateral en pantallas medianas.
+ */
+.criterios {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--s-4);
+}
+
+.accionesBuscador {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  margin-top: var(--s-5);
+}
+
+.rotulo {
+  font-size: var(--t-xs);
+  letter-spacing: var(--e-nav);
+  text-transform: uppercase;
+  font-weight: var(--p-semi);
+  color: var(--c-texto-tenue);
+}
+
+/* --- Tabla de resultados --- */
+/* El envoltorio permite desplazar la tabla en movil sin romper la pagina. */
+.tablaEnvoltorio {
+  overflow-x: auto;
+  background: var(--c-superficie);
+  border: 1px solid var(--c-borde);
+  border-radius: var(--r-lg);
+  box-shadow: var(--b-sutil);
+}
+
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--t-sm);
+  text-align: left;
+}
+
+.tabla th,
+.tabla td {
+  padding: var(--s-3) var(--s-4);
+  border-bottom: 1px solid var(--c-borde);
+  white-space: nowrap;
+}
+
+.tabla thead th {
+  background: var(--c-fondo-franja);
+  font-size: var(--t-xs);
+  letter-spacing: var(--e-nav);
+  text-transform: uppercase;
+  color: var(--c-marino-titulo);
+}
+
+.tabla tbody tr:last-child th,
+.tabla tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.tabla tbody tr:hover {
+  background: var(--c-superficie-tenue);
+}
+
+.celdaNombre {
+  font-weight: var(--p-semi);
+  color: var(--c-marino-titulo);
+}
+
+.abrir {
+  font-weight: var(--p-semi);
+  white-space: nowrap;
+}
+
+/* --- Paginacion --- */
+.paginacion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+  margin-top: var(--s-5);
+}
+
+.recuento {
+  margin-top: var(--s-4);
+  font-size: var(--t-sm);
+  color: var(--c-texto-tenue);
+}
+
+.paginacion .recuento {
+  margin-top: 0;
+  text-align: center;
+}
+
+/* --- Perfil --- */
+.perfil {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--s-5);
+  align-items: start;
+}
+
+.ficha {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  padding: var(--s-5);
+  background: var(--c-superficie);
+  border: 1px solid var(--c-borde);
+  border-radius: var(--r-lg);
+  box-shadow: var(--b-sutil);
+}
+
+.datos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.datos dt {
+  font-size: var(--t-xs);
+  letter-spacing: var(--e-nav);
+  text-transform: uppercase;
+  color: var(--c-texto-tenue);
+}
+
+.datos dd {
+  margin-top: var(--s-1);
+  color: var(--c-texto);
+  overflow-wrap: anywhere;
+}
+
+.accionesPerfil {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+  margin-top: var(--s-2);
+}
+
+/* --- Avisos --- */
+.avisoExito,
+.avisoError {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-3);
+  margin-bottom: var(--s-5);
+  padding: var(--s-4);
+  border-radius: var(--r-md);
+  font-size: var(--t-sm);
+}
+
+.avisoExito {
+  background: var(--c-exito-fondo);
+  border: 1px solid var(--c-exito);
+  color: #14532d;
+}
+
+.avisoError {
+  background: var(--c-error-fondo);
+  border: 1px solid var(--c-error);
+  color: #7f1d1d;
+}
+
+.notaDialogo {
+  margin-top: var(--s-3);
+  font-size: var(--t-sm);
+  color: var(--c-texto-tenue);
+}
+
+@media (max-width: 720px) {
+  .barraSuperior {
+    justify-content: stretch;
+  }
+
+  .accionesBuscador {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .paginacion {
+    flex-direction: column;
+  }
+}
+
+/* Lista de advertencias previas a una operacion irreversible (HU-09 C05). */
+.advertencias {
+  margin-top: var(--s-3);
+  padding: var(--s-4);
+  border-radius: var(--r-md);
+  background: var(--c-alerta-fondo);
+  border: 1px solid var(--c-alerta);
+  list-style: disc inside;
+  font-size: var(--t-sm);
+  color: #78350f;
+}
+
+.advertencias li + li {
+  margin-top: var(--s-2);
+}

@@ -11,10 +11,13 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.PROYECTO.IKERNELL.backend.shared.error.ArchivoInvalidoException;
+import com.PROYECTO.IKERNELL.backend.shared.error.RecursoNoEncontradoException;
 
 /**
  * Guarda las fotografias de perfil en disco y devuelve la ruta (RF-002).
@@ -87,6 +90,25 @@ public class AlmacenFotografias {
 		catch (IOException ex) {
 			throw new ArchivoInvalidoException("No se pudo guardar la fotografia. Intente de nuevo.");
 		}
+	}
+
+	/**
+	 * Abre una fotografia ya guardada (RF-002, HU-04 C04: "se puede ver en el").
+	 *
+	 * <p>La ruta procede de la base de datos y la escribio {@link #guardar}, no
+	 * el cliente. Aun asi se comprueba que caiga dentro del directorio
+	 * configurado: un lector de archivos guiado por una ruta almacenada no
+	 * deberia poder salir de el si esa ruta se corrompe o se manipula.
+	 *
+	 * <p>Un archivo ausente se trata como recurso no encontrado y no como error
+	 * del servidor: el perfil puede seguir existiendo sin su imagen.
+	 */
+	public Resource abrir(String ruta) {
+		Path archivo = Paths.get(ruta).toAbsolutePath().normalize();
+		if (!archivo.startsWith(directorio.toAbsolutePath().normalize()) || !Files.isReadable(archivo)) {
+			throw new RecursoNoEncontradoException("La fotografia del perfil no esta disponible.");
+		}
+		return new FileSystemResource(archivo);
 	}
 
 	private boolean contenidoCoincideConTipo(MultipartFile archivo, String tipo) {

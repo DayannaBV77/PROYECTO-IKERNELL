@@ -1,0 +1,22 @@
+.estado {
+  display: inline-block;
+  padding: 2px var(--s-3);
+  border-radius: var(--r-full);
+  font-size: var(--t-xs);
+  font-weight: var(--p-semi);
+  letter-spacing: var(--e-nav);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.habilitado {
+  background: var(--c-exito-fondo);
+  border: 1px solid var(--c-exito);
+  color: #14532d;
+}
+
+.inhabilitado {
+  background: var(--c-fondo-franja);
+  border: 1px solid var(--c-neutro);
+  color: var(--c-texto-tenue);
+}

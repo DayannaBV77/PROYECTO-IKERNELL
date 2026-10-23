@@ -2,6 +2,8 @@ package com.PROYECTO.IKERNELL.backend.asignaciones;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +18,7 @@ import com.PROYECTO.IKERNELL.backend.shared.error.ConfirmacionRequeridaException
 import com.PROYECTO.IKERNELL.backend.shared.error.RecursoNoEncontradoException;
 import com.PROYECTO.IKERNELL.backend.shared.error.ReglaNegocioException;
 import com.PROYECTO.IKERNELL.backend.trabajadores.ServicioTrabajadores;
+import com.PROYECTO.IKERNELL.backend.trabajadores.domain.TipoTrabajador;
 import com.PROYECTO.IKERNELL.backend.trabajadores.domain.Trabajador;
 
 /**
@@ -170,6 +173,32 @@ public class ServicioAsignaciones {
 	}
 
 	/** Resultado de una asignacion por lote, con los exitos y los rechazos. */
+	/**
+	 * Desarrolladores a los que el lider puede asignar este proyecto ahora
+	 * mismo (RF-009, HU-10 C01).
+	 *
+	 * <p>Excluye a los inhabilitados y a los que ya tienen una asignacion activa
+	 * como desarrollador en el proyecto, que son exactamente los dos motivos por
+	 * los que {@link #asignarEquipo} los rechazaria. Asi el selector no ofrece lo
+	 * que la operacion va a devolver rechazado.
+	 *
+	 * <p>Existe porque la busqueda de trabajadores esta reservada al coordinador
+	 * (RNF-001) y el lider no tiene otra forma de conocer los identificadores que
+	 * la asignacion le exige enviar. Entrega solo lo necesario para elegir, sin
+	 * abrir el registro completo de perfiles, que es lo que sigue en discusion en
+	 * la ambiguedad A-03.
+	 */
+	@Transactional(readOnly = true)
+	public List<Trabajador> candidatosParaEquipo(Long proyectoId) {
+		Set<Long> yaEnElEquipo = equipoDeProyecto(proyectoId).stream()
+				.map(asignacion -> asignacion.getTrabajador().getId())
+				.collect(Collectors.toSet());
+
+		return servicioTrabajadores.habilitadosPorTipo(TipoTrabajador.DESARROLLADOR).stream()
+				.filter(desarrollador -> !yaEnElEquipo.contains(desarrollador.getId()))
+				.toList();
+	}
+
 	public record ResultadoLote(List<Asignacion> asignados, List<DesarrolladorRechazado> rechazados) {
 	}
 

@@ -1,9 +1,13 @@
 package com.PROYECTO.IKERNELL.backend.trabajadores;
 
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.PROYECTO.IKERNELL.backend.shared.domain.EstadoHabilitacion;
+import com.PROYECTO.IKERNELL.backend.trabajadores.ServicioTrabajadores.FotografiaGuardada;
 import com.PROYECTO.IKERNELL.backend.shared.dto.PaginaResponse;
 import com.PROYECTO.IKERNELL.backend.trabajadores.domain.TipoTrabajador;
 import com.PROYECTO.IKERNELL.backend.trabajadores.dto.CriteriosBusquedaTrabajador;
@@ -121,6 +126,32 @@ public class TrabajadorController {
 	@PostMapping("/{id}/inhabilitacion")
 	public TrabajadorResponse inhabilitar(@PathVariable Long id) {
 		return TrabajadorResponse.de(servicio.inhabilitar(id));
+	}
+
+	/**
+	 * RF-002, HU-04 C04: devuelve la fotografia del perfil.
+	 *
+	 * <p>El criterio no se cumple solo adjuntando la imagen: pide que "se pueda
+	 * ver en el" perfil, y para eso hace falta poder recuperarla.
+	 *
+	 * <p>Se sirve con el tipo que se valido al guardarla y sin cache compartida:
+	 * es un dato personal de un trabajador, no un recurso publico, y la respuesta
+	 * depende de quien pregunta.
+	 *
+	 * <p>Un perfil sin fotografia responde 404 con su mensaje, no una imagen
+	 * vacia: el cliente ya sabe por {@code tieneFotografia} si debe pedirla.
+	 */
+	@GetMapping("/{id}/fotografia")
+	public ResponseEntity<Resource> fotografia(@PathVariable Long id) {
+		FotografiaGuardada fotografia = servicio.fotografiaDe(id);
+
+		ResponseEntity.BodyBuilder respuesta = ResponseEntity.ok()
+				.contentType(MediaType.parseMediaType(fotografia.contentType()))
+				.cacheControl(CacheControl.noStore().cachePrivate());
+		if (fotografia.tamanoBytes() != null) {
+			respuesta = respuesta.contentLength(fotografia.tamanoBytes());
+		}
+		return respuesta.body(fotografia.contenido());
 	}
 
 	/**

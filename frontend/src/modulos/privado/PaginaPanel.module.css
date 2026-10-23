@@ -1,0 +1,99 @@
+/* --- Identidad de la sesion --- */
+.identidad {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  padding: var(--s-5);
+  background: var(--c-superficie);
+  border: 1px solid var(--c-borde-tarjeta);
+  border-radius: var(--r-lg);
+  box-shadow: var(--b-sutil);
+}
+
+.iniciales {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  border-radius: var(--r-full);
+  background: var(--c-marino);
+  color: var(--c-texto-inverso);
+  font-weight: var(--p-bold);
+  font-size: var(--t-md);
+}
+
+.nombre {
+  font-size: var(--t-md);
+  font-weight: var(--p-bold);
+  color: var(--c-marino-titulo);
+}
+
+.detalle {
+  font-size: var(--t-sm);
+  color: var(--c-texto-tenue);
+  overflow-wrap: anywhere;
+}
+
+.rol {
+  display: inline-block;
+  margin-top: var(--s-2);
+  padding: 2px var(--s-3);
+  border-radius: var(--r-full);
+  background: var(--c-superficie-tenue);
+  border: 1px solid var(--c-borde-tarjeta);
+  font-size: var(--t-xs);
+  font-weight: var(--p-semi);
+  letter-spacing: var(--e-nav);
+  text-transform: uppercase;
+  color: var(--c-marino-titulo);
+}
+
+/* Pie de la tarjeta de un servicio que sale del aplicativo. */
+.externo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--t-sm);
+  font-weight: var(--p-semi);
+  color: var(--c-marino-titulo);
+}
+
+/* --- Aviso de falta de autorizacion --- */
+.aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-4);
+  padding: var(--s-5);
+  background: var(--c-error-fondo);
+  border: 1px solid var(--c-error);
+  border-radius: var(--r-lg);
+}
+
+.avisoIcono {
+  flex-shrink: 0;
+  color: var(--c-error);
+}
+
+.avisoTitulo {
+  font-weight: var(--p-bold);
+  color: #7f1d1d;
+}
+
+.avisoDetalle {
+  margin-top: var(--s-2);
+  font-size: var(--t-sm);
+  color: var(--c-texto);
+}
+
+.avisoAccion {
+  margin-top: var(--s-4);
+}
+
+@media (max-width: 720px) {
+  .identidad {
+    flex-direction: column;
+    text-align: center;
+  }
+}

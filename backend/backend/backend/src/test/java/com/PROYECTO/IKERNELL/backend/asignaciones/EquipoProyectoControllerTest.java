@@ -9,6 +9,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.LocalDate;
+import java.util.List;
+
+import org.hibernate.Hibernate;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -24,6 +27,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
 
+import com.PROYECTO.IKERNELL.backend.asignaciones.domain.Asignacion;
 import com.PROYECTO.IKERNELL.backend.asignaciones.domain.RolEnProyecto;
 import com.PROYECTO.IKERNELL.backend.auth.CuentaAccesoRepository;
 import com.PROYECTO.IKERNELL.backend.proyectos.ProyectoRepository;
@@ -32,6 +36,8 @@ import com.PROYECTO.IKERNELL.backend.support.AutenticacionDePrueba;
 import com.PROYECTO.IKERNELL.backend.trabajadores.TrabajadorRepository;
 import com.PROYECTO.IKERNELL.backend.trabajadores.domain.TipoTrabajador;
 import com.PROYECTO.IKERNELL.backend.trabajadores.domain.Trabajador;
+
+import jakarta.persistence.EntityManager;
 
 /**
  * Asignacion de desarrolladores por el lider: una prueba por condicion de
@@ -56,6 +62,9 @@ class EquipoProyectoControllerTest {
 
 	@Autowired
 	private ServicioAsignaciones servicioAsignaciones;
+
+	@Autowired
+	private EntityManager entityManager;
 
 	private MockMvc mockMvc;
 	private Authentication lider;
@@ -217,6 +226,98 @@ class EquipoProyectoControllerTest {
 				.content("{\"desarrolladorIds\":[]}"))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.campos.desarrolladorIds").exists());
+	}
+
+	@Test
+	@DisplayName("HU-10 C01: se ofrecen como candidatos los desarrolladores habilitados")
+	void ofreceLosDesarrolladoresHabilitadosComoCandidatos() throws Exception {
+		Trabajador habilitado = nuevoTrabajador("8000000020", TipoTrabajador.DESARROLLADOR);
+		Trabajador inhabilitado = nuevoTrabajador("8000000021", TipoTrabajador.DESARROLLADOR);
+		inhabilitado.inhabilitar();
+		trabajadores.saveAndFlush(inhabilitado);
+		// Un lider no es candidato por su tipo global, aunque RN-05 le permita
+		// trabajar como desarrollador si se le asigna expresamente.
+		nuevoTrabajador("8000000022", TipoTrabajador.LIDER);
+
+		mockMvc.perform(get("/api/proyectos/" + proyecto.getId() + "/equipo/candidatos")
+				.with(authentication(lider)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.contenido[?(@.id == " + habilitado.getId() + ")]").exists())
+				.andExpect(jsonPath("$.contenido[?(@.id == " + inhabilitado.getId() + ")]").doesNotExist())
+				.andExpect(jsonPath("$.contenido[?(@.tipoTrabajador == 'LIDER')]").doesNotExist());
+	}
+
+	@Test
+	@DisplayName("HU-10 C01: el desarrollador ya asignado deja de ofrecerse como candidato")
+	void dejaDeOfrecerAlQueYaEstaEnElEquipo() throws Exception {
+		Trabajador uno = nuevoTrabajador("8000000023", TipoTrabajador.DESARROLLADOR);
+		String candidatos = "/api/proyectos/" + proyecto.getId() + "/equipo/candidatos";
+
+		mockMvc.perform(get(candidatos).with(authentication(lider)))
+				.andExpect(jsonPath("$.contenido[?(@.id == " + uno.getId() + ")]").exists());
+
+		mockMvc.perform(post("/api/proyectos/" + proyecto.getId() + "/equipo")
+				.with(csrf()).with(authentication(lider))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(cuerpo(uno.getId())))
+				.andExpect(status().isOk());
+
+		// Asignarlo otra vez seria rechazado, asi que tampoco se ofrece.
+		mockMvc.perform(get(candidatos).with(authentication(lider)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.contenido[?(@.id == " + uno.getId() + ")]").doesNotExist());
+	}
+
+	@Test
+	@DisplayName("RN-14: sin desarrolladores disponibles se avisa, en lugar de una lista vacia")
+	void avisaCuandoNoHayCandidatos() throws Exception {
+		mockMvc.perform(get("/api/proyectos/" + proyecto.getId() + "/equipo/candidatos")
+				.with(authentication(lider)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.total").value(0))
+				.andExpect(jsonPath("$.mensaje").value(
+						"No hay desarrolladores habilitados disponibles para asignar a este proyecto."));
+	}
+
+	@Test
+	@DisplayName("RNF-001: la lista de candidatos no abre el registro de trabajadores a otros roles")
+	void soloElLiderConsultaLosCandidatos() throws Exception {
+		Authentication coordinador = AutenticacionDePrueba.comoTrabajador(trabajadores, cuentas,
+				"8000000024", "coord.equipo@ikernell.com", TipoTrabajador.COORDINADOR);
+
+		mockMvc.perform(get("/api/proyectos/" + proyecto.getId() + "/equipo/candidatos")
+				.with(authentication(coordinador)))
+				.andExpect(status().isForbidden());
+	}
+
+	@Test
+	@DisplayName("open-in-view=false: el equipo llega con sus relaciones cargadas, no como proxies")
+	void elEquipoLlegaConSusRelacionesCargadas() throws Exception {
+		Trabajador uno = nuevoTrabajador("8000000025", TipoTrabajador.DESARROLLADOR);
+		mockMvc.perform(post("/api/proyectos/" + proyecto.getId() + "/equipo")
+				.with(csrf()).with(authentication(lider))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(cuerpo(uno.getId())))
+				.andExpect(status().isOk());
+
+		// Se vacia el contexto de persistencia: sin esto, las entidades que la
+		// prueba ya cargo resolverian las relaciones desde la cache de primer
+		// nivel y la comprobacion no probaria nada.
+		entityManager.flush();
+		entityManager.clear();
+
+		List<Asignacion> equipo = servicioAsignaciones.equipoDeProyecto(proyecto.getId());
+
+		// El controlador mapea a AsignacionResponse FUERA de la transaccion,
+		// porque open-in-view esta desactivado. Si las relaciones llegan como
+		// proxies sin inicializar, ese mapeo lanza LazyInitializationException y
+		// el endpoint responde 500. Una prueba @Transactional que solo mire el
+		// JSON no lo detecta: su transaccion mantiene la sesion abierta y el
+		// proxy se resuelve igualmente. Por eso se comprueba la carga, y no el
+		// cuerpo de la respuesta.
+		assertThat(equipo).isNotEmpty();
+		assertThat(Hibernate.isInitialized(equipo.get(0).getTrabajador())).isTrue();
+		assertThat(Hibernate.isInitialized(equipo.get(0).getProyecto())).isTrue();
 	}
 
 	@Test

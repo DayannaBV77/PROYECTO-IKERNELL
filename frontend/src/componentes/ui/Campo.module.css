@@ -72,3 +72,17 @@
   font-size: var(--t-sm);
   color: var(--c-error);
 }
+
+/*
+ * El <select> nativo trae su propio relleno y su flecha; se iguala al resto de
+ * los controles sin ocultar el indicador, que es lo que delata que la lista se
+ * despliega.
+ */
+.lista {
+  appearance: none;
+  padding-inline-end: var(--s-7);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--s-4) center;
+  cursor: pointer;
+}

@@ -13,3 +13,18 @@ export function formatearFecha(iso) {
     year: 'numeric',
   }).format(fecha);
 }
+
+/**
+ * Iniciales de un nombre completo, para el avatar de la sesion.
+ *
+ * Toma las dos primeras palabras: con los nombres compuestos que se usan aqui,
+ * tomar mas llenaria el circulo de letras.
+ */
+export function iniciales(nombreCompleto) {
+  return (nombreCompleto || '')
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((parte) => parte[0].toUpperCase())
+    .join('');
+}

@@ -12,6 +12,13 @@ import estilos from './Campo.module.css';
  *
  * El error que recibe procede de `ErrorRespuesta.campos`, es decir, del propio
  * servidor: la validacion que manda es la suya.
+ *
+ * Con `opciones` renderiza un <select> en vez de un <input>, para que una lista
+ * cerrada -los tipos de trabajador, un estado- no se escriba a mano y comparta
+ * la etiqueta, el error y el cableado accesible con el resto de los campos.
+ *
+ * @param {Array}  [opciones]  [{ valor, texto }]
+ * @param {string} [textoVacio] primera opcion sin valor; null la suprime
  */
 export default function Campo({
   etiqueta,
@@ -21,6 +28,8 @@ export default function Campo({
   obligatorio = false,
   error,
   pista,
+  opciones,
+  textoVacio = 'Seleccione una opcion',
   ...resto
 }) {
   const idGenerado = useId();
@@ -30,7 +39,7 @@ export default function Campo({
 
   const descritoPor = [error ? idError : null, pista ? idPista : null].filter(Boolean).join(' ');
 
-  const Control = area ? 'textarea' : 'input';
+  const Control = opciones ? 'select' : area ? 'textarea' : 'input';
 
   return (
     <div className={estilos.campo}>
@@ -53,13 +62,26 @@ export default function Campo({
       <Control
         id={idControl}
         name={nombre}
-        type={area ? undefined : tipo}
-        className={`${estilos.control} ${area ? estilos.area : ''} ${error ? estilos.conError : ''}`}
+        type={Control === 'input' ? tipo : undefined}
+        className={`${estilos.control} ${area ? estilos.area : ''} ${
+          opciones ? estilos.lista : ''
+        } ${error ? estilos.conError : ''}`}
         aria-invalid={error ? 'true' : undefined}
         aria-describedby={descritoPor || undefined}
         aria-required={obligatorio || undefined}
         {...resto}
-      />
+      >
+        {opciones && (
+          <>
+            {textoVacio !== null && <option value="">{textoVacio}</option>}
+            {opciones.map(({ valor, texto }) => (
+              <option key={valor} value={valor}>
+                {texto}
+              </option>
+            ))}
+          </>
+        )}
+      </Control>
 
       {error && (
         <p className={estilos.error} id={idError}>

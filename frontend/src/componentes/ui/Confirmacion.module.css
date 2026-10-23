@@ -1,0 +1,37 @@
+.dialogo {
+  width: min(460px, calc(100vw - 2 * var(--s-5)));
+  padding: var(--s-6);
+  border: 1px solid var(--c-borde-tarjeta);
+  border-radius: var(--r-lg);
+  background: var(--c-superficie);
+  box-shadow: var(--b-elevada);
+  color: var(--c-texto);
+}
+
+.dialogo::backdrop {
+  background: rgb(15 23 42 / 0.5);
+}
+
+.titulo {
+  font-size: var(--t-lg);
+  color: var(--c-marino-titulo);
+}
+
+.cuerpo {
+  margin-top: var(--s-4);
+  font-size: var(--t-base);
+  line-height: var(--i-normal);
+}
+
+.acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--s-3);
+  margin-top: var(--s-6);
+}
+
+@media (max-width: 480px) {
+  .acciones {
+    flex-direction: column-reverse;
+  }
+}

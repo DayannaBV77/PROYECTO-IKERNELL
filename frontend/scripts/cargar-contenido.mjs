@@ -38,6 +38,18 @@ const CLAVE = argumento('clave', process.env.IKERNELL_CLAVE || 'Dev12345');
 /** Almacen de cookies minimo: fetch no las conserva entre peticiones. */
 const galletas = new Map();
 
+/**
+ * Token CSRF vigente.
+ *
+ * La proteccion CSRF cubre toda peticion que modifica datos, incluido el propio
+ * login. El token viaja tambien en la cookie XSRF-TOKEN, pero ese valor NO
+ * sirve para rellenar la cabecera: Spring Security enmascara el token en cada
+ * resolucion -su proteccion contra BREACH- y solo acepta el valor enmascarado
+ * que devuelve GET /api/auth/csrf. Enviar el de la cookie responde 403.
+ * El navegador tiene el mismo problema; ver src/api/csrf.js.
+ */
+let tokenCsrf = null;
+
 function guardarCookies(respuesta) {
   for (const cruda of respuesta.headers.getSetCookie?.() ?? []) {
     const [par] = cruda.split(';');
@@ -56,10 +68,10 @@ async function llamar(ruta, { metodo = 'GET', cuerpo } = {}) {
   const cabeceras = { Cookie: cabeceraCookie() };
 
   if (metodo !== 'GET') {
-    const token = galletas.get('XSRF-TOKEN');
-    if (token) {
-      cabeceras['X-XSRF-TOKEN'] = decodeURIComponent(token);
+    if (!tokenCsrf) {
+      throw new Error(`${metodo} ${ruta} sin token CSRF: falta renovarTokenCsrf()`);
     }
+    cabeceras['X-XSRF-TOKEN'] = tokenCsrf;
   }
   if (cuerpo !== undefined) {
     cabeceras['Content-Type'] = 'application/json; charset=utf-8';
@@ -82,14 +94,23 @@ async function llamar(ruta, { metodo = 'GET', cuerpo } = {}) {
   return datos;
 }
 
+/** Pide el token al endpoint y lo deja listo para las escrituras. */
+async function renovarTokenCsrf() {
+  const { token } = await llamar('/api/auth/csrf');
+  if (!token) {
+    throw new Error('GET /api/auth/csrf no devolvio ningun token.');
+  }
+  tokenCsrf = token;
+}
+
 async function main() {
   const contenido = JSON.parse(await readFile(resolve(AQUI, 'contenido-inicial.json'), 'utf8'));
 
   console.log(`API: ${API}`);
-  await llamar('/api/auth/csrf');
+  await renovarTokenCsrf();
   await llamar('/api/auth/login', { metodo: 'POST', cuerpo: { correoCorporativo: USUARIO, password: CLAVE } });
   // La sesion cambia de identificador al autenticar; hay que renovar el token.
-  await llamar('/api/auth/csrf');
+  await renovarTokenCsrf();
   console.log(`Sesion iniciada como ${USUARIO}`);
 
   let creadas = 0;

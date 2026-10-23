@@ -1,13 +1,18 @@
 package com.PROYECTO.IKERNELL.backend.trabajadores;
 
+import java.util.List;
+
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.PROYECTO.IKERNELL.backend.shared.domain.EstadoHabilitacion;
 import com.PROYECTO.IKERNELL.backend.shared.error.RecursoNoEncontradoException;
 import com.PROYECTO.IKERNELL.backend.shared.error.ReglaNegocioException;
+import com.PROYECTO.IKERNELL.backend.trabajadores.domain.TipoTrabajador;
 import com.PROYECTO.IKERNELL.backend.trabajadores.domain.Trabajador;
 import com.PROYECTO.IKERNELL.backend.trabajadores.dto.CriteriosBusquedaTrabajador;
 import com.PROYECTO.IKERNELL.backend.trabajadores.dto.ModificacionTrabajadorRequest;
@@ -118,6 +123,44 @@ public class ServicioTrabajadores {
 		String ruta = almacenFotografias.guardar(trabajador.getId(), archivo);
 		trabajador.asignarFotografia(ruta, archivo.getContentType(), archivo.getSize());
 		return trabajadores.save(trabajador);
+	}
+
+	/**
+	 * Fotografia del perfil (RF-002, HU-04 C04).
+	 *
+	 * <p>HU-04 C04 no se conforma con adjuntar la imagen: pide que "se pueda ver
+	 * en el" perfil, de modo que recuperarla forma parte del criterio.
+	 *
+	 * <p>Devuelve tambien el tipo con el que se valido al guardarla, en lugar de
+	 * deducirlo de la extension del archivo: el tipo validado es el dato de
+	 * confianza.
+	 */
+	@Transactional(readOnly = true)
+	public FotografiaGuardada fotografiaDe(Long id) {
+		Trabajador trabajador = obtener(id);
+		if (trabajador.getFotoRuta() == null) {
+			throw new RecursoNoEncontradoException("El perfil no tiene una fotografia adjunta.");
+		}
+		return new FotografiaGuardada(
+				almacenFotografias.abrir(trabajador.getFotoRuta()),
+				trabajador.getFotoContentType(),
+				trabajador.getFotoTamanoBytes());
+	}
+
+	/**
+	 * Trabajadores de un tipo que siguen habilitados (RF-009, HU-10 C01).
+	 *
+	 * <p>Sin paginar: el conjunto es acotado por naturaleza -los desarrolladores
+	 * de la empresa- y quien lo pide necesita la lista completa para elegir.
+	 */
+	@Transactional(readOnly = true)
+	public List<Trabajador> habilitadosPorTipo(TipoTrabajador tipo) {
+		return trabajadores.findByTipoTrabajadorAndEstadoOrderByApellidoAscNombreAsc(
+				tipo, EstadoHabilitacion.HABILITADO);
+	}
+
+	/** Fotografia recuperada del almacen, con los datos con que se valido. */
+	public record FotografiaGuardada(Resource contenido, String contentType, Long tamanoBytes) {
 	}
 
 }

@@ -42,8 +42,14 @@ public class AuthController {
 	 * Entrega el token CSRF antes del login.
 	 *
 	 * <p>La API mantiene la sesion en una cookie, de modo que la proteccion CSRF
-	 * sigue activa; el cliente lee el token aqui (o de la cookie XSRF-TOKEN) y lo
-	 * reenvia en la cabecera X-XSRF-TOKEN.
+	 * sigue activa; el cliente lee el token aqui y lo reenvia en la cabecera
+	 * X-XSRF-TOKEN.
+	 *
+	 * <p>El token tiene que pedirse a este endpoint y no leerse de la cookie
+	 * XSRF-TOKEN: la proteccion contra BREACH que Spring Security aplica por
+	 * defecto enmascara el token en cada resolucion, asi que la cookie conserva
+	 * el valor en crudo y el servidor solo acepta el enmascarado que se devuelve
+	 * aqui. Enviar el de la cookie responde 403.
 	 */
 	@GetMapping("/csrf")
 	public CsrfToken csrf(CsrfToken token) {

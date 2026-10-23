@@ -1,0 +1,49 @@
+.fotografia {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s-3);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--c-borde);
+}
+
+.fotografiaEstado {
+  font-size: var(--t-sm);
+  color: var(--c-texto-tenue);
+}
+
+
+.campoArchivo {
+  margin-top: var(--s-5);
+  padding-top: var(--s-5);
+  border-top: 1px solid var(--c-borde);
+}
+
+.pistaArchivo {
+  margin: var(--s-1) 0 var(--s-3);
+  font-size: var(--t-sm);
+  color: var(--c-texto-tenue);
+}
+
+/* --- Vista de la fotografia --- */
+.imagen {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: var(--r-md);
+  border: 1px solid var(--c-borde-tarjeta);
+  background: var(--c-fondo-franja);
+}
+
+/* Marcador cuando no hay imagen: ocupa el mismo sitio que ocupara la foto. */
+.marcador {
+  display: flex;
+  align-items: center;
+  gap: var(--s-4);
+  color: var(--c-neutro);
+}
+
+.marcadorTexto {
+  font-size: var(--t-sm);
+  color: var(--c-texto-tenue);
+}

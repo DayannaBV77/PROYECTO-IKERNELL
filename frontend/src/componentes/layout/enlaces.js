@@ -18,3 +18,49 @@ export const ENLACES_PUBLICOS = [
   { a: '/recursos', texto: 'Recursos' },
   { a: '/contacto', texto: 'Contacto' },
 ];
+
+/**
+ * Servicios internos del trabajador autenticado (HU-03 C02).
+ *
+ * Solo figuran los que el backend atiende hoy: la biblioteca de programas
+ * (RF-029) y los tutoriales (RF-030). El correo corporativo (RF-031) no es una
+ * pagina sino un enlace autorizado, y se ofrece desde el panel; el chat
+ * corporativo (RF-028) no esta implementado porque D-12 lo deja sin definir.
+ *
+ * `tipos` restringe la entrada a unos tipos de trabajador; sin el, la ve
+ * cualquiera con la sesion iniciada. Igual que en el menu publico, no se crean
+ * entradas para completar visualmente el menu: cada una corresponde a una
+ * pantalla que existe.
+ */
+export const ENLACES_PRIVADOS = [
+  { a: '/app', texto: 'Panel', exacto: true },
+  // Gestion de trabajadores: el backend la reserva al coordinador (RNF-001).
+  { a: '/app/trabajadores', texto: 'Trabajadores', tipos: ['COORDINADOR'] },
+  // Gestion de proyectos: reservada al lider (HU-08 C05 lo dice expresamente,
+  // "ni ver esa opcion").
+  { a: '/app/proyectos', texto: 'Proyectos', tipos: ['LIDER'] },
+  { a: '/app/biblioteca', texto: 'Biblioteca' },
+  { a: '/app/tutoriales', texto: 'Tutoriales' },
+];
+
+/**
+ * Menu que corresponde a la sesion.
+ *
+ * HU-03 C02: el trabajador autenticado "sigue viendo la informacion empresarial
+ * publica y, ademas, ve los servicios internos". La sesion anade entradas, no
+ * las sustituye, que es tambien lo que muestran los mockups.
+ *
+ * El mismo criterio pide mostrar las funciones de su tipo "y ninguna de las que
+ * corresponden a otro tipo", de ahi el filtrado. Ocultar la entrada no es la
+ * medida de seguridad: el servidor rechaza la operacion de todos modos.
+ */
+export function enlacesPara(sesion) {
+  if (!sesion) {
+    return ENLACES_PUBLICOS;
+  }
+
+  const propios = ENLACES_PRIVADOS.filter(
+    ({ tipos }) => !tipos || tipos.includes(sesion.tipoTrabajador),
+  );
+  return [...ENLACES_PUBLICOS, ...propios];
+}
