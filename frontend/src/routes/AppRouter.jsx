@@ -6,6 +6,10 @@ import PaginaBiblioteca from '../modulos/privado/PaginaBiblioteca.jsx';
 import PaginaPanel from '../modulos/privado/PaginaPanel.jsx';
 import PaginaRecursoInterno from '../modulos/privado/PaginaRecursoInterno.jsx';
 import PaginaTutoriales from '../modulos/privado/PaginaTutoriales.jsx';
+import PaginaActividades from '../modulos/actividades/PaginaActividades.jsx';
+import PaginaDetalleActividad from '../modulos/actividades/PaginaDetalleActividad.jsx';
+import PaginaMisActividades from '../modulos/actividades/PaginaMisActividades.jsx';
+import PaginaRegistroActividad from '../modulos/actividades/PaginaRegistroActividad.jsx';
 import PaginaDetalleProyecto from '../modulos/proyectos/PaginaDetalleProyecto.jsx';
 import PaginaProyectos from '../modulos/proyectos/PaginaProyectos.jsx';
 import PaginaRegistroProyecto from '../modulos/proyectos/PaginaRegistroProyecto.jsx';
@@ -73,7 +77,18 @@ export default function AppRouter() {
             <Route path="proyectos" element={<PaginaProyectos />} />
             <Route path="proyectos/nuevo" element={<PaginaRegistroProyecto />} />
             <Route path="proyectos/:id" element={<PaginaDetalleProyecto />} />
+
+            {/* Planificacion de actividades (RF-019..RF-021; HU-13). */}
+            <Route path="actividades" element={<PaginaActividades />} />
+            <Route path="actividades/nueva" element={<PaginaRegistroActividad />} />
+            <Route path="actividades/:id" element={<PaginaDetalleActividad />} />
           </Route>
+
+          {/* RF-022, HU-16: las actividades propias. Sin `tipos`, porque el
+              backend tampoco restringe por tipo: quien tenga actividades
+              asignadas las ve, incluido el lider asignado como desarrollador en
+              otro proyecto (C05, RN-05). */}
+          <Route path="mis-actividades" element={<PaginaMisActividades />} />
         </Route>
 
         <Route path="*" element={<PaginaNoEncontrada />} />

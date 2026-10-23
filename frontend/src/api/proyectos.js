@@ -63,3 +63,81 @@ export function advertenciasDeInhabilitacion(id, opciones) {
 export function inhabilitarProyecto(id, confirmado = false) {
   return api.crear(`/api/proyectos/${id}/inhabilitacion?confirmado=${confirmado}`);
 }
+
+/**
+ * RF-016, HU-12: estado del proyecto y datos de avance disponibles.
+ *
+ * No devuelve un porcentaje: la formula de avance no esta definida (D-03), asi
+ * que el servidor entrega conteos crudos, el aviso cuando aun no hay nada de lo
+ * que derivar un avance (C02) y que falta para poder calcularlo.
+ */
+export function obtenerEstadoProyecto(id, opciones) {
+  return api.obtener(`/api/proyectos/${id}/estado`, opciones);
+}
+
+/** RF-009, HU-10 C05: equipo de desarrolladores asignado al proyecto. */
+export function obtenerEquipo(proyectoId, opciones) {
+  return api.obtener(`/api/proyectos/${proyectoId}/equipo`, opciones);
+}
+
+/**
+ * RF-009, HU-10 C01: desarrolladores que se pueden asignar ahora mismo.
+ *
+ * El servidor ya descarta a los inhabilitados y a los que tienen una asignacion
+ * activa en el proyecto, que son los dos casos que la asignacion rechazaria.
+ */
+export function obtenerCandidatos(proyectoId, opciones) {
+  return api.obtener(`/api/proyectos/${proyectoId}/equipo/candidatos`, opciones);
+}
+
+/**
+ * RF-009, HU-10 C01: asigna uno o varios desarrolladores.
+ *
+ * Responde 200 con `{ asignados, rechazados }` incluso cuando alguno se
+ * rechaza: HU-10 C03 descarta al desarrollador inhabilitado concreto, no al
+ * lote entero. Un proyecto inhabilitado si detiene la operacion completa y
+ * responde 409 (C02).
+ */
+export function asignarDesarrolladores(proyectoId, desarrolladorIds) {
+  return api.crear(`/api/proyectos/${proyectoId}/equipo`, { desarrolladorIds });
+}
+
+/** Rol con que un trabajador participa en un proyecto. */
+export const ETIQUETA_ROL = {
+  LIDER: 'Lider',
+  DESARROLLADOR: 'Desarrollador',
+};
+
+/**
+ * Etapas de un proyecto (RF-010 a RF-012, HU-11).
+ *
+ * Cuelgan del proyecto en la ruta porque una etapa no existe por si sola: el
+ * backend las expone bajo /api/proyectos/{id}/etapas.
+ */
+
+/** Lista las etapas del proyecto, origen de la seleccion de HU-11. */
+export function obtenerEtapas(proyectoId, opciones) {
+  return api.obtener(`/api/proyectos/${proyectoId}/etapas`, opciones);
+}
+
+/** RF-010, HU-11 C01. */
+export function registrarEtapa(proyectoId, datos) {
+  return api.crear(`/api/proyectos/${proyectoId}/etapas`, datos);
+}
+
+/** RF-011, HU-11 C03. */
+export function modificarEtapa(proyectoId, etapaId, datos) {
+  return api.reemplazar(`/api/proyectos/${proyectoId}/etapas/${etapaId}`, datos);
+}
+
+/**
+ * RF-012, HU-11 C04 y C05: elimina la etapa.
+ *
+ * Es la unica operacion de borrado real del sistema; el resto inhabilita
+ * (RN-02). Se permite porque una etapa mal creada es un error de estructura, no
+ * un hecho historico. Si tiene actividades u otros registros asociados, el
+ * servidor responde 409 y no borra nada (C05).
+ */
+export function eliminarEtapa(proyectoId, etapaId) {
+  return api.eliminar(`/api/proyectos/${proyectoId}/etapas/${etapaId}`);
+}

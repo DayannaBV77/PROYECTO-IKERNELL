@@ -39,6 +39,12 @@ export const ENLACES_PRIVADOS = [
   // Gestion de proyectos: reservada al lider (HU-08 C05 lo dice expresamente,
   // "ni ver esa opcion").
   { a: '/app/proyectos', texto: 'Proyectos', tipos: ['LIDER'] },
+  // Planificacion de actividades: del lider (RF-019 a RF-021).
+  { a: '/app/actividades', texto: 'Actividades', tipos: ['LIDER'] },
+  // Las actividades propias las ve cualquiera que tenga alguna asignada; se
+  // ofrece a desarrolladores y lideres porque HU-16 C05 incluye al lider al
+  // que asignaron como desarrollador en otro proyecto (RN-05).
+  { a: '/app/mis-actividades', texto: 'Mis actividades', tipos: ['DESARROLLADOR', 'LIDER'] },
   { a: '/app/biblioteca', texto: 'Biblioteca' },
   { a: '/app/tutoriales', texto: 'Tutoriales' },
 ];

@@ -1,6 +1,8 @@
 import { useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
+  ClipboardCheck,
+  ClipboardList,
   ExternalLink,
   FolderKanban,
   GraduationCap,
@@ -48,6 +50,21 @@ const GESTION = [
     titulo: 'Proyectos',
     detalle: 'Registrar proyectos, buscarlos, corregir su informacion e inhabilitarlos.',
     a: '/app/proyectos',
+  },
+  {
+    tipos: ['LIDER'],
+    icono: ClipboardList,
+    titulo: 'Actividades',
+    detalle: 'Planificar el trabajo de cada desarrollador, buscarlo y ajustarlo.',
+    a: '/app/actividades',
+  },
+  {
+    // HU-16 C05: tambien el lider, cuando lo asignan como desarrollador.
+    tipos: ['DESARROLLADOR', 'LIDER'],
+    icono: ClipboardCheck,
+    titulo: 'Mis actividades',
+    detalle: 'Consultar las actividades asignadas y registrar su ejecucion.',
+    a: '/app/mis-actividades',
   },
 ];
 

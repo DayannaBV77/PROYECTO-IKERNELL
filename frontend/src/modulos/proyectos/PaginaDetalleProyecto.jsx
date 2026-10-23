@@ -17,6 +17,9 @@ import EtiquetaEstado from '../../componentes/ui/EtiquetaEstado.jsx';
 import Seccion from '../../componentes/ui/Seccion.jsx';
 import estilos from '../../estilos/gestion.module.css';
 import { usePeticion } from '../../hooks/usePeticion.js';
+import EquipoProyecto from './componentes/EquipoProyecto.jsx';
+import EstadoProyecto from './componentes/EstadoProyecto.jsx';
+import EtapasProyecto from './componentes/EtapasProyecto.jsx';
 
 /** Los dos campos que el backend admite modificar (RF-014). */
 function editablesDe(proyecto) {
@@ -271,6 +274,14 @@ function ProyectoCargado({ inicial }) {
           </div>
         </form>
       </div>
+
+      {/* RF-016, HU-12 y RF-009, HU-10: cada seccion consulta lo suyo, de modo
+          que actualizar una no obliga a recargar el resto de la pantalla. */}
+      <EstadoProyecto proyecto={proyecto} />
+
+      <EtapasProyecto proyecto={proyecto} />
+
+      <EquipoProyecto proyecto={proyecto} />
 
       <Confirmacion
         abierto={dialogo !== null}

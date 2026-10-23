@@ -11,6 +11,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.LocalDate;
+import java.util.List;
+
+import org.hibernate.Hibernate;
+import org.springframework.data.domain.PageRequest;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -26,6 +30,9 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
 
+import com.PROYECTO.IKERNELL.backend.actividades.domain.Actividad;
+import com.PROYECTO.IKERNELL.backend.actividades.dto.CriteriosBusquedaActividad;
+import com.PROYECTO.IKERNELL.backend.actividades.dto.RegistroActividadRequest;
 import com.PROYECTO.IKERNELL.backend.asignaciones.ServicioAsignaciones;
 import com.PROYECTO.IKERNELL.backend.asignaciones.domain.RolEnProyecto;
 import com.PROYECTO.IKERNELL.backend.asignaciones.dto.AsignacionRequest;
@@ -38,6 +45,8 @@ import com.PROYECTO.IKERNELL.backend.support.AutenticacionDePrueba;
 import com.PROYECTO.IKERNELL.backend.trabajadores.TrabajadorRepository;
 import com.PROYECTO.IKERNELL.backend.trabajadores.domain.TipoTrabajador;
 import com.PROYECTO.IKERNELL.backend.trabajadores.domain.Trabajador;
+
+import jakarta.persistence.EntityManager;
 
 /**
  * Registro, busqueda y modificacion de actividades: una prueba por condicion de
@@ -65,6 +74,12 @@ class ActividadControllerTest {
 
 	@Autowired
 	private ServicioAsignaciones servicioAsignaciones;
+
+	@Autowired
+	private ServicioActividades servicioActividades;
+
+	@Autowired
+	private EntityManager entityManager;
 
 	private MockMvc mockMvc;
 	private Authentication lider;
@@ -289,6 +304,45 @@ class ActividadControllerTest {
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(cuerpoRegistro(etapa.getId(), desarrollador.getId(), "Actividad")))
 				.andExpect(status().isForbidden());
+	}
+
+	@Test
+	@DisplayName("open-in-view=false: la actividad llega con etapa, proyecto y desarrollador cargados")
+	void laActividadLlegaConSusRelacionesCargadas() {
+		Actividad registrada = servicioActividades.registrar(proyecto.getId(),
+				new RegistroActividadRequest(etapa.getId(), desarrollador.getId(), "Actividad de prueba"),
+				false);
+
+		// Al registrar, la respuesta se construye con la entidad recien guardada:
+		// su etapa es real, pero el proyecto de esa etapa seguiria siendo un
+		// proxy sin la carga explicita.
+		assertThat(Hibernate.isInitialized(registrada.getEtapa().getProyecto())).isTrue();
+
+		// Se vacia el contexto para que las consultas no resuelvan las
+		// relaciones desde la cache de primer nivel.
+		entityManager.flush();
+		entityManager.clear();
+
+		Actividad obtenida = servicioActividades.obtener(registrada.getId());
+		assertThat(Hibernate.isInitialized(obtenida.getEtapa())).isTrue();
+		assertThat(Hibernate.isInitialized(obtenida.getEtapa().getProyecto())).isTrue();
+		assertThat(Hibernate.isInitialized(obtenida.getDesarrollador())).isTrue();
+
+		entityManager.clear();
+
+		// Y lo mismo por la via de la busqueda, que usa una Specification.
+		List<Actividad> encontradas = servicioActividades
+				.buscar(new CriteriosBusquedaActividad(null, proyecto.getId(), null, null),
+						PageRequest.of(0, 20))
+				.getContent();
+		assertThat(encontradas).isNotEmpty();
+		// ActividadResponse lee estos tres nombres fuera de la transaccion; si
+		// llegan como proxies, el endpoint responde 500. Las pruebas que solo
+		// miran el JSON no lo detectan: su @Transactional mantiene la sesion
+		// abierta y el proxy se resuelve igual.
+		assertThat(Hibernate.isInitialized(encontradas.get(0).getEtapa())).isTrue();
+		assertThat(Hibernate.isInitialized(encontradas.get(0).getEtapa().getProyecto())).isTrue();
+		assertThat(Hibernate.isInitialized(encontradas.get(0).getDesarrollador())).isTrue();
 	}
 
 }

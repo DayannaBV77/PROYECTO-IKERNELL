@@ -227,3 +227,213 @@
 .advertencias li + li {
   margin-top: var(--s-2);
 }
+
+/* --- Motivos de rechazo y datos pendientes --- */
+.motivos {
+  margin-top: var(--s-2);
+  padding-inline-start: var(--s-5);
+  list-style: disc;
+}
+
+.motivos li + li {
+  margin-top: var(--s-1);
+}
+
+/* --- Seleccion de candidatos a un equipo (HU-10 C01) --- */
+.asignacion {
+  margin-top: var(--s-6);
+  padding-top: var(--s-5);
+  border-top: 1px solid var(--c-borde);
+}
+
+.candidatos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--s-2);
+  margin: var(--s-4) 0 var(--s-5);
+  list-style: none;
+}
+
+.candidato {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-4);
+  background: var(--c-superficie);
+  border: 1px solid var(--c-borde);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition: border-color var(--tr-rapida);
+}
+
+.candidato:hover {
+  border-color: var(--c-turquesa);
+}
+
+.candidato:has(input:checked) {
+  border-color: var(--c-turquesa-fuerte);
+  background: var(--c-superficie-tenue);
+}
+
+.candidato input {
+  margin-top: 3px;
+  flex-shrink: 0;
+  accent-color: var(--c-turquesa-fuerte);
+}
+
+.candidatoNombre {
+  display: block;
+  font-size: var(--t-sm);
+  font-weight: var(--p-semi);
+  color: var(--c-marino-titulo);
+}
+
+.candidatoDetalle {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--t-xs);
+  color: var(--c-texto-tenue);
+}
+
+/* --- Conteos de avance (HU-12) --- */
+.conteos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--s-4);
+  margin-top: var(--s-4);
+  list-style: none;
+}
+
+.conteo {
+  padding: var(--s-4);
+  background: var(--c-superficie-tenue);
+  border: 1px solid var(--c-borde-tarjeta);
+  border-radius: var(--r-md);
+  text-align: center;
+}
+
+.conteoValor {
+  display: block;
+  font-size: var(--t-xl);
+  font-weight: var(--p-bold);
+  color: var(--c-marino-titulo);
+  line-height: var(--i-ajustado);
+}
+
+.conteoNombre {
+  display: block;
+  margin-top: var(--s-1);
+  font-size: var(--t-xs);
+  color: var(--c-texto-tenue);
+}
+
+.pendientes {
+  margin-top: var(--s-5);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--c-borde);
+  font-size: var(--t-sm);
+  color: var(--c-texto-tenue);
+}
+
+/* --- Edicion de etapas en la propia seccion (HU-11) --- */
+.formularioEtapa {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  margin-top: var(--s-5);
+  padding: var(--s-5);
+  background: var(--c-superficie);
+  border: 1px solid var(--c-borde-tarjeta);
+  border-radius: var(--r-lg);
+}
+
+/* Acciones por fila: compactas, para que la tabla no crezca de alto. */
+.accionesFila {
+  display: flex;
+  gap: var(--s-2);
+}
+
+.accionesFila button {
+  padding-block: var(--s-1);
+}
+
+/* La descripcion es el unico texto largo de la tabla; se deja fluir. */
+.celdaDescripcion {
+  white-space: normal;
+  min-width: 220px;
+  max-width: 420px;
+  color: var(--c-texto-tenue);
+}
+
+/* --- Actividades asignadas (HU-16) --- */
+.listaActividades {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.actividad {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s-4);
+  padding: var(--s-5);
+  background: var(--c-superficie);
+  border: 1px solid var(--c-borde-tarjeta);
+  border-radius: var(--r-lg);
+  box-shadow: var(--b-sutil);
+}
+
+.actividadCabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--s-4);
+  width: 100%;
+}
+
+.actividadProyecto {
+  font-size: var(--t-xs);
+  letter-spacing: var(--e-nav);
+  text-transform: uppercase;
+  font-weight: var(--p-semi);
+  color: var(--c-texto-tenue);
+}
+
+.actividadDescripcion {
+  margin-top: var(--s-2);
+  color: var(--c-texto);
+  line-height: var(--i-normal);
+}
+
+.actividadEstado {
+  flex-shrink: 0;
+  padding: 2px var(--s-3);
+  border-radius: var(--r-full);
+  background: var(--c-superficie-tenue);
+  border: 1px solid var(--c-borde-tarjeta);
+  font-size: var(--t-xs);
+  font-weight: var(--p-semi);
+  color: var(--c-marino-titulo);
+}
+
+.ejecucion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  width: 100%;
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--c-borde);
+}
+
+.casilla {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  font-size: var(--t-sm);
+  cursor: pointer;
+}
+
+.casilla input {
+  accent-color: var(--c-turquesa-fuerte);
+}
