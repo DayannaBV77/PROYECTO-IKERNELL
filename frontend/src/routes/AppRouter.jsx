@@ -10,7 +10,13 @@ import PaginaActividades from '../modulos/actividades/PaginaActividades.jsx';
 import PaginaDetalleActividad from '../modulos/actividades/PaginaDetalleActividad.jsx';
 import PaginaMisActividades from '../modulos/actividades/PaginaMisActividades.jsx';
 import PaginaRegistroActividad from '../modulos/actividades/PaginaRegistroActividad.jsx';
+import PaginaAsignaciones from '../modulos/asignaciones/PaginaAsignaciones.jsx';
+import PaginaConsultas from '../modulos/contenido/PaginaConsultas.jsx';
+import PaginaContenidoAdmin from '../modulos/contenido/PaginaContenidoAdmin.jsx';
 import PaginaIncidencias from '../modulos/incidencias/PaginaIncidencias.jsx';
+import PaginaArchivoPlano from '../modulos/reportes/PaginaArchivoPlano.jsx';
+import PaginaReporteDesempeno from '../modulos/reportes/PaginaReporteDesempeno.jsx';
+import PaginaReportesProyecto from '../modulos/reportes/PaginaReportesProyecto.jsx';
 import PaginaDetalleProyecto from '../modulos/proyectos/PaginaDetalleProyecto.jsx';
 import PaginaProyectos from '../modulos/proyectos/PaginaProyectos.jsx';
 import PaginaRegistroProyecto from '../modulos/proyectos/PaginaRegistroProyecto.jsx';
@@ -70,6 +76,17 @@ export default function AppRouter() {
             <Route path="trabajadores" element={<PaginaTrabajadores />} />
             <Route path="trabajadores/nuevo" element={<PaginaRegistroTrabajador />} />
             <Route path="trabajadores/:id" element={<PaginaPerfilTrabajador />} />
+
+            {/* RF-003, HU-06: asignar trabajadores a proyectos. */}
+            <Route path="asignaciones" element={<PaginaAsignaciones />} />
+
+            {/* RF-006, HU-07: desempeno de un desarrollador. */}
+            <Route path="reportes/desempeno" element={<PaginaReporteDesempeno />} />
+
+            {/* RF-032..RF-036 y RF-035: administrar la pagina publica y las
+                consultas recibidas. */}
+            <Route path="contenido" element={<PaginaContenidoAdmin />} />
+            <Route path="consultas" element={<PaginaConsultas />} />
           </Route>
 
           {/* Gestion de proyectos (RF-008, RF-013..RF-015; HU-08, HU-09): solo
@@ -83,6 +100,12 @@ export default function AppRouter() {
             <Route path="actividades" element={<PaginaActividades />} />
             <Route path="actividades/nueva" element={<PaginaRegistroActividad />} />
             <Route path="actividades/:id" element={<PaginaDetalleActividad />} />
+
+            {/* RF-017 y RF-018, HU-14 y HU-15: reportes del proyecto. */}
+            <Route path="reportes/proyecto" element={<PaginaReportesProyecto />} />
+
+            {/* RF-025, HU-19: archivo plano para la empresa brasileña. */}
+            <Route path="reportes/archivo-plano" element={<PaginaArchivoPlano />} />
           </Route>
 
           {/* RF-022, HU-16: las actividades propias. Sin `tipos`, porque el

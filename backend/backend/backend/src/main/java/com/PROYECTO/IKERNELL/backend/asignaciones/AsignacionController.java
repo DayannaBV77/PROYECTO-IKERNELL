@@ -17,6 +17,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.PROYECTO.IKERNELL.backend.asignaciones.dto.AsignacionRequest;
 import com.PROYECTO.IKERNELL.backend.asignaciones.dto.AsignacionResponse;
 import com.PROYECTO.IKERNELL.backend.auth.TrabajadorAutenticado;
+import com.PROYECTO.IKERNELL.backend.proyectos.ServicioProyectos;
+import com.PROYECTO.IKERNELL.backend.proyectos.dto.ProyectoResumenResponse;
+import com.PROYECTO.IKERNELL.backend.shared.dto.ListaResponse;
 import com.PROYECTO.IKERNELL.backend.trabajadores.ServicioTrabajadores;
 import com.PROYECTO.IKERNELL.backend.trabajadores.domain.Trabajador;
 
@@ -35,10 +38,34 @@ public class AsignacionController {
 
 	private final ServicioAsignaciones servicio;
 	private final ServicioTrabajadores servicioTrabajadores;
+	private final ServicioProyectos servicioProyectos;
 
-	public AsignacionController(ServicioAsignaciones servicio, ServicioTrabajadores servicioTrabajadores) {
+	public AsignacionController(ServicioAsignaciones servicio, ServicioTrabajadores servicioTrabajadores,
+			ServicioProyectos servicioProyectos) {
 		this.servicio = servicio;
 		this.servicioTrabajadores = servicioTrabajadores;
+		this.servicioProyectos = servicioProyectos;
+	}
+
+	/**
+	 * RF-003, HU-06 C01: proyectos a los que se puede asignar un trabajador.
+	 *
+	 * <p>Sin este endpoint el coordinador tendria que conocer de memoria los
+	 * identificadores que la asignacion le exige enviar: la gestion de proyectos
+	 * esta reservada al lider (RNF-001) y responde 403 a cualquier otro.
+	 *
+	 * <p>Entrega lo justo para elegir -la misma vista resumida que ya usa la
+	 * busqueda de proyectos- sin abrir el modulo completo, que es lo que decidiria
+	 * la ambiguedad A-01.
+	 *
+	 * <p>Solo los habilitados: asignar a un proyecto inhabilitado lo rechaza la
+	 * propia operacion (C02), de modo que ofrecerlo seria ofrecer un fracaso.
+	 */
+	@GetMapping("/proyectos-asignables")
+	public ListaResponse<ProyectoResumenResponse> proyectosAsignables() {
+		List<ProyectoResumenResponse> lista = servicioProyectos.habilitados().stream()
+				.map(ProyectoResumenResponse::de).toList();
+		return ListaResponse.de(lista, "No hay proyectos habilitados a los que asignar trabajadores.");
 	}
 
 	/**

@@ -1,7 +1,11 @@
 import { useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
+  BarChart3,
+  FileDown,
+  FileText,
   Bug,
+  Link2,
   ClipboardCheck,
   ClipboardList,
   ExternalLink,
@@ -46,6 +50,27 @@ const GESTION = [
     a: '/app/trabajadores',
   },
   {
+    tipos: ['COORDINADOR'],
+    icono: Link2,
+    titulo: 'Asignaciones',
+    detalle: 'Asignar trabajadores a proyectos y consultar en cual participa cada uno.',
+    a: '/app/asignaciones',
+  },
+  {
+    tipos: ['COORDINADOR'],
+    icono: BarChart3,
+    titulo: 'Desempeno',
+    detalle: 'Actividades y ejecuciones de un desarrollador dentro de un proyecto.',
+    a: '/app/reportes/desempeno',
+  },
+  {
+    tipos: ['COORDINADOR'],
+    icono: FileText,
+    titulo: 'Contenido y consultas',
+    detalle: 'Actualizar la pagina publica y atender las consultas recibidas.',
+    a: '/app/contenido',
+  },
+  {
     tipos: ['LIDER'],
     icono: FolderKanban,
     titulo: 'Proyectos',
@@ -58,6 +83,20 @@ const GESTION = [
     titulo: 'Actividades',
     detalle: 'Planificar el trabajo de cada desarrollador, buscarlo y ajustarlo.',
     a: '/app/actividades',
+  },
+  {
+    tipos: ['LIDER'],
+    icono: BarChart3,
+    titulo: 'Reportes',
+    detalle: 'Actividades e interrupciones registradas de un proyecto.',
+    a: '/app/reportes/proyecto',
+  },
+  {
+    tipos: ['LIDER'],
+    icono: FileDown,
+    titulo: 'Archivo plano',
+    detalle: 'Generar el reporte de proyectos para la empresa brasileña aliada.',
+    a: '/app/reportes/archivo-plano',
   },
   {
     // HU-16 C05: tambien el lider, cuando lo asignan como desarrollador.

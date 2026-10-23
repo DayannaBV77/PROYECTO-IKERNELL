@@ -437,3 +437,57 @@
 .casilla input {
   accent-color: var(--c-turquesa-fuerte);
 }
+
+/* --- Ejecuciones dentro del reporte de desempeno (HU-07) --- */
+.ejecuciones {
+  width: 100%;
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--c-borde);
+  list-style: none;
+  font-size: var(--t-sm);
+}
+
+.ejecuciones li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2) var(--s-4);
+  padding: var(--s-2) 0;
+  color: var(--c-texto);
+}
+
+.ejecuciones li + li {
+  border-top: 1px dashed var(--c-borde);
+}
+
+.ejecucionFecha {
+  flex-shrink: 0;
+  font-size: var(--t-xs);
+  letter-spacing: var(--e-nav);
+  text-transform: uppercase;
+  color: var(--c-texto-tenue);
+}
+
+/* Datos de contacto de una consulta recibida (RF-035). */
+.contacto {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2);
+  margin-top: var(--s-3);
+  font-size: var(--t-sm);
+  color: var(--c-texto-tenue);
+}
+
+/* Aviso de que algo esta pendiente de acordar con la empresa. */
+.avisoPendiente {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-3);
+  margin-bottom: var(--s-5);
+  padding: var(--s-4);
+  border-radius: var(--r-md);
+  background: var(--c-alerta-fondo);
+  border: 1px solid var(--c-alerta);
+  font-size: var(--t-sm);
+  color: #78350f;
+}

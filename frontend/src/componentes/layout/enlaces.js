@@ -36,11 +36,23 @@ export const ENLACES_PRIVADOS = [
   { a: '/app', texto: 'Panel', exacto: true },
   // Gestion de trabajadores: el backend la reserva al coordinador (RNF-001).
   { a: '/app/trabajadores', texto: 'Trabajadores', tipos: ['COORDINADOR'] },
+  // Asignacion de trabajadores a proyectos (RF-003, HU-06).
+  { a: '/app/asignaciones', texto: 'Asignaciones', tipos: ['COORDINADOR'] },
+  // Reporte de desempeno de un desarrollador (RF-006, HU-07).
+  { a: '/app/reportes/desempeno', texto: 'Desempeno', tipos: ['COORDINADOR'] },
+  // Administracion de la pagina publica y de las consultas recibidas. Es una
+  // PROPUESTA: RF-032 deja el proceso de actualizacion por definir (D-26).
+  { a: '/app/contenido', texto: 'Contenido', tipos: ['COORDINADOR'] },
+  { a: '/app/consultas', texto: 'Consultas', tipos: ['COORDINADOR'] },
   // Gestion de proyectos: reservada al lider (HU-08 C05 lo dice expresamente,
   // "ni ver esa opcion").
   { a: '/app/proyectos', texto: 'Proyectos', tipos: ['LIDER'] },
   // Planificacion de actividades: del lider (RF-019 a RF-021).
   { a: '/app/actividades', texto: 'Actividades', tipos: ['LIDER'] },
+  // Reportes de actividades e interrupciones (RF-017, RF-018; HU-14, HU-15).
+  { a: '/app/reportes/proyecto', texto: 'Reportes', tipos: ['LIDER'] },
+  // Archivo plano para la empresa aliada (RF-025, HU-19 C05: solo el lider).
+  { a: '/app/reportes/archivo-plano', texto: 'Archivo plano', tipos: ['LIDER'] },
   // Las actividades propias las ve cualquiera que tenga alguna asignada; se
   // ofrece a desarrolladores y lideres porque HU-16 C05 incluye al lider al
   // que asignaron como desarrollador en otro proyecto (RN-05).

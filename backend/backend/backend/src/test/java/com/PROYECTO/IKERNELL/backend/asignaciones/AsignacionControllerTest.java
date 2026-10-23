@@ -194,4 +194,31 @@ class AsignacionControllerTest {
 				.andExpect(status().isForbidden());
 	}
 
+	// --------------------------------------- proyectos asignables (HU-06 C01)
+
+	@Test
+	@DisplayName("HU-06 C01: se ofrecen los proyectos habilitados para asignar")
+	void ofreceLosProyectosHabilitados() throws Exception {
+		Proyecto inhabilitado = proyectos.saveAndFlush(new Proyecto("Proyecto retirado", "d", null));
+		inhabilitado.inhabilitar();
+		proyectos.saveAndFlush(inhabilitado);
+
+		mockMvc.perform(get("/api/asignaciones/proyectos-asignables").with(authentication(coordinador)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.contenido[?(@.id == " + proyecto.getId() + ")]").exists())
+				// C02: asignar a un proyecto inhabilitado se rechaza, asi que no
+				// se ofrece.
+				.andExpect(jsonPath("$.contenido[?(@.id == " + inhabilitado.getId() + ")]").doesNotExist());
+	}
+
+	@Test
+	@DisplayName("RNF-001: la lista de proyectos asignables es solo del coordinador")
+	void soloElCoordinadorVeLosProyectosAsignables() throws Exception {
+		Authentication lider = AutenticacionDePrueba.comoTrabajador(trabajadores, cuentas,
+				"7000000005", "lider.asig@ikernell.com", TipoTrabajador.LIDER);
+
+		mockMvc.perform(get("/api/asignaciones/proyectos-asignables").with(authentication(lider)))
+				.andExpect(status().isForbidden());
+	}
+
 }

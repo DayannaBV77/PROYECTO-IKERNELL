@@ -10,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.PROYECTO.IKERNELL.backend.shared.domain.EstadoHabilitacion;
 import com.PROYECTO.IKERNELL.backend.proyectos.dependencias.ProveedorDatosAvance;
 import com.PROYECTO.IKERNELL.backend.proyectos.dependencias.VerificadorDependenciasProyecto;
 import com.PROYECTO.IKERNELL.backend.proyectos.domain.Proyecto;
@@ -166,6 +167,19 @@ public class ServicioProyectos {
 				datosDisponibles,
 				mensajeAvance,
 				DATOS_PENDIENTES_PARA_AVANCE);
+	}
+
+	/**
+	 * Proyectos habilitados, para elegir uno al asignar un trabajador
+	 * (RF-003, HU-06 C01).
+	 *
+	 * <p>Sin paginar: el conjunto es acotado y quien asigna necesita la lista
+	 * completa para escoger. Solo los habilitados, porque asignar a uno
+	 * inhabilitado lo rechaza la propia operacion (C02).
+	 */
+	@Transactional(readOnly = true)
+	public List<Proyecto> habilitados() {
+		return proyectos.findByEstadoHabilitacionOrderByNombreAsc(EstadoHabilitacion.HABILITADO);
 	}
 
 }
