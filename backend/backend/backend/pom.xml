@@ -54,10 +54,25 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-flyway</artifactId>
 		</dependency>
+		<!-- Flyway 11 reparte el soporte de cada motor en su propio modulo:
+		     flyway-core solo trae el nucleo, de modo que sin este artefacto las
+		     migraciones fallan al no reconocer PostgreSQL. -->
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-database-postgresql</artifactId>
+		</dependency>
+		<!-- Base de datos de desarrollo y produccion (decision D-28). -->
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+		<!-- H2 queda reducido a las pruebas: la suite arranca un esquema limpio
+		     en memoria y no necesita que el servidor de PostgreSQL este arriba. -->
 		<dependency>
 			<groupId>com.h2database</groupId>
 			<artifactId>h2</artifactId>
-			<scope>runtime</scope>
+			<scope>test</scope>
 		</dependency>
 
 		<dependency>

@@ -32,5 +32,10 @@ build/
 ### VS Code ###
 .vscode/
 
-### Base de datos H2 de desarrollo ###
+### Datos locales: fotografias de perfil (RF-002) ###
 data/
+
+### Credenciales locales ###
+# .env lleva la contrasena real de la base de datos; solo se versiona la
+# plantilla .env.example.
+.env
