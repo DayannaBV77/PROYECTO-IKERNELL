@@ -9,6 +9,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
+
+import org.hibernate.Hibernate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -28,12 +33,19 @@ import com.PROYECTO.IKERNELL.backend.asignaciones.domain.RolEnProyecto;
 import com.PROYECTO.IKERNELL.backend.asignaciones.dto.AsignacionRequest;
 import com.PROYECTO.IKERNELL.backend.auth.CuentaAccesoRepository;
 import com.PROYECTO.IKERNELL.backend.incidencias.domain.FaseProyecto;
+import com.PROYECTO.IKERNELL.backend.incidencias.dto.RegistroInterrupcionRequest;
+import com.PROYECTO.IKERNELL.backend.incidencias.dto.RegistroErrorRequest;
+import com.PROYECTO.IKERNELL.backend.incidencias.domain.UnidadDuracion;
+import com.PROYECTO.IKERNELL.backend.incidencias.domain.InterrupcionProyecto;
+import com.PROYECTO.IKERNELL.backend.incidencias.domain.ErrorProyecto;
 import com.PROYECTO.IKERNELL.backend.proyectos.ProyectoRepository;
 import com.PROYECTO.IKERNELL.backend.proyectos.domain.Proyecto;
 import com.PROYECTO.IKERNELL.backend.support.AutenticacionDePrueba;
 import com.PROYECTO.IKERNELL.backend.trabajadores.TrabajadorRepository;
 import com.PROYECTO.IKERNELL.backend.trabajadores.domain.TipoTrabajador;
 import com.PROYECTO.IKERNELL.backend.trabajadores.domain.Trabajador;
+
+import jakarta.persistence.EntityManager;
 
 /**
  * Errores e interrupciones: una prueba por condicion de aceptacion de HU-17 y
@@ -67,6 +79,12 @@ class IncidenciaControllerTest {
 
 	@Autowired
 	private ServicioAsignaciones servicioAsignaciones;
+
+	@Autowired
+	private ServicioIncidencias servicioIncidencias;
+
+	@Autowired
+	private EntityManager entityManager;
 
 	private MockMvc mockMvc;
 	private Authentication desarrollador;
@@ -383,6 +401,42 @@ class IncidenciaControllerTest {
 				.andExpect(status().isOk());
 
 		assertThat(errores.countByProyectoId(proyecto.getId())).isEqualTo(1);
+	}
+
+	@Test
+	@DisplayName("open-in-view=false: errores e interrupciones llegan con proyecto y fase cargados")
+	void lasIncidenciasLleganConSusRelacionesCargadas() throws Exception {
+		Trabajador dev = trabajadores.findByIdentificacion("9200000002").orElseThrow();
+		servicioIncidencias.registrarError(proyecto.getId(),
+				new RegistroErrorRequest("Validacion", fasePruebas.getId(), "d", LocalDate.now()),
+				dev.getId());
+		servicioIncidencias.registrarInterrupcion(proyecto.getId(),
+				new RegistroInterrupcionRequest("Corte", LocalDate.now(), new BigDecimal("2.5"),
+						UnidadDuracion.HORAS, fasePruebas.getId()),
+				dev.getId());
+
+		// Sin vaciar el contexto, las entidades ya cargadas resolverian las
+		// relaciones desde la cache de primer nivel y la comprobacion no
+		// probaria nada.
+		entityManager.flush();
+		entityManager.clear();
+
+		// El controlador lee el nombre del proyecto y el de la fase fuera de la
+		// transaccion; con proxies sin inicializar responde 500. Una prueba
+		// @Transactional que mire el JSON no lo detecta, porque su transaccion
+		// mantiene la sesion abierta.
+		List<ErrorProyecto> listaErrores = servicioIncidencias.erroresDeProyecto(proyecto.getId());
+		assertThat(listaErrores).isNotEmpty();
+		assertThat(Hibernate.isInitialized(listaErrores.get(0).getProyecto())).isTrue();
+		assertThat(Hibernate.isInitialized(listaErrores.get(0).getFase())).isTrue();
+
+		entityManager.clear();
+
+		List<InterrupcionProyecto> listaInterrupciones =
+				servicioIncidencias.interrupcionesDeProyecto(proyecto.getId());
+		assertThat(listaInterrupciones).isNotEmpty();
+		assertThat(Hibernate.isInitialized(listaInterrupciones.get(0).getProyecto())).isTrue();
+		assertThat(Hibernate.isInitialized(listaInterrupciones.get(0).getFase())).isTrue();
 	}
 
 }

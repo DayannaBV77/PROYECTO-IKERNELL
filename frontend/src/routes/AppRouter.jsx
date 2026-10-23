@@ -10,6 +10,7 @@ import PaginaActividades from '../modulos/actividades/PaginaActividades.jsx';
 import PaginaDetalleActividad from '../modulos/actividades/PaginaDetalleActividad.jsx';
 import PaginaMisActividades from '../modulos/actividades/PaginaMisActividades.jsx';
 import PaginaRegistroActividad from '../modulos/actividades/PaginaRegistroActividad.jsx';
+import PaginaIncidencias from '../modulos/incidencias/PaginaIncidencias.jsx';
 import PaginaDetalleProyecto from '../modulos/proyectos/PaginaDetalleProyecto.jsx';
 import PaginaProyectos from '../modulos/proyectos/PaginaProyectos.jsx';
 import PaginaRegistroProyecto from '../modulos/proyectos/PaginaRegistroProyecto.jsx';
@@ -89,6 +90,12 @@ export default function AppRouter() {
               asignadas las ve, incluido el lider asignado como desarrollador en
               otro proyecto (C05, RN-05). */}
           <Route path="mis-actividades" element={<PaginaMisActividades />} />
+
+          {/* RF-023 y RF-024, HU-17 y HU-18: errores e interrupciones. Tampoco
+              declara `tipos`: el servidor exige una asignacion activa como
+              desarrollador en ESE proyecto, que es el nivel 2 y no el tipo
+              global. */}
+          <Route path="incidencias" element={<PaginaIncidencias />} />
         </Route>
 
         <Route path="*" element={<PaginaNoEncontrada />} />

@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
+  Bug,
   ClipboardCheck,
   ClipboardList,
   ExternalLink,
@@ -65,6 +66,13 @@ const GESTION = [
     titulo: 'Mis actividades',
     detalle: 'Consultar las actividades asignadas y registrar su ejecucion.',
     a: '/app/mis-actividades',
+  },
+  {
+    tipos: ['DESARROLLADOR', 'LIDER'],
+    icono: Bug,
+    titulo: 'Incidencias',
+    detalle: 'Registrar los errores y las interrupciones que afectan a un proyecto.',
+    a: '/app/incidencias',
   },
 ];
 
