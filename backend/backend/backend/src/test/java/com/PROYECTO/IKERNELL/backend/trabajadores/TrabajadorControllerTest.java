@@ -122,6 +122,60 @@ class TrabajadorControllerTest {
 
 	@Test
 	@WithMockUser(roles = "COORDINADOR")
+	@DisplayName("HU-04 C02: la fecha de nacimiento vacia se senala en su campo, no como error inesperado")
+	void rechazaLaFechaDeNacimientoVacia() throws Exception {
+		// Es lo que manda el formulario cuando el <input type="date"> queda sin
+		// llenar: la cadena vacia, no la ausencia del campo.
+		String sinFecha = """
+				{
+				  "identificacion": "4000000012",
+				  "nombre": "Laura",
+				  "apellido": "Moreno",
+				  "fechaNacimiento": "",
+				  "direccion": "Calle 45 # 12-30",
+				  "profesion": "Ingenieria de sistemas",
+				  "especialidadDesarrollo": "Backend",
+				  "tipoTrabajador": "DESARROLLADOR"
+				}
+				""";
+
+		mockMvc.perform(post("/api/trabajadores").with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(sinFecha))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.campos.fechaNacimiento").exists());
+
+		org.assertj.core.api.Assertions.assertThat(trabajadores.existsByIdentificacion("4000000012")).isFalse();
+	}
+
+	@Test
+	@WithMockUser(roles = "COORDINADOR")
+	@DisplayName("HU-04 C02: una fecha con formato dd/mm/aaaa se senala en su campo")
+	void rechazaLaFechaConFormatoNoIso() throws Exception {
+		String fechaInvalida = """
+				{
+				  "identificacion": "4000000013",
+				  "nombre": "Laura",
+				  "apellido": "Moreno",
+				  "fechaNacimiento": "12/07/1994",
+				  "direccion": "Calle 45 # 12-30",
+				  "profesion": "Ingenieria de sistemas",
+				  "especialidadDesarrollo": "Backend",
+				  "tipoTrabajador": "DESARROLLADOR"
+				}
+				""";
+
+		mockMvc.perform(post("/api/trabajadores").with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(fechaInvalida))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.campos.fechaNacimiento").exists());
+
+		org.assertj.core.api.Assertions.assertThat(trabajadores.existsByIdentificacion("4000000013")).isFalse();
+	}
+
+	@Test
+	@WithMockUser(roles = "COORDINADOR")
 	@DisplayName("HU-04 C03: identificacion ya registrada se rechaza con mensaje concreto (RN-01)")
 	void rechazaIdentificacionDuplicada() throws Exception {
 		registrarDirecto("4000000003", "Ana", "Perez", "Ingenieria", TipoTrabajador.DESARROLLADOR);

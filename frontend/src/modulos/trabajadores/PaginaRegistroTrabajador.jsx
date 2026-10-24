@@ -11,6 +11,7 @@ import Boton from '../../componentes/ui/Boton.jsx';
 import Campo from '../../componentes/ui/Campo.jsx';
 import Seccion from '../../componentes/ui/Seccion.jsx';
 import estilos from '../../estilos/gestion.module.css';
+import { aFechaIso } from '../../utilidades/formato.js';
 import archivo from './componentes/SubidaFotografia.module.css';
 
 const VACIO = {
@@ -33,6 +34,14 @@ const VACIO = {
  * lo que corresponde y conserva lo escrito, que es justo lo que los criterios
  * exigen (RN-13). Por eso no se valida nada antes de enviar: repetir aqui las
  * reglas del servidor solo llevaria a que los dos lados discrepen.
+ *
+ * La fecha de nacimiento es el unico dato que no viaja tal cual: se normaliza a
+ * ISO (AAAA-MM-DD) con `aFechaIso`, que es el formato que el servidor convierte
+ * a `LocalDate` y la columna `date` de PostgreSQL almacena. No es validarla
+ * -de eso sigue encargandose el servidor- sino asegurar el formato: donde el
+ * navegador no soporta `<input type="date">` el control degrada a texto y lo
+ * escrito a mano ("12/07/1994") no se podia convertir, de modo que el perfil no
+ * se guardaba.
  *
  * La fotografia es opcional y se adjunta en una segunda peticion, porque el
  * backend la recibe en su propio endpoint. Si el perfil se crea y la fotografia
@@ -62,7 +71,7 @@ export default function PaginaRegistroTrabajador() {
 
     let creado;
     try {
-      creado = await registrarTrabajador(valores);
+      creado = await registrarTrabajador({ ...valores, fechaNacimiento: aFechaIso(valores.fechaNacimiento) });
     } catch (error) {
       if (error.campos) {
         setErrores(error.campos);
