@@ -17,7 +17,7 @@ import com.PROYECTO.IKERNELL.backend.corporativo.dto.AccesoCorreoResponse;
  * lugar se entrega el estado del acceso, que es el dato que si existe.
  * </ul>
  *
- * <p>Esa parte de RF-038 queda por tanto INCUMPLIDA a proposito, y se deja
+ * <p>DECISION D-35: esa parte de RF-038 queda INCUMPLIDA a proposito, y se deja
  * declarada aqui en lugar de rellenarla con un cero -que el cliente leeria como
  * "no tiene correos nuevos"- o con un numero inventado. Para cumplirla hace
  * falta resolver D-13 con una integracion que exponga el buzon.

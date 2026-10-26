@@ -84,11 +84,12 @@ public class ServicioEtapas {
 	 * perder la informacion historica del proyecto. La comprobacion delega en los
 	 * verificadores registrados.
 	 *
-	 * <p>ADVERTENCIA: hoy no hay ningun verificador, porque las entidades que
-	 * dependerian de una etapa -Actividad y, segun D-05, los errores e
-	 * interrupciones- aun no existen. Es decir, HU-11 C05 esta implementada pero
-	 * todavia no se puede verificar con datos reales; solo el mecanismo esta
-	 * probado. Al implementar Actividad hay que registrar su verificador.
+	 * <p>Hay tres verificadores registrados, y entre los cuatro tipos de registro
+	 * que dependen de una etapa cubren HU-11 C05 con datos reales: actividades
+	 * (RF-019), errores e interrupciones -desde D-36, que hizo de la fase una
+	 * etapa- y hilos de conversacion (RF-037). Un modulo nuevo que dependa de la
+	 * etapa solo tiene que registrar su propio verificador; este servicio no se
+	 * modifica.
 	 */
 	@Transactional
 	public void eliminar(Long proyectoId, Long etapaId) {

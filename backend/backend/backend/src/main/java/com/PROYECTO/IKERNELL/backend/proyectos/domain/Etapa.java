@@ -17,9 +17,15 @@ import jakarta.persistence.Table;
  * (HU-11 C03: "la etapa sigue asociada al mismo proyecto"), por eso no hay
  * setter para {@code proyecto}.
  *
- * <p>PENDIENTE D-05: queda por confirmar si la "fase del proyecto" de los
- * errores y las interrupciones (RF-023, RF-024) es esta misma etapa. Hasta que
- * se confirme, nada apunta aqui desde esas entidades.
+ * <p>RESUELTO D-36: la "fase del proyecto" de los errores y las interrupciones
+ * (RF-023, RF-024) ES esta misma etapa. Esa decision revirtio la D-05, que habia
+ * resuelto lo contrario y creaba un catalogo de fases aparte, retirado en V9.
+ * Desde entonces las dos entidades de incidencias apuntan aqui, y el servicio
+ * exige que la etapa sea una del proyecto de la propia incidencia.
+ *
+ * <p>Tambien apuntan aqui las actividades (RF-019) y los hilos de conversacion
+ * (RF-037), de modo que son cuatro las entidades que impiden eliminar una etapa
+ * con registros asociados (RN-08).
  */
 @Entity
 @Table(name = "etapa")

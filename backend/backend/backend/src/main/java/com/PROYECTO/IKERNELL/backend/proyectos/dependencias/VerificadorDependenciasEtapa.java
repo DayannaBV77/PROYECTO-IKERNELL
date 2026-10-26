@@ -6,14 +6,20 @@ import java.util.Optional;
  * Informa si una etapa tiene registros asociados que impiden eliminarla.
  *
  * <p>RN-08 esta CONFIRMADA (RF-012, HU-11 C05): una etapa con actividades o
- * registros asociados no se elimina, para no perder informacion historica. Pero
- * las entidades que dependerian de una etapa -actividades, y segun D-05 tambien
- * errores e interrupciones- todavia no existen en el modelo.
+ * registros asociados no se elimina, para no perder informacion historica.
  *
- * <p>Por eso la regla se expresa como punto de extension: hoy no hay ninguna
- * implementacion y la etapa siempre se puede eliminar; cuando se implemente
- * Actividad bastara con registrar un bean que cuente las suyas, sin tocar el
- * servicio de etapas. El mecanismo de bloqueo si esta probado.
+ * <p>La regla se expresa como punto de extension para que cada modulo aporte sus
+ * propias dependencias sin que el servicio de etapas tenga que conocerlas. Hoy
+ * hay TRES implementaciones, y basto registrar cada bean:
+ *
+ * <ul>
+ * <li>{@code VerificadorActividadesDeEtapa} (actividades, RF-019).
+ * <li>{@code VerificadorIncidenciasDeEtapa} (errores e interrupciones; aplica
+ * desde D-36, que hizo de la fase de una incidencia una etapa del proyecto).
+ * <li>{@code VerificadorHilosDeEtapa} (hilos de conversacion, RF-037).
+ * </ul>
+ *
+ * <p>Basta con que uno encuentre dependencias para que la etapa no se elimine.
  */
 public interface VerificadorDependenciasEtapa {
 

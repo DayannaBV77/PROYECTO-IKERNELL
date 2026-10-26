@@ -24,8 +24,8 @@ import com.PROYECTO.IKERNELL.backend.trabajadores.domain.Trabajador;
 /**
  * Reglas de negocio de los hilos de conversacion por proyecto y etapa (RF-037).
  *
- * <p>La autorizacion se resuelve en el <b>nivel 2</b>: hace falta una asignacion
- * activa en el proyecto, con CUALQUIER rol. Es lo que dice HU-22 literalmente
+ * <p>DECISION D-33, la autorizacion se resuelve en el <b>nivel 2</b>: hace falta
+ * una asignacion activa en el proyecto, con CUALQUIER rol. Es lo que dice HU-22 literalmente
  * -"yo como trabajador asignado a un proyecto"- y lo que RF-037 llama "la
  * relacion que tenga con el proyecto". No se comprueba el tipo global, de modo
  * que leer y escribir en un hilo no depende de ser desarrollador o lider sino de
@@ -37,6 +37,11 @@ import com.PROYECTO.IKERNELL.backend.trabajadores.domain.Trabajador;
  * (A-02 sin resolver). Tampoco entra el coordinador, que no puede tener
  * asignacion: {@code RolEnProyecto} solo admite LIDER y DESARROLLADOR, aunque
  * RF-037 lo nombre entre los actores. Resolver eso excede lo que RF-037 define.
+ *
+ * <p>DECISION D-32: solo se implementan los hilos contextuales de RF-037, que
+ * estan especificados al detalle en HU-22. El chat libre de RF-028
+ * -conversaciones individuales, grupos, disponibilidad- queda fuera porque D-12
+ * no define sus funciones, y suponerlas seria inventar alcance.
  *
  * <p>Las operaciones no exigen que el proyecto este habilitado. Ninguna regla lo
  * pide y RN-02 manda conservar el historial de un proyecto inhabilitado, del que

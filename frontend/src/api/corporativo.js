@@ -4,9 +4,12 @@ import { api, construirConsulta } from './cliente.js';
  * Servicios internos del trabajador autenticado (RF-029, RF-030, RF-031).
  *
  * Los tres los ofrece el backend a cualquiera de los tres tipos de trabajador:
- * basta la sesion iniciada (HU-20, HU-21). No incluye el chat corporativo
- * (RF-028) porque el backend no lo implementa: D-12 deja sin definir sus
- * funciones y si vive dentro del aplicativo o en un servicio externo.
+ * basta la sesion iniciada (HU-20, HU-21).
+ *
+ * El chat no esta aqui: la parte contextual -los hilos por proyecto y etapa de
+ * RF-037- vive en `api/chat.js`, y el chat LIBRE de RF-028 -conversaciones
+ * individuales, grupos, disponibilidad- sigue sin implementar porque D-12 lo
+ * deja sin definir.
  */
 
 /** RF-029, HU-21 C01: biblioteca de programas, con busqueda del servidor. */

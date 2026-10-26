@@ -23,8 +23,11 @@ import com.PROYECTO.IKERNELL.backend.shared.dto.ListaResponse;
  * desarrollador)", es decir a los tres tipos. Basta la autenticacion, que la
  * configuracion de seguridad ya exige para todo lo que no sea publico (HU-01 C05).
  *
- * <p>NO incluye el chat corporativo (RF-028): D-12 deja sin definir sus
- * funciones y si se implementa dentro del aplicativo o con un servicio externo.
+ * <p>NO incluye el chat. La parte contextual -los hilos por proyecto y etapa de
+ * RF-037- la atiende {@code HiloController}, en su propio modulo. El chat LIBRE
+ * de RF-028 -conversaciones individuales, grupos, disponibilidad- sigue sin
+ * implementar porque D-12 deja sin definir sus funciones y si vive dentro del
+ * aplicativo o en un servicio externo.
  */
 @RestController
 @RequestMapping("/api/corporativo")
