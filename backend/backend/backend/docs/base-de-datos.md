@@ -261,6 +261,34 @@ hoy, no solo las de hoy exacto, y marca las atrasadas. Con la lectura estricta
 una actividad vencida desapareceria del panel justo el dia en que mas importa.
 La decision vive en la consulta, no en el esquema.
 
+### El panel «Mi Dia» no anade tablas (RF-038)
+
+El panel es solo lectura y COMPONE lo que ya existe: las actividades (V4 + V11),
+los no leidos de los hilos (V10) y el estado del acceso al correo. No hay tabla
+nueva, y es deliberado: cualquier dato propio del panel podria acabar diciendo
+algo distinto de lo que dicen las pantallas de las que lo saca.
+
+Las tres decisiones que RF-038 deja abiertas viven en `ServicioMiDia`, no en el
+esquema, porque son criterios de consulta y no estructura:
+
+| Decision | Criterio aplicado |
+|---|---|
+| D-30 | "del dia" = `fecha_planificada <= hoy`, marcando las atrasadas |
+| D-31 | "pendiente" = sin ninguna `ejecucion_actividad` con `finalizada_en` |
+| D-29 | el orden usa el orden de declaracion del enum; sin prioridad, al final |
+
+**D-31 en detalle:** se usa la ejecucion finalizada y NO `actividad.estado`,
+porque el dominio de ese campo sigue sin definir (D-04) y ninguna operacion lo
+escribe. La ejecucion, en cambio, es un dato real que el propio desarrollador
+registra (RF-022, HU-16 C02).
+
+**Lo que RF-038 pide y NO se puede cumplir:** el contador de correos sin leer.
+RF-031 resuelve el correo como un enlace a un servicio externo (D-13 deja la
+integracion por confirmar), de modo que el aplicativo no tiene acceso al buzon.
+El panel entrega el estado del acceso y un aviso que lo explica, en lugar de un
+cero que se leeria como "no tiene correos nuevos". Para cumplirlo hace falta
+resolver D-13 con una integracion real.
+
 ## Partir de cero
 
 Borra TODOS los datos. Flyway vuelve a crear el esquema al arrancar la

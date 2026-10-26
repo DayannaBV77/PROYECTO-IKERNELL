@@ -24,6 +24,7 @@ import Tarjeta from '../../componentes/ui/Tarjeta.jsx';
 import { usePeticion } from '../../hooks/usePeticion.js';
 import { iniciales } from '../../utilidades/formato.js';
 import { useSesion } from '../../sesion/contexto.js';
+import PaginaMiDia from './PaginaMiDia.jsx';
 import estilos from './PaginaPanel.module.css';
 
 /**
@@ -38,7 +39,16 @@ import estilos from './PaginaPanel.module.css';
  * hoy solo existe la gestion de trabajadores, reservada al coordinador. Las
  * demas -proyectos, actividades, incidencias, reportes- llegan con sus modulos;
  * esta pagina no las anuncia como disponibles antes de tiempo.
+ *
+ * Encabeza la pagina el panel «Mi Dia» (RF-038), que el requerimiento pide "como
+ * parte de su pantalla de inicio" (decision D-34): no es una ruta aparte. Se
+ * muestra a los tipos que pueden tener actividades asignadas, el mismo criterio
+ * con que se ofrecen «Mis actividades» e «Incidencias»; HU-16 C05 (RN-05)
+ * incluye al lider al que asignaron como desarrollador en otro proyecto.
  */
+
+/** Tipos que pueden tener actividades asignadas y por tanto panel del dia. */
+const TIPOS_CON_PANEL_DEL_DIA = ['DESARROLLADOR', 'LIDER'];
 
 /** Funciones de gestion por tipo de trabajador. */
 const GESTION = [
@@ -153,6 +163,8 @@ export default function PaginaPanel() {
 
   return (
     <>
+      {TIPOS_CON_PANEL_DEL_DIA.includes(sesion.tipoTrabajador) && <PaginaMiDia />}
+
       <Seccion titulo="Mi sesion" id="panel">
         <div className={estilos.identidad}>
           <span className={estilos.iniciales} aria-hidden="true">

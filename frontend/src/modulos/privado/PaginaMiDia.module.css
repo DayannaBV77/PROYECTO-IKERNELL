@@ -1,0 +1,124 @@
+/*
+ * Panel personalizado «Mi Dia» (RF-038).
+ *
+ * Solo lo que esta pantalla necesita y no existe en gestion.module.css: la lista
+ * de actividades del dia con su marca de prioridad y de atraso, y la fila de
+ * indicadores de notificaciones.
+ */
+
+/* ------------------------------------------------------------ indicadores */
+
+.indicadores {
+  display: grid;
+  gap: var(--s-3);
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+}
+
+.indicador {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  padding: var(--s-4);
+  background: var(--c-superficie);
+  border: var(--b-sutil);
+  border-radius: var(--r-md);
+}
+
+.indicadorValor {
+  font-size: var(--t-2xl);
+  font-weight: var(--p-bold);
+  color: var(--c-marino-titulo);
+}
+
+.indicadorNombre {
+  font-size: var(--t-sm);
+  color: var(--c-texto-tenue);
+}
+
+/* La nota del correo: no es un error, es una limitacion conocida. */
+.indicadorNota {
+  font-size: var(--t-xs);
+  color: var(--c-texto-tenue);
+}
+
+/* ------------------------------------------------------------ actividades */
+
+.actividades {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.actividad {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-4);
+  background: var(--c-superficie);
+  border: var(--b-sutil);
+  border-left: 4px solid var(--c-borde);
+  border-radius: var(--r-md);
+}
+
+/* El borde refuerza la prioridad, que tambien va escrita: el color no es la
+   unica senal. */
+.prioridadALTA {
+  border-left-color: var(--c-alerta);
+}
+
+.prioridadMEDIA {
+  border-left-color: var(--c-info);
+}
+
+.prioridadBAJA {
+  border-left-color: var(--c-turquesa);
+}
+
+.cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.contexto {
+  font-size: var(--t-xs);
+  color: var(--c-texto-tenue);
+}
+
+.descripcion {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.etiquetas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  align-items: center;
+}
+
+.prioridad {
+  padding: 0 var(--s-2);
+  font-size: var(--t-xs);
+  font-weight: var(--p-semi);
+  line-height: 1.5rem;
+  color: var(--c-texto);
+  background: var(--c-superficie-tenue);
+  border: var(--b-sutil);
+  border-radius: var(--r-full);
+}
+
+.atrasada {
+  display: inline-flex;
+  gap: var(--s-1);
+  align-items: center;
+  padding: 0 var(--s-2);
+  font-size: var(--t-xs);
+  font-weight: var(--p-semi);
+  line-height: 1.5rem;
+  color: var(--c-alerta);
+  background: var(--c-alerta-fondo);
+  border-radius: var(--r-full);
+}

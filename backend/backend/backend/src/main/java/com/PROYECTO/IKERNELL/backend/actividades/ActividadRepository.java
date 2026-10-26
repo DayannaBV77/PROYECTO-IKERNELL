@@ -1,5 +1,6 @@
 package com.PROYECTO.IKERNELL.backend.actividades;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -37,6 +38,31 @@ public interface ActividadRepository
 	List<Actividad> findByDesarrolladorIdOrderByIdDesc(Long desarrolladorId);
 
 	Optional<Actividad> findByIdAndDesarrolladorId(Long id, Long desarrolladorId);
+
+	/**
+	 * RF-038: actividades del desarrollador planificadas para hoy o antes.
+	 *
+	 * <p>DECISION D-30: {@code <=} y no {@code =}. Con la lectura estricta una
+	 * actividad vencida desapareceria del panel justo el dia en que mas importa;
+	 * asi sigue apareciendo y el panel la marca como atrasada.
+	 *
+	 * <p>No filtra las ya terminadas: lo que cuenta como "pendiente" lo decide
+	 * {@code ServicioMiDia} a partir de las ejecuciones (D-31), porque
+	 * {@code actividad.estado} sigue sin dominio definido (D-04).
+	 */
+	@EntityGraph(attributePaths = { "etapa", "etapa.proyecto", "desarrollador" })
+	List<Actividad> findByDesarrolladorIdAndFechaPlanificadaLessThanEqual(
+			Long desarrolladorId, LocalDate hasta);
+
+	/**
+	 * RF-038: actividades propias sin dia planificado.
+	 *
+	 * <p>El panel no las muestra -no son "del dia"- pero si avisa de cuantas hay,
+	 * en lugar de ocultarlas sin decirlo. RF-019 no exige la fecha, de modo que
+	 * una actividad sin ella es legitima y no un dato que falte por error.
+	 */
+	@EntityGraph(attributePaths = { "etapa", "etapa.proyecto", "desarrollador" })
+	List<Actividad> findByDesarrolladorIdAndFechaPlanificadaIsNull(Long desarrolladorId);
 
 	/** RF-006: actividades de un desarrollador dentro de un proyecto (HU-07 C01). */
 	@EntityGraph(attributePaths = { "etapa", "etapa.proyecto", "desarrollador" })

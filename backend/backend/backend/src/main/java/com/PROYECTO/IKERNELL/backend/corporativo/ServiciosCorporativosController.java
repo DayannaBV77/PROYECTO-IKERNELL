@@ -2,7 +2,6 @@ package com.PROYECTO.IKERNELL.backend.corporativo;
 
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -32,12 +31,12 @@ import com.PROYECTO.IKERNELL.backend.shared.dto.ListaResponse;
 public class ServiciosCorporativosController {
 
 	private final ServicioRecursosInternos servicio;
-	private final String urlCorreo;
+	private final ServicioAccesoCorreo servicioCorreo;
 
 	public ServiciosCorporativosController(ServicioRecursosInternos servicio,
-			@Value("${ikernell.correo.url:}") String urlCorreo) {
+			ServicioAccesoCorreo servicioCorreo) {
 		this.servicio = servicio;
-		this.urlCorreo = urlCorreo;
+		this.servicioCorreo = servicioCorreo;
 	}
 
 	/** RF-029, HU-21 C01, C04 y C05: biblioteca de programas. */
@@ -71,16 +70,13 @@ public class ServiciosCorporativosController {
 	/**
 	 * RF-031, HU-20 C04 y C05: acceso al correo electronico corporativo.
 	 *
-	 * <p>Se resuelve con un enlace autorizado configurable, que es lo que RF-031
-	 * permite expresamente mientras la integracion tecnica no se confirme (D-13).
-	 * Sin enlace configurado devuelve el aviso de C05 en lugar de una pantalla en
-	 * blanco.
+	 * <p>La decision vive en {@link ServicioAccesoCorreo}, porque el panel «Mi
+	 * Dia» (RF-038) necesita el mismo dato y duplicarla aqui habria dejado dos
+	 * sitios que decidir cuando D-13 se resuelva.
 	 */
 	@GetMapping("/correo")
 	public AccesoCorreoResponse correo() {
-		return StringUtils.hasText(urlCorreo)
-				? AccesoCorreoResponse.enlace(urlCorreo)
-				: AccesoCorreoResponse.noDisponible();
+		return servicioCorreo.acceso();
 	}
 
 	private ListaResponse<RecursoResumenResponse> listar(TipoRecurso tipo, String busqueda,

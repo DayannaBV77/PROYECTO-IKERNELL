@@ -142,6 +142,30 @@ public class ServicioHilos {
 	}
 
 	/**
+	 * Total de mensajes sin leer del trabajador en todas sus conversaciones.
+	 *
+	 * <p>Es el indicador de notificaciones no leidas del chat que RF-038 pide
+	 * mostrar en el panel «Mi Dia».
+	 *
+	 * <p>Se apoya en las piezas que ya existen -las asignaciones activas y el
+	 * resumen por hilo- en lugar de una consulta propia con subconsultas
+	 * correlacionadas. Hace varias consultas, y es la misma concesion deliberada
+	 * que {@link #resumir}: los proyectos de una persona y los hilos de un
+	 * proyecto son pocos, y una sola consulta equivalente resultaria bastante mas
+	 * opaca por un ahorro que RNF-005 no reclama a esta escala. Si el volumen
+	 * crece, este es el punto a cambiar.
+	 */
+	@Transactional(readOnly = true)
+	public long totalNoLeidos(Long trabajadorId) {
+		return servicioAsignaciones.misAsignacionesActivas(trabajadorId).stream()
+				.map(asignacion -> asignacion.getProyecto().getId())
+				.distinct()
+				.flatMap(proyectoId -> hilos.findByProyectoIdOrderByCreadoEnDesc(proyectoId).stream())
+				.mapToLong(hilo -> resumir(hilo, trabajadorId).noLeidos())
+				.sum();
+	}
+
+	/**
 	 * Hilo al que el trabajador tiene acceso, o el error correspondiente.
 	 *
 	 * <p>HU-22 C04 pide impedir el acceso de quien no esta autorizado. Se
