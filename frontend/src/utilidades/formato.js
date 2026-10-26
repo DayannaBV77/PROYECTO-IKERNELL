@@ -14,6 +14,32 @@ export function formatearFecha(iso) {
   }).format(fecha);
 }
 
+/**
+ * Formatea una fecha con hora para mostrarla al usuario.
+ *
+ * Es distinta de `formatearFecha`: alli el valor es solo una fecha, aqui un
+ * instante completo (`AAAA-MM-DDTHH:MM:SS`), que es lo que devuelve el servidor
+ * para la fecha de envio de un mensaje (HU-22 C02). Construir el `Date` con la
+ * cadena completa es correcto en este caso, porque el instante si tiene hora y
+ * se quiere mostrar en la del usuario.
+ */
+export function formatearFechaHora(iso) {
+  if (!iso) {
+    return null;
+  }
+  const fecha = new Date(iso);
+  if (Number.isNaN(fecha.getTime())) {
+    return iso;
+  }
+  return new Intl.DateTimeFormat('es', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(fecha);
+}
+
 /** Una fecha ya en ISO: AAAA-MM-DD, que es lo que produce <input type="date">. */
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
 

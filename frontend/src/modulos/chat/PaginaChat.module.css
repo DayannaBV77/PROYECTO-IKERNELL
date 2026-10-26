@@ -1,0 +1,138 @@
+/*
+ * Conversaciones por proyecto y etapa (RF-037, HU-22).
+ *
+ * Solo lo que la pantalla necesita y no existe ya en gestion.module.css: la
+ * lista de hilos con su marca de no leidos y el historial de mensajes. Los
+ * formularios, avisos y campos reutilizan los estilos de gestion.
+ */
+
+.disposicion {
+  display: grid;
+  gap: var(--s-5);
+  grid-template-columns: minmax(0, 20rem) minmax(0, 1fr);
+  align-items: start;
+}
+
+@media (max-width: 60rem) {
+  .disposicion {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ------------------------------------------------------------------ hilos */
+
+.hilos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.hilo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  width: 100%;
+  padding: var(--s-3);
+  text-align: left;
+  background: var(--c-superficie);
+  border: var(--b-sutil);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition: border-color var(--tr-rapida), background var(--tr-rapida);
+}
+
+.hilo:hover {
+  border-color: var(--c-turquesa);
+}
+
+.hilo:focus-visible {
+  outline: var(--anillo-foco);
+}
+
+.hiloActivo {
+  background: var(--c-superficie-tenue);
+  border-color: var(--c-turquesa-fuerte);
+}
+
+.hiloCabecera {
+  display: flex;
+  gap: var(--s-2);
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.hiloTitulo {
+  font-weight: var(--p-semi);
+  color: var(--c-marino-titulo);
+}
+
+.hiloContexto {
+  font-size: var(--t-xs);
+  color: var(--c-texto-tenue);
+}
+
+/* Marca de mensajes sin leer (RF-038). */
+.noLeidos {
+  flex-shrink: 0;
+  min-width: 1.5rem;
+  padding: 0 var(--s-1);
+  font-size: var(--t-xs);
+  font-weight: var(--p-bold);
+  line-height: 1.5rem;
+  color: var(--c-texto-inverso);
+  text-align: center;
+  background: var(--c-turquesa-fuerte);
+  border-radius: var(--r-full);
+}
+
+/* --------------------------------------------------------------- mensajes */
+
+.conversacion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.mensajes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  max-height: 28rem;
+  overflow-y: auto;
+}
+
+.mensaje {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  padding: var(--s-3);
+  background: var(--c-superficie-tenue);
+  border: var(--b-sutil);
+  border-radius: var(--r-md);
+}
+
+/* Los propios se distinguen sin depender solo del color. */
+.mensajePropio {
+  background: var(--c-info-fondo);
+  border-color: var(--c-info);
+}
+
+.mensajeFirma {
+  display: flex;
+  gap: var(--s-2);
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: var(--t-xs);
+  color: var(--c-texto-tenue);
+}
+
+.mensajeAutor {
+  font-weight: var(--p-semi);
+  color: var(--c-texto);
+}
+
+.mensajeCuerpo {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

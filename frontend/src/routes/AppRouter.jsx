@@ -11,6 +11,7 @@ import PaginaDetalleActividad from '../modulos/actividades/PaginaDetalleActivida
 import PaginaMisActividades from '../modulos/actividades/PaginaMisActividades.jsx';
 import PaginaRegistroActividad from '../modulos/actividades/PaginaRegistroActividad.jsx';
 import PaginaAsignaciones from '../modulos/asignaciones/PaginaAsignaciones.jsx';
+import PaginaChat from '../modulos/chat/PaginaChat.jsx';
 import PaginaConsultas from '../modulos/contenido/PaginaConsultas.jsx';
 import PaginaContenidoAdmin from '../modulos/contenido/PaginaContenidoAdmin.jsx';
 import PaginaIncidencias from '../modulos/incidencias/PaginaIncidencias.jsx';
@@ -119,6 +120,11 @@ export default function AppRouter() {
               desarrollador en ESE proyecto, que es el nivel 2 y no el tipo
               global. */}
           <Route path="incidencias" element={<PaginaIncidencias />} />
+
+          {/* RF-037, HU-22: conversaciones por proyecto y etapa. Sin `tipos`
+              por la misma razon: el permiso es la asignacion en el proyecto,
+              con cualquier rol, y lo comprueba el servidor. */}
+          <Route path="chat" element={<PaginaChat />} />
         </Route>
 
         <Route path="*" element={<PaginaNoEncontrada />} />

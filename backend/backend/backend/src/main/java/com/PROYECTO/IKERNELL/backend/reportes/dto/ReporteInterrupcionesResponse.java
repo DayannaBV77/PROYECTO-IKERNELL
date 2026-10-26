@@ -13,7 +13,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
  * Reporte de interrupciones por proyecto (RF-017, HU-15).
  *
  * <p>Cada fila trae tipo, fecha, duracion y fase, los cuatro datos que exige
- * HU-15 C02.
+ * HU-15 C02. Por D-36 la fase de cada fila es la etapa del proyecto; las filas
+ * previas a esa decision no tienen etapa y traen su fase historica (D-37), de
+ * modo que el dato que HU-15 C02 exige nunca falta.
  *
  * <p>{@code duracionTotalPorUnidad} suma las duraciones SEPARADAS POR UNIDAD y
  * no en un unico numero. Sumar horas con dias exigiria un factor de conversion

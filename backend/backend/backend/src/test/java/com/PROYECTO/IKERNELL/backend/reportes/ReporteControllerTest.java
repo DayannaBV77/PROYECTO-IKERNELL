@@ -30,9 +30,7 @@ import com.PROYECTO.IKERNELL.backend.asignaciones.ServicioAsignaciones;
 import com.PROYECTO.IKERNELL.backend.asignaciones.domain.RolEnProyecto;
 import com.PROYECTO.IKERNELL.backend.asignaciones.dto.AsignacionRequest;
 import com.PROYECTO.IKERNELL.backend.auth.CuentaAccesoRepository;
-import com.PROYECTO.IKERNELL.backend.incidencias.FaseProyectoRepository;
 import com.PROYECTO.IKERNELL.backend.incidencias.InterrupcionProyectoRepository;
-import com.PROYECTO.IKERNELL.backend.incidencias.domain.FaseProyecto;
 import com.PROYECTO.IKERNELL.backend.incidencias.domain.InterrupcionProyecto;
 import com.PROYECTO.IKERNELL.backend.incidencias.domain.UnidadDuracion;
 import com.PROYECTO.IKERNELL.backend.proyectos.EtapaRepository;
@@ -74,8 +72,6 @@ class ReporteControllerTest {
 	@Autowired
 	private InterrupcionProyectoRepository interrupciones;
 
-	@Autowired
-	private FaseProyectoRepository fases;
 
 	@Autowired
 	private ServicioAsignaciones servicioAsignaciones;
@@ -87,7 +83,6 @@ class ReporteControllerTest {
 	private Trabajador desarrollador;
 	private Proyecto proyecto;
 	private Etapa etapa;
-	private FaseProyecto fase;
 
 	@BeforeEach
 	void prepararEntorno() {
@@ -111,7 +106,6 @@ class ReporteControllerTest {
 				new AsignacionRequest(desarrollador.getId(), proyecto.getId(), RolEnProyecto.DESARROLLADOR),
 				liderTrabajador, false);
 
-		this.fase = fases.findByActivaTrueOrderByOrdenAsc().get(2);
 	}
 
 	private Actividad nuevaActividad(Trabajador asignado, String descripcion) {
@@ -129,7 +123,7 @@ class ReporteControllerTest {
 	private InterrupcionProyecto nuevaInterrupcion(String tipo, LocalDate fecha, String valor,
 			UnidadDuracion unidad) {
 		return interrupciones.saveAndFlush(new InterrupcionProyecto(proyecto, tipo, fecha,
-				new BigDecimal(valor), unidad, fase, desarrollador));
+				new BigDecimal(valor), unidad, etapa, desarrollador));
 	}
 
 	// --------------------------------------------------- HU-07 / RF-006
@@ -295,7 +289,7 @@ class ReporteControllerTest {
 	// --------------------------------------------------- HU-15 / RF-017
 
 	@Test
-	@DisplayName("HU-15 C01 y C02: cada interrupcion se reporta con tipo, fecha, duracion y fase")
+	@DisplayName("HU-15 C01 y C02: cada interrupcion se reporta con tipo, fecha, duracion y etapa")
 	void reporteDeInterrupciones() throws Exception {
 		nuevaInterrupcion("CORTE_ENERGIA", LocalDate.of(2026, 10, 10), "4", UnidadDuracion.HORAS);
 
@@ -306,7 +300,7 @@ class ReporteControllerTest {
 				.andExpect(jsonPath("$.contenido[0].tipoInterrupcion").value("CORTE_ENERGIA"))
 				.andExpect(jsonPath("$.contenido[0].fecha").value("2026-10-10"))
 				.andExpect(jsonPath("$.contenido[0].duracionValor").value(4))
-				.andExpect(jsonPath("$.contenido[0].faseNombre").exists());
+				.andExpect(jsonPath("$.contenido[0].etapaNombre").value("Desarrollo"));
 	}
 
 	@Test

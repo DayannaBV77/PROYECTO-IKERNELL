@@ -21,13 +21,22 @@ export const ETIQUETA_UNIDAD = {
 };
 
 /**
- * Catalogo de fases del proyecto.
+ * Etiqueta de la fase de una incidencia.
  *
- * Abierto a cualquier trabajador autenticado: sin el, el desarrollador no
- * tendria de donde escoger la fase que RN-10 le exige indicar.
+ * D-36: la fase es la etapa del proyecto, y la respuesta trae `etapaNombre`.
+ * Los registros anteriores a esa decision no tienen etapa y conservan en
+ * `faseHistorica` el nombre de la fase del catalogo retirado (D-37); el
+ * servidor entrega los dos campos por separado para no presentar uno como el
+ * otro, y aqui se elige el que corresponda con la marca que lo distingue.
+ *
+ * La lista de etapas entre las que escoger NO esta en este modulo: la sirve el
+ * de proyectos (`obtenerEtapas`), que es a quien pertenece.
  */
-export function obtenerFases(opciones) {
-  return api.obtener('/api/fases', opciones);
+export function etiquetaDeFase({ etapaNombre, faseHistorica } = {}) {
+  if (etapaNombre) {
+    return etapaNombre;
+  }
+  return faseHistorica ? `${faseHistorica} (fase anterior)` : '';
 }
 
 /** RF-023, HU-17 C01: registra un error encontrado en el proyecto. */

@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 
-import { buscarProyectos, obtenerEquipo, obtenerEtapas } from '../../../api/proyectos.js';
+import { buscarProyectos, obtenerEquipo } from '../../../api/proyectos.js';
+import { useEtapasDeProyecto } from '../../../hooks/useEtapasDeProyecto.js';
 import { usePeticion } from '../../../hooks/usePeticion.js';
 
 /**
@@ -16,11 +17,9 @@ import { usePeticion } from '../../../hooks/usePeticion.js';
  * proyecto.
  */
 export function useContextoDeProyecto(proyectoId) {
-  const cargarEtapas = useCallback(
-    ({ senal }) => (proyectoId ? obtenerEtapas(proyectoId, { senal }) : Promise.resolve([])),
-    [proyectoId],
-  );
-  const etapas = usePeticion(cargarEtapas, [proyectoId]);
+  // Las etapas las resuelve el hook compartido: el registro de incidencias pide
+  // exactamente la misma lista desde D-36.
+  const etapas = useEtapasDeProyecto(proyectoId);
 
   const cargarEquipo = useCallback(
     ({ senal }) => (proyectoId ? obtenerEquipo(proyectoId, { senal }) : Promise.resolve([])),
@@ -29,10 +28,7 @@ export function useContextoDeProyecto(proyectoId) {
   const equipo = usePeticion(cargarEquipo, [proyectoId]);
 
   return {
-    opcionesDeEtapa: (etapas.datos || []).map((etapa) => ({
-      valor: String(etapa.id),
-      texto: etapa.orden ? `${etapa.orden}. ${etapa.nombre}` : etapa.nombre,
-    })),
+    opcionesDeEtapa: etapas.opcionesDeEtapa,
     // El equipo son asignaciones: lo que identifica a la persona es
     // `trabajadorId`, no el id de la asignacion.
     opcionesDeDesarrollador: (equipo.datos || []).map((asignacion) => ({

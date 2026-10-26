@@ -15,7 +15,8 @@ import jakarta.validation.constraints.Size;
  *
  * <p>Los cuatro campos que RN-10 declara obligatorios lo son aqui tambien, de
  * modo que HU-18 C02 se cumple campo por campo. El proyecto llega en la ruta
- * (HU-18 C03).
+ * (HU-18 C03), y por D-36 la fase es una etapa de ESE proyecto: que lo sea lo
+ * comprueba el servicio.
  */
 public record RegistroInterrupcionRequest(
 
@@ -33,6 +34,6 @@ public record RegistroInterrupcionRequest(
 		@NotNull(message = "Debe indicar la unidad de la duracion.")
 		UnidadDuracion duracionUnidad,
 
-		@NotNull(message = "Debe indicar la fase del proyecto en la que ocurrio.")
-		Long faseId) {
+		@NotNull(message = "Debe indicar la etapa del proyecto en la que ocurrio.")
+		Long etapaId) {
 }

@@ -23,10 +23,14 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
 
+import com.PROYECTO.IKERNELL.backend.asignaciones.ServicioAsignaciones;
+import com.PROYECTO.IKERNELL.backend.asignaciones.domain.RolEnProyecto;
+import com.PROYECTO.IKERNELL.backend.asignaciones.dto.AsignacionRequest;
 import com.PROYECTO.IKERNELL.backend.auth.CuentaAccesoRepository;
 import com.PROYECTO.IKERNELL.backend.support.AutenticacionDePrueba;
 import com.PROYECTO.IKERNELL.backend.trabajadores.TrabajadorRepository;
 import com.PROYECTO.IKERNELL.backend.trabajadores.domain.TipoTrabajador;
+import com.PROYECTO.IKERNELL.backend.trabajadores.domain.Trabajador;
 
 /** Gestion de etapas: una prueba por condicion de aceptacion de HU-11. */
 @SpringBootTest
@@ -42,6 +46,9 @@ class EtapaControllerTest {
 
 	@Autowired
 	private CuentaAccesoRepository cuentas;
+
+	@Autowired
+	private ServicioAsignaciones servicioAsignaciones;
 
 	private MockMvc mockMvc;
 	private Authentication lider;
@@ -189,6 +196,37 @@ class EtapaControllerTest {
 				.with(csrf()).with(authentication(desarrollador))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"nombre\":\"Analisis\",\"descripcion\":\"d\",\"orden\":1}"))
+				.andExpect(status().isForbidden());
+	}
+
+	@Test
+	@DisplayName("D-36: un desarrollador asignado SI consulta las etapas de su proyecto")
+	void unDesarrolladorAsignadoConsultaLasEtapasDeSuProyecto() throws Exception {
+		registrarEtapa("Construccion", 1);
+		Authentication desarrollador = AutenticacionDePrueba.comoTrabajador(trabajadores, cuentas,
+				"6000000003", "dev.lee.etapas@ikernell.com", TipoTrabajador.DESARROLLADOR);
+		Trabajador devTrabajador = trabajadores.findByIdentificacion("6000000003").orElseThrow();
+		servicioAsignaciones.asignarTrabajador(
+				new AsignacionRequest(devTrabajador.getId(), proyectoId, RolEnProyecto.DESARROLLADOR),
+				trabajadores.findByIdentificacion("6000000001").orElseThrow(), false);
+
+		// Lo necesita para escoger la etapa que RN-10 le exige al registrar una
+		// incidencia: antes de D-36 esta consulta le respondia 403.
+		mockMvc.perform(get("/api/proyectos/" + proyectoId + "/etapas")
+				.with(authentication(desarrollador)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[0].nombre").value("Construccion"));
+	}
+
+	@Test
+	@DisplayName("D-36: un desarrollador NO asignado no consulta las etapas del proyecto")
+	void unDesarrolladorNoAsignadoNoConsultaLasEtapas() throws Exception {
+		registrarEtapa("Construccion", 1);
+		Authentication ajeno = AutenticacionDePrueba.comoTrabajador(trabajadores, cuentas,
+				"6000000004", "dev.ajeno.etapas@ikernell.com", TipoTrabajador.DESARROLLADOR);
+
+		mockMvc.perform(get("/api/proyectos/" + proyectoId + "/etapas")
+				.with(authentication(ajeno)))
 				.andExpect(status().isForbidden());
 	}
 

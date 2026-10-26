@@ -135,6 +135,23 @@ public class ServicioAsignaciones {
 		return asignaciones.findByTrabajadorIdOrderByFechaAsignacionDesc(trabajadorId);
 	}
 
+	/**
+	 * Asignaciones activas del trabajador autenticado, origen de "mis proyectos".
+	 *
+	 * <p>No valida el trabajador contra el repositorio como hacen las consultas
+	 * del coordinador: aqui el identificador no llega por la ruta sino de la
+	 * sesion, de modo que corresponde a un trabajador que acaba de autenticarse.
+	 *
+	 * <p>No filtra por rol. El rol viaja en la respuesta para que cada pantalla
+	 * decida que puede ofrecer: las incidencias exigen DESARROLLADOR (RF-023,
+	 * RF-024) y los hilos de conversacion por proyecto admitiran cualquier rol
+	 * (RF-037).
+	 */
+	@Transactional(readOnly = true)
+	public List<Asignacion> misAsignacionesActivas(Long trabajadorId) {
+		return asignaciones.findByTrabajadorIdAndActivaTrueOrderByProyectoNombreAsc(trabajadorId);
+	}
+
 	/** HU-06 C05: asignaciones registradas de un proyecto. */
 	@Transactional(readOnly = true)
 	public List<Asignacion> asignacionesDeProyecto(Long proyectoId) {
@@ -157,6 +174,18 @@ public class ServicioAsignaciones {
 	@Transactional(readOnly = true)
 	public boolean puedeActuarComo(Long trabajadorId, Long proyectoId, RolEnProyecto rol) {
 		return asignaciones.tieneAsignacionActivaConRol(trabajadorId, proyectoId, rol);
+	}
+
+	/**
+	 * Nivel 2 de lectura: el trabajador participa en el proyecto con cualquier rol.
+	 *
+	 * <p>La consulta de etapas la usa para que un desarrollador pueda ver las de
+	 * SU proyecto: desde D-36 la etapa es la fase que RN-10 le exige indicar al
+	 * registrar una incidencia, y sin esta consulta no tendria de donde escogerla.
+	 */
+	@Transactional(readOnly = true)
+	public boolean participaEnProyecto(Long trabajadorId, Long proyectoId) {
+		return asignaciones.participaEnProyecto(trabajadorId, proyectoId);
 	}
 
 	private void exigirProyectoHabilitado(Proyecto proyecto) {

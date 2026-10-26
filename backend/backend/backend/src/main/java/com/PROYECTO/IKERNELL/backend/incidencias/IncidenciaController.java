@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.PROYECTO.IKERNELL.backend.auth.TrabajadorAutenticado;
 import com.PROYECTO.IKERNELL.backend.incidencias.dto.ErrorProyectoResponse;
-import com.PROYECTO.IKERNELL.backend.incidencias.dto.FaseResponse;
 import com.PROYECTO.IKERNELL.backend.incidencias.dto.InterrupcionProyectoResponse;
 import com.PROYECTO.IKERNELL.backend.incidencias.dto.RegistroErrorRequest;
 import com.PROYECTO.IKERNELL.backend.incidencias.dto.RegistroInterrupcionRequest;
@@ -45,17 +44,10 @@ public class IncidenciaController {
 		this.servicio = servicio;
 	}
 
-	/**
-	 * Fases disponibles para elegir al registrar.
-	 *
-	 * <p>Catalogo de solo lectura y abierto a cualquier trabajador autenticado:
-	 * sin el, el desarrollador no tendria de donde escoger la fase que RN-10 le
-	 * exige indicar.
-	 */
-	@GetMapping("/fases")
-	public List<FaseResponse> fases() {
-		return servicio.fasesDisponibles().stream().map(FaseResponse::de).toList();
-	}
+	// D-36: la fase que RN-10 exige indicar es una etapa del proyecto, asi que ya
+	// no hay catalogo de fases que publicar aqui. El desarrollador escoge entre
+	// las etapas de su proyecto, que entrega el modulo de proyectos
+	// (GET /api/proyectos/{id}/etapas).
 
 	/** RF-023, HU-17 C01: registra un error del proyecto. */
 	@PostMapping("/proyectos/{proyectoId}/errores")

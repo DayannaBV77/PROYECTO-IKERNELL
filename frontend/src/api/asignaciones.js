@@ -41,6 +41,22 @@ export function asignarTrabajador(datos, confirmado = false) {
   return api.crear(`/api/asignaciones?confirmado=${confirmado}`, datos);
 }
 
+/**
+ * Proyectos en los que participa el trabajador autenticado.
+ *
+ * No es parte de RF-003: cubre un vacio de requisitos. Las funciones que el
+ * trabajador ejerce sobre "sus" proyectos -registrar errores e interrupciones
+ * (RF-023, RF-024)- le exigen el identificador del proyecto, pero la busqueda
+ * de proyectos esta reservada al lider y las consultas de asignaciones, al
+ * coordinador.
+ *
+ * Devuelve una fila por proyecto con `roles`, para no ofrecer una operacion que
+ * el servidor iba a rechazar. Quien decide sigue siendo el servidor.
+ */
+export function obtenerMisProyectos(opciones) {
+  return api.obtener('/api/mis-proyectos', opciones);
+}
+
 /** HU-06 C05: asignaciones registradas de un trabajador. */
 export function asignacionesDeTrabajador(trabajadorId, opciones) {
   return api.obtener(`/api/asignaciones/trabajador/${trabajadorId}`, opciones);

@@ -22,10 +22,11 @@ export const ENLACES_PUBLICOS = [
 /**
  * Servicios internos del trabajador autenticado (HU-03 C02).
  *
- * Solo figuran los que el backend atiende hoy: la biblioteca de programas
- * (RF-029) y los tutoriales (RF-030). El correo corporativo (RF-031) no es una
- * pagina sino un enlace autorizado, y se ofrece desde el panel; el chat
- * corporativo (RF-028) no esta implementado porque D-12 lo deja sin definir.
+ * Figuran la biblioteca de programas (RF-029), los tutoriales (RF-030) y las
+ * conversaciones por proyecto y etapa (RF-037). El correo corporativo (RF-031)
+ * no es una pagina sino un enlace autorizado, y se ofrece desde el panel; el
+ * chat corporativo LIBRE de RF-028 -conversaciones individuales, grupos,
+ * disponibilidad- sigue sin implementar porque D-12 lo deja sin definir.
  *
  * `tipos` restringe la entrada a unos tipos de trabajador; sin el, la ve
  * cualquiera con la sesion iniciada. Igual que en el menu publico, no se crean
@@ -60,6 +61,9 @@ export const ENLACES_PRIVADOS = [
   // Errores e interrupciones: los registra quien esta asignado como
   // desarrollador al proyecto, sea cual sea su tipo global (RN-05).
   { a: '/app/incidencias', texto: 'Incidencias', tipos: ['DESARROLLADOR', 'LIDER'] },
+  // Conversaciones por proyecto y etapa (RF-037, HU-22). Sin `tipos`: el
+  // permiso es la asignacion en el proyecto, no el tipo de trabajador.
+  { a: '/app/chat', texto: 'Conversaciones' },
   { a: '/app/biblioteca', texto: 'Biblioteca' },
   { a: '/app/tutoriales', texto: 'Tutoriales' },
 ];

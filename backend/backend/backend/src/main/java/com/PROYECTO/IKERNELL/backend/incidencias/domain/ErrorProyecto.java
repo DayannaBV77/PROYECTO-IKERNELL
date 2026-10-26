@@ -2,6 +2,7 @@ package com.PROYECTO.IKERNELL.backend.incidencias.domain;
 
 import java.time.LocalDate;
 
+import com.PROYECTO.IKERNELL.backend.proyectos.domain.Etapa;
 import com.PROYECTO.IKERNELL.backend.proyectos.domain.Proyecto;
 import com.PROYECTO.IKERNELL.backend.trabajadores.domain.Trabajador;
 
@@ -22,8 +23,14 @@ import jakarta.persistence.Table;
  * encontro. La descripcion y la fecha quedan opcionales mientras la empresa no
  * las declare obligatorias (HU-17 C04).
  *
- * <p>La fase apunta al catalogo {@code FaseProyecto}, no a una etapa: son
- * conceptos distintos.
+ * <p>D-36: la fase en que se encontro el error ES una etapa del proyecto, y
+ * debe pertenecer al proyecto del propio error. Esa correspondencia no cabe en
+ * una restriccion de columna, asi que la valida el servicio.
+ *
+ * <p>{@code etapa} admite nulo y {@code faseHistorica} existe por los registros
+ * anteriores a D-36, que apuntaban a un catalogo de fases hoy retirado y cuyo
+ * nombre no se puede remapear a una etapa sin inventar la correspondencia
+ * (D-37). Toda incidencia tiene uno de los dos; las nuevas, siempre la etapa.
  */
 @Entity
 @Table(name = "error_proyecto")
@@ -40,9 +47,13 @@ public class ErrorProyecto {
 	@Column(name = "tipo_error", nullable = false, length = 50)
 	private String tipoError;
 
-	@ManyToOne(fetch = FetchType.LAZY, optional = false)
-	@JoinColumn(name = "fase_id", nullable = false)
-	private FaseProyecto fase;
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "etapa_id")
+	private Etapa etapa;
+
+	/** Nombre de la fase del catalogo retirado; solo en registros previos a D-36. */
+	@Column(name = "fase_historica", length = 80)
+	private String faseHistorica;
 
 	@Column(length = 2000)
 	private String descripcion;
@@ -57,11 +68,11 @@ public class ErrorProyecto {
 		// requerido por JPA
 	}
 
-	public ErrorProyecto(Proyecto proyecto, String tipoError, FaseProyecto fase, String descripcion,
+	public ErrorProyecto(Proyecto proyecto, String tipoError, Etapa etapa, String descripcion,
 			LocalDate fecha, Trabajador registradoPor) {
 		this.proyecto = proyecto;
 		this.tipoError = tipoError;
-		this.fase = fase;
+		this.etapa = etapa;
 		this.descripcion = descripcion;
 		this.fecha = fecha;
 		this.registradoPor = registradoPor;
@@ -79,8 +90,13 @@ public class ErrorProyecto {
 		return tipoError;
 	}
 
-	public FaseProyecto getFase() {
-		return fase;
+	public Etapa getEtapa() {
+		return etapa;
+	}
+
+	/** Solo tiene valor en los registros previos a D-36 (ver {@link #getEtapa()}). */
+	public String getFaseHistorica() {
+		return faseHistorica;
 	}
 
 	public String getDescripcion() {

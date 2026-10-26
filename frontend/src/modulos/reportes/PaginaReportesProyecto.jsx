@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { ClipboardList, PauseCircle, Search } from 'lucide-react';
 
-import { ETIQUETA_UNIDAD } from '../../api/incidencias.js';
+import { ETIQUETA_UNIDAD, etiquetaDeFase } from '../../api/incidencias.js';
 import { reporteDeActividades, reporteDeInterrupciones } from '../../api/reportes.js';
 import EstadoCarga from '../../componentes/estados/EstadoCarga.jsx';
 import EstadoError from '../../componentes/estados/EstadoError.jsx';
@@ -279,7 +279,7 @@ function ReporteDeInterrupciones({ proyectoId }) {
                   <th scope="col">Fecha</th>
                   <th scope="col">Tipo</th>
                   <th scope="col">Duracion</th>
-                  <th scope="col">Fase</th>
+                  <th scope="col">Etapa</th>
                 </tr>
               </thead>
               <tbody>
@@ -294,7 +294,9 @@ function ReporteDeInterrupciones({ proyectoId }) {
                       {ETIQUETA_UNIDAD[interrupcion.duracionUnidad] ||
                         interrupcion.duracionUnidad?.toLowerCase()}
                     </td>
-                    <td>{interrupcion.faseNombre}</td>
+                    {/* D-36: la etapa del proyecto. Las interrupciones previas
+                        traen su fase historica (D-37). */}
+                    <td>{etiquetaDeFase(interrupcion)}</td>
                   </tr>
                 ))}
               </tbody>

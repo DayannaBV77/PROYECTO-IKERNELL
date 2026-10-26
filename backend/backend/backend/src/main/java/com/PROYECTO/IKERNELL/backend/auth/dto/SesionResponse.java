@@ -10,8 +10,15 @@ import com.PROYECTO.IKERNELL.backend.trabajadores.domain.TipoTrabajador;
  *
  * <p>{@code serviciosComunes} son los cuatro servicios internos que HU-03 C02
  * enumera para cualquier trabajador autenticado. Se devuelven para que el
- * cliente arme el menu; los endpoints que los atienden corresponden a
- * RF-028..031 y llegan en la ultima fase de implementacion.
+ * cliente arme el menu.
+ *
+ * <p>Estado de cada uno: la biblioteca y los tutoriales los atiende
+ * {@code ServiciosCorporativosController} (RF-029, RF-030); el correo se ofrece
+ * como enlace autorizado configurable (RF-031, D-13); y del chat existe la parte
+ * contextual, los hilos por proyecto y etapa de RF-037
+ * ({@code HiloController}). El chat LIBRE de RF-028 -conversaciones
+ * individuales, grupos, disponibilidad- sigue sin implementar porque D-12 lo
+ * deja sin definir.
  *
  * <p>El {@code tipoTrabajador} permite al cliente mostrar solo las funciones de
  * su tipo "y ninguna de las que corresponden a otro tipo" (HU-03 C02). La

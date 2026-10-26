@@ -133,8 +133,12 @@ const SERVICIOS = {
   },
   CHAT_CORPORATIVO: {
     icono: MessagesSquare,
-    // No se promete una pantalla que no existe: el backend tampoco lo atiende.
-    detalle: 'Pendiente de definir con la empresa; el aplicativo aun no lo atiende.',
+    // Lo que existe son los hilos por proyecto y etapa (RF-037, HU-22). El chat
+    // libre de RF-028 -conversaciones individuales, grupos, disponibilidad-
+    // sigue sin definir (D-12), y el texto no promete mas de lo que hay.
+    detalle:
+      'Conversaciones vinculadas a sus proyectos y etapas, para seguir consultas y decisiones tecnicas.',
+    a: '/app/chat',
   },
 };
 

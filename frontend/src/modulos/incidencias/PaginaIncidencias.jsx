@@ -1,10 +1,9 @@
 import { useCallback, useState } from 'react';
 import { Bug, CircleCheck, PauseCircle, Save, TriangleAlert } from 'lucide-react';
 
-import { obtenerMisActividades } from '../../api/actividades.js';
+import { obtenerMisProyectos } from '../../api/asignaciones.js';
 import {
   UNIDADES_DURACION,
-  obtenerFases,
   registrarError,
   registrarInterrupcion,
 } from '../../api/incidencias.js';
@@ -15,6 +14,7 @@ import Boton from '../../componentes/ui/Boton.jsx';
 import Campo from '../../componentes/ui/Campo.jsx';
 import Seccion from '../../componentes/ui/Seccion.jsx';
 import estilos from '../../estilos/gestion.module.css';
+import { useEtapasDeProyecto } from '../../hooks/useEtapasDeProyecto.js';
 import { usePeticion } from '../../hooks/usePeticion.js';
 
 /**
@@ -25,37 +25,38 @@ import { usePeticion } from '../../hooks/usePeticion.js';
  * eso la pantalla se ofrece tambien al lider, que puede estar asignado como
  * desarrollador en otro proyecto (RN-05); quien decide es el servidor.
  *
- * LIMITACION CONOCIDA: el backend no expone "los proyectos en los que estoy
- * asignado". La unica consulta propia del trabajador es la de sus actividades,
- * asi que los proyectos se deducen de ahi. Un desarrollador asignado a un
- * proyecto en el que todavia no tiene ninguna actividad no podra elegirlo, y
- * hara falta un endpoint equivalente al de candidatos de equipo.
+ * Los proyectos salen de /api/mis-proyectos, que entrega las asignaciones
+ * activas de quien pregunta. Antes se deducian de las actividades propias, de
+ * modo que un desarrollador recien asignado, sin actividades todavia, no podia
+ * elegir su proyecto; esa limitacion queda resuelta.
+ *
+ * Se ofrecen solo los proyectos donde tiene el rol DESARROLLADOR, porque es el
+ * que el servidor exige para registrar (nivel 2): ofrecer los demas seria
+ * ofrecer un 403.
+ *
+ * D-36: la fase que se indica es una ETAPA del proyecto, no un valor de un
+ * catalogo comun. Por eso el desplegable de etapa depende del proyecto elegido
+ * en el mismo formulario, y cada uno carga las suyas.
  */
 export default function PaginaIncidencias() {
-  const cargarActividades = useCallback(({ senal }) => obtenerMisActividades({ senal }), []);
-  const actividades = usePeticion(cargarActividades, []);
+  const cargarProyectos = useCallback(({ senal }) => obtenerMisProyectos({ senal }), []);
+  const misProyectos = usePeticion(cargarProyectos, []);
 
-  const cargarFases = useCallback(({ senal }) => obtenerFases({ senal }), []);
-  const fases = usePeticion(cargarFases, []);
+  // El servidor ya entrega una fila por proyecto, sin repetirlos.
+  const proyectos = (misProyectos.datos?.contenido || [])
+    .filter(({ roles }) => roles.includes('DESARROLLADOR'))
+    .map(({ proyectoId, proyectoNombre, estadoHabilitacion }) => ({
+      valor: String(proyectoId),
+      // El proyecto inhabilitado se ofrece igualmente -el servidor no lo
+      // rechaza al registrar- pero se senala para que no pase inadvertido.
+      texto:
+        estadoHabilitacion === 'INHABILITADO'
+          ? `${proyectoNombre} (inhabilitado)`
+          : proyectoNombre,
+    }));
 
-  // Un proyecto puede aparecer en varias actividades; se deja uno por proyecto.
-  const proyectos = Object.values(
-    (actividades.datos?.contenido || []).reduce((acumulado, actividad) => {
-      acumulado[actividad.proyectoId] = {
-        valor: String(actividad.proyectoId),
-        texto: actividad.proyectoNombre,
-      };
-      return acumulado;
-    }, {}),
-  );
-
-  const opcionesDeFase = (fases.datos || []).map((fase) => ({
-    valor: String(fase.id),
-    texto: fase.orden ? `${fase.orden}. ${fase.nombre}` : fase.nombre,
-  }));
-
-  const cargando = actividades.cargando || fases.cargando;
-  const error = actividades.error || fases.error;
+  const cargando = misProyectos.cargando;
+  const error = misProyectos.error;
 
   return (
     <Seccion
@@ -63,26 +64,23 @@ export default function PaginaIncidencias() {
       descripcion="Deje documentadas las incidencias de los proyectos en los que trabaja."
       id="incidencias"
     >
-      {cargando && <EstadoCarga mensaje="Cargando proyectos y fases..." />}
+      {cargando && <EstadoCarga mensaje="Cargando sus proyectos..." />}
 
       {!cargando && error && (
-        <EstadoError
-          error={error}
-          alReintentar={actividades.error ? actividades.reintentar : fases.reintentar}
-        />
+        <EstadoError error={error} alReintentar={misProyectos.reintentar} />
       )}
 
       {!cargando && !error && proyectos.length === 0 && (
         <EstadoVacio
-          mensaje="No se le ha asignado trabajo en ningun proyecto todavia, de modo que no hay proyecto sobre el que registrar incidencias."
+          mensaje="No esta asignado como desarrollador en ningun proyecto, de modo que no hay proyecto sobre el que registrar incidencias."
           icono={Bug}
         />
       )}
 
       {!cargando && !error && proyectos.length > 0 && (
         <div className={estilos.perfil}>
-          <FormularioDeError proyectos={proyectos} opcionesDeFase={opcionesDeFase} />
-          <FormularioDeInterrupcion proyectos={proyectos} opcionesDeFase={opcionesDeFase} />
+          <FormularioDeError proyectos={proyectos} />
+          <FormularioDeInterrupcion proyectos={proyectos} />
         </div>
       )}
     </Seccion>
@@ -109,7 +107,7 @@ function Avisos({ confirmado, fallo }) {
   );
 }
 
-const ERROR_VACIO = { proyectoId: '', tipoError: '', faseId: '', descripcion: '', fecha: '' };
+const ERROR_VACIO = { proyectoId: '', tipoError: '', etapaId: '', descripcion: '', fecha: '' };
 
 /**
  * Registro de un error (RF-023, HU-17).
@@ -119,8 +117,9 @@ const ERROR_VACIO = { proyectoId: '', tipoError: '', faseId: '', descripcion: ''
  * cliente. Los demas datos los valida el servidor (C02 y C04), que es quien
  * sabe cuales son obligatorios.
  */
-function FormularioDeError({ proyectos, opcionesDeFase }) {
+function FormularioDeError({ proyectos }) {
   const [valores, setValores] = useState(ERROR_VACIO);
+  const { opcionesDeEtapa } = useEtapasDeProyecto(valores.proyectoId);
   const [errores, setErrores] = useState({});
   const [fallo, setFallo] = useState(null);
   const [confirmado, setConfirmado] = useState(null);
@@ -148,7 +147,7 @@ function FormularioDeError({ proyectos, opcionesDeFase }) {
     try {
       await registrarError(valores.proyectoId, {
         tipoError: valores.tipoError,
-        faseId: valores.faseId ? Number(valores.faseId) : null,
+        etapaId: valores.etapaId ? Number(valores.etapaId) : null,
         descripcion: valores.descripcion,
         fecha: valores.fecha || null,
       });
@@ -191,13 +190,14 @@ function FormularioDeError({ proyectos, opcionesDeFase }) {
         pista="Los tipos los define la empresa; por ahora es texto libre."
       />
       <Campo
-        etiqueta="Fase en que lo encontro"
-        nombre="faseId"
-        opciones={opcionesDeFase}
+        etiqueta="Etapa en que lo encontro"
+        nombre="etapaId"
+        opciones={opcionesDeEtapa}
         obligatorio
-        value={valores.faseId}
+        value={valores.etapaId}
         onChange={alCambiar}
-        error={errores.faseId}
+        error={errores.etapaId}
+        pista="Son las etapas del proyecto elegido; elija primero el proyecto."
       />
       <Campo
         etiqueta="Fecha"
@@ -232,12 +232,13 @@ const INTERRUPCION_VACIA = {
   fecha: '',
   duracionValor: '',
   duracionUnidad: 'HORAS',
-  faseId: '',
+  etapaId: '',
 };
 
 /** Registro de una interrupcion (RF-024, HU-18). */
-function FormularioDeInterrupcion({ proyectos, opcionesDeFase }) {
+function FormularioDeInterrupcion({ proyectos }) {
   const [valores, setValores] = useState(INTERRUPCION_VACIA);
+  const { opcionesDeEtapa } = useEtapasDeProyecto(valores.proyectoId);
   const [errores, setErrores] = useState({});
   const [fallo, setFallo] = useState(null);
   const [confirmado, setConfirmado] = useState(null);
@@ -269,7 +270,7 @@ function FormularioDeInterrupcion({ proyectos, opcionesDeFase }) {
         // Un campo numerico vacio no se envia como cadena.
         duracionValor: valores.duracionValor === '' ? null : Number(valores.duracionValor),
         duracionUnidad: valores.duracionUnidad || null,
-        faseId: valores.faseId ? Number(valores.faseId) : null,
+        etapaId: valores.etapaId ? Number(valores.etapaId) : null,
       });
       setConfirmado('La interrupcion quedo registrada y asociada al proyecto.');
       setValores({ ...INTERRUPCION_VACIA, proyectoId: valores.proyectoId });
@@ -343,13 +344,14 @@ function FormularioDeInterrupcion({ proyectos, opcionesDeFase }) {
       </div>
 
       <Campo
-        etiqueta="Fase en que ocurrio"
-        nombre="faseId"
-        opciones={opcionesDeFase}
+        etiqueta="Etapa en que ocurrio"
+        nombre="etapaId"
+        opciones={opcionesDeEtapa}
         obligatorio
-        value={valores.faseId}
+        value={valores.etapaId}
         onChange={alCambiar}
-        error={errores.faseId}
+        error={errores.etapaId}
+        pista="Son las etapas del proyecto elegido; elija primero el proyecto."
       />
 
       <div className={estilos.accionesPerfil}>

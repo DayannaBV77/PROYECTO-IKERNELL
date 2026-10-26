@@ -34,6 +34,17 @@ public interface AsignacionRepository extends JpaRepository<Asignacion, Long> {
 	@EntityGraph(attributePaths = { "trabajador", "proyecto" })
 	List<Asignacion> findByTrabajadorIdOrderByFechaAsignacionDesc(Long trabajadorId);
 
+	/**
+	 * Asignaciones activas del trabajador, el nivel 2 de autorizacion visto del
+	 * lado de quien consulta: la misma condicion de
+	 * {@link #tieneAsignacionActivaConRol}, pero sin fijar proyecto ni rol.
+	 *
+	 * <p>Ordenadas por nombre de proyecto para que un selector sea estable, y no
+	 * por fecha de asignacion como la consulta del coordinador.
+	 */
+	@EntityGraph(attributePaths = { "trabajador", "proyecto" })
+	List<Asignacion> findByTrabajadorIdAndActivaTrueOrderByProyectoNombreAsc(Long trabajadorId);
+
 	/** HU-06 C05: consultar las asignaciones de un proyecto. */
 	@EntityGraph(attributePaths = { "trabajador", "proyecto" })
 	List<Asignacion> findByProyectoIdOrderByFechaAsignacionDesc(Long proyectoId);
@@ -60,5 +71,24 @@ public interface AsignacionRepository extends JpaRepository<Asignacion, Long> {
 			""")
 	boolean tieneAsignacionActivaConRol(@Param("trabajadorId") Long trabajadorId,
 			@Param("proyectoId") Long proyectoId, @Param("rol") RolEnProyecto rol);
+
+	/**
+	 * Nivel 2 de LECTURA: el trabajador participa en el proyecto, con cualquier
+	 * rol, y sigue habilitado.
+	 *
+	 * <p>La misma condicion que {@link #tieneAsignacionActivaConRol} sin fijar el
+	 * rol. Separa el permiso de consultar del permiso de operar: ver las etapas de
+	 * un proyecto propio no exige ser desarrollador en el, pero registrar una
+	 * incidencia si (RF-023, RF-024).
+	 */
+	@Query("""
+			select count(a) > 0 from Asignacion a
+			where a.trabajador.id = :trabajadorId
+			  and a.proyecto.id = :proyectoId
+			  and a.activa = true
+			  and a.trabajador.estado = com.PROYECTO.IKERNELL.backend.shared.domain.EstadoHabilitacion.HABILITADO
+			""")
+	boolean participaEnProyecto(@Param("trabajadorId") Long trabajadorId,
+			@Param("proyectoId") Long proyectoId);
 
 }
