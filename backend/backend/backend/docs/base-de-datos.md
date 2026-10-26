@@ -300,6 +300,20 @@ podman volume rm ikernell-pgdata
 systemctl --user start ikernell-postgres
 ```
 
+## Poblar la base de datos con datos de prueba
+
+Carga un conjunto completo, coherente y realista de datos para todos los
+módulos (trabajadores, coordinadores, líderes, desarrolladores, proyectos,
+etapas, asignaciones, actividades, ejecuciones, incidencias, hilos de chat,
+contenido público, consultas y recursos internos):
+
+```bash
+./scripts/poblar-base-de-datos.sh
+```
+
+Todas las cuentas de usuario de prueba se crean con la contraseña `Dev12345`.
+El script es idempotente y actualiza las secuencias de claves primarias.
+
 ## Verificar que todo funciona
 
 ```bash
