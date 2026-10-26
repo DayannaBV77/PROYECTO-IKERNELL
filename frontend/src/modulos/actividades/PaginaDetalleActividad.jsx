@@ -2,7 +2,11 @@ import { useCallback, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { ArrowLeft, CircleCheck, Save, TriangleAlert } from 'lucide-react';
 
-import { modificarActividad, obtenerActividad } from '../../api/actividades.js';
+import {
+  PRIORIDADES_ACTIVIDAD,
+  modificarActividad,
+  obtenerActividad,
+} from '../../api/actividades.js';
 import EstadoCarga from '../../componentes/estados/EstadoCarga.jsx';
 import EstadoError from '../../componentes/estados/EstadoError.jsx';
 import Boton from '../../componentes/ui/Boton.jsx';
@@ -62,7 +66,9 @@ function Volver() {
 /**
  * Actividad ya cargada.
  *
- * Solo se pueden cambiar la etapa y la descripcion. El desarrollador no:
+ * Se pueden cambiar la etapa, la descripcion, la prioridad y el dia planificado:
+ * los dos ultimos son lo que RF-021 llama replanificar ante una eventualidad.
+ * El desarrollador no:
  * RF-021 ordena conservar esa asociacion y el servidor no admite el campo, de
  * modo que ofrecerlo seria prometer algo que no ocurre. La etapa si, y solo
  * entre las del mismo proyecto, con lo que la garantia de C05 -que la actividad
@@ -75,6 +81,9 @@ function ActividadCargada({ inicial }) {
   const [editables, setEditables] = useState(() => ({
     etapaId: String(inicial.etapaId ?? ''),
     descripcion: inicial.descripcion || '',
+    // El servidor omite los campos sin valor (NON_NULL), de ahi los respaldos.
+    prioridad: inicial.prioridad || '',
+    fechaPlanificada: inicial.fechaPlanificada || '',
   }));
   const [errores, setErrores] = useState({});
   const [fallo, setFallo] = useState(null);
@@ -102,11 +111,15 @@ function ActividadCargada({ inicial }) {
       const actualizada = await modificarActividad(actividad.id, {
         etapaId: editables.etapaId ? Number(editables.etapaId) : null,
         descripcion: editables.descripcion,
+        prioridad: editables.prioridad || null,
+        fechaPlanificada: editables.fechaPlanificada || null,
       });
       setActividad(actualizada);
       setEditables({
         etapaId: String(actualizada.etapaId ?? ''),
         descripcion: actualizada.descripcion || '',
+        prioridad: actualizada.prioridad || '',
+        fechaPlanificada: actualizada.fechaPlanificada || '',
       });
       setConfirmado('Los cambios se guardaron correctamente.');
     } catch (error) {
@@ -187,6 +200,28 @@ function ActividadCargada({ inicial }) {
             value={editables.descripcion}
             onChange={alCambiar}
             error={errores.descripcion}
+          />
+
+          {/* RF-021: replanificar es mover el dia o cambiar la prioridad. Los
+              dos se pueden dejar vacios, que es un estado legitimo mientras
+              RF-019 no los exija al registrar. */}
+          <Campo
+            etiqueta="Prioridad"
+            nombre="prioridad"
+            opciones={PRIORIDADES_ACTIVIDAD}
+            value={editables.prioridad}
+            onChange={alCambiar}
+            error={errores.prioridad}
+            pista="Opcional. Ordena las actividades en el panel del desarrollador."
+          />
+          <Campo
+            etiqueta="Dia planificado"
+            nombre="fechaPlanificada"
+            tipo="date"
+            value={editables.fechaPlanificada}
+            onChange={alCambiar}
+            error={errores.fechaPlanificada}
+            pista="Opcional. Es el dia en que la actividad aparece en el panel."
           />
 
           <div className={estilos.accionesPerfil}>

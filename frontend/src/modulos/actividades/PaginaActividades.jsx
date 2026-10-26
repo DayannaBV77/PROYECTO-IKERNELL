@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ClipboardList, Plus, Search } from 'lucide-react';
 
-import { buscarActividades } from '../../api/actividades.js';
+import { ETIQUETA_PRIORIDAD, buscarActividades } from '../../api/actividades.js';
 import EstadoCarga from '../../componentes/estados/EstadoCarga.jsx';
 import EstadoError from '../../componentes/estados/EstadoError.jsx';
 import EstadoVacio from '../../componentes/estados/EstadoVacio.jsx';
@@ -11,6 +11,7 @@ import Campo from '../../componentes/ui/Campo.jsx';
 import Seccion from '../../componentes/ui/Seccion.jsx';
 import estilos from '../../estilos/gestion.module.css';
 import { usePeticion } from '../../hooks/usePeticion.js';
+import { formatearFecha } from '../../utilidades/formato.js';
 import {
   useContextoDeProyecto,
   useProyectosComoOpciones,
@@ -155,6 +156,8 @@ export default function PaginaActividades() {
                   <th scope="col">Proyecto</th>
                   <th scope="col">Etapa</th>
                   <th scope="col">Desarrollador</th>
+                  <th scope="col">Prioridad</th>
+                  <th scope="col">Dia</th>
                   <th scope="col">Estado</th>
                   <th scope="col">
                     <span className="solo-lectores">Acciones</span>
@@ -171,6 +174,10 @@ export default function PaginaActividades() {
                     <td>{actividad.proyectoNombre}</td>
                     <td>{actividad.etapaNombre}</td>
                     <td>{actividad.desarrolladorNombreCompleto}</td>
+                    {/* Prioridad y dia los anade RF-038; pueden faltar en las
+                        actividades registradas antes de que existieran. */}
+                    <td>{ETIQUETA_PRIORIDAD[actividad.prioridad] || '—'}</td>
+                    <td>{formatearFecha(actividad.fechaPlanificada) || '—'}</td>
                     {/* Los estados posibles los define la empresa (D-04). */}
                     <td>{actividad.estado || '—'}</td>
                     <td>

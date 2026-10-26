@@ -1,5 +1,9 @@
 package com.PROYECTO.IKERNELL.backend.actividades.dto;
 
+import java.time.LocalDate;
+
+import com.PROYECTO.IKERNELL.backend.actividades.domain.PrioridadActividad;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -19,6 +23,11 @@ import jakarta.validation.constraints.Size;
  *
  * <p>PENDIENTE: HU-13 T1 deja abierto "si se pedira el motivo al modificarla".
  * No se incluye campo de motivo porque no habria donde conservarlo.
+ *
+ * <p>La prioridad y la fecha planificada si se admiten, y son justamente lo que
+ * RF-021 llama replanificar ante una eventualidad. Opcionales, igual que al
+ * registrar: enviarlas vacias las deja sin valor, que es un estado legitimo
+ * mientras RF-019 no las exija.
  */
 public record ModificacionActividadRequest(
 
@@ -27,5 +36,9 @@ public record ModificacionActividadRequest(
 
 		@NotBlank(message = "Debe indicar la descripcion de la actividad.")
 		@Size(max = 2000, message = "La descripcion admite hasta 2000 caracteres.")
-		String descripcion) {
+		String descripcion,
+
+		PrioridadActividad prioridad,
+
+		LocalDate fechaPlanificada) {
 }

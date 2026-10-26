@@ -81,7 +81,9 @@ class MisActividadesControllerTest {
 	}
 
 	private Actividad actividadPara(Trabajador trabajador, String descripcion) {
-		return actividades.saveAndFlush(new Actividad(etapa, trabajador, descripcion));
+		// Sin prioridad ni fecha planificada: RF-019 no las exige, de modo que una
+		// actividad valida puede no tenerlas (los dos campos los anade RF-038).
+		return actividades.saveAndFlush(new Actividad(etapa, trabajador, descripcion, null, null));
 	}
 
 	@Test

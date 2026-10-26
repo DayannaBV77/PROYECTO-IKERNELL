@@ -1,7 +1,11 @@
 import { useCallback, useState } from 'react';
 import { CircleCheck, ClipboardCheck, Play, TriangleAlert } from 'lucide-react';
 
-import { obtenerMisActividades, registrarEjecucion } from '../../api/actividades.js';
+import {
+  ETIQUETA_PRIORIDAD,
+  obtenerMisActividades,
+  registrarEjecucion,
+} from '../../api/actividades.js';
 import EstadoCarga from '../../componentes/estados/EstadoCarga.jsx';
 import EstadoError from '../../componentes/estados/EstadoError.jsx';
 import EstadoVacio from '../../componentes/estados/EstadoVacio.jsx';
@@ -10,6 +14,7 @@ import Campo from '../../componentes/ui/Campo.jsx';
 import Seccion from '../../componentes/ui/Seccion.jsx';
 import estilos from '../../estilos/gestion.module.css';
 import { usePeticion } from '../../hooks/usePeticion.js';
+import { formatearFecha } from '../../utilidades/formato.js';
 
 /**
  * Actividades asignadas al trabajador y su ejecucion (RF-022, HU-16).
@@ -69,6 +74,12 @@ export default function PaginaMisActividades() {
                 <div>
                   <p className={estilos.actividadProyecto}>
                     {actividad.proyectoNombre} · {actividad.etapaNombre}
+                    {/* Prioridad y dia los anade RF-038 y pueden faltar: solo se
+                        muestran cuando el lider los diligencio. */}
+                    {actividad.prioridad &&
+                      ` · Prioridad ${ETIQUETA_PRIORIDAD[actividad.prioridad]}`}
+                    {actividad.fechaPlanificada &&
+                      ` · ${formatearFecha(actividad.fechaPlanificada)}`}
                   </p>
                   <p className={estilos.actividadDescripcion}>{actividad.descripcion}</p>
                 </div>

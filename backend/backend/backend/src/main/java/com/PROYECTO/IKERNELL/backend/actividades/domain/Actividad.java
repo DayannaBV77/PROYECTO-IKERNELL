@@ -1,11 +1,15 @@
 package com.PROYECTO.IKERNELL.backend.actividades.domain;
 
+import java.time.LocalDate;
+
 import com.PROYECTO.IKERNELL.backend.proyectos.domain.Etapa;
 import com.PROYECTO.IKERNELL.backend.proyectos.domain.Proyecto;
 import com.PROYECTO.IKERNELL.backend.trabajadores.domain.Trabajador;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -25,6 +29,12 @@ import jakarta.persistence.Table;
  * <p>No hay setter para {@code desarrollador}: RF-021 manda conservar la
  * asociacion con el desarrollador al modificar la actividad, y HU-13 C05 lo
  * confirma. Cambiarlo requeriria una regla de negocio que todavia no existe.
+ *
+ * <p>{@code prioridad} y {@code fechaPlanificada} los anade RF-038, que las
+ * enumera entre sus entradas y exige mostrar "las actividades pendientes del dia
+ * ordenadas por prioridad". RF-019 no las pide al registrar, de modo que las dos
+ * admiten nulo: las actividades registradas antes no las tienen y no se les
+ * puede inventar un valor.
  */
 @Entity
 @Table(name = "actividad")
@@ -52,14 +62,29 @@ public class Actividad {
 	@Column(length = 20)
 	private String estado;
 
+	/**
+	 * Prioridad con que se planifico. Nula mientras el lider no la indique;
+	 * valores PROPUESTOS en {@link PrioridadActividad} (D-29).
+	 */
+	@Enumerated(EnumType.STRING)
+	@Column(length = 10)
+	private PrioridadActividad prioridad;
+
+	/** Dia para el que se planifica. Es lo que responde "las del dia" de RF-038. */
+	@Column(name = "fecha_planificada")
+	private LocalDate fechaPlanificada;
+
 	protected Actividad() {
 		// requerido por JPA
 	}
 
-	public Actividad(Etapa etapa, Trabajador desarrollador, String descripcion) {
+	public Actividad(Etapa etapa, Trabajador desarrollador, String descripcion,
+			PrioridadActividad prioridad, LocalDate fechaPlanificada) {
 		this.etapa = etapa;
 		this.desarrollador = desarrollador;
 		this.descripcion = descripcion;
+		this.prioridad = prioridad;
+		this.fechaPlanificada = fechaPlanificada;
 	}
 
 	/** RN-06: solo el desarrollador asignado puede ejecutarla (HU-16 C03). */
@@ -99,6 +124,22 @@ public class Actividad {
 
 	public String getEstado() {
 		return estado;
+	}
+
+	public PrioridadActividad getPrioridad() {
+		return prioridad;
+	}
+
+	public void setPrioridad(PrioridadActividad prioridad) {
+		this.prioridad = prioridad;
+	}
+
+	public LocalDate getFechaPlanificada() {
+		return fechaPlanificada;
+	}
+
+	public void setFechaPlanificada(LocalDate fechaPlanificada) {
+		this.fechaPlanificada = fechaPlanificada;
 	}
 
 }

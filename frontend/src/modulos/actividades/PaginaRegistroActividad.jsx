@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, TriangleAlert } from 'lucide-react';
 
-import { registrarActividad } from '../../api/actividades.js';
+import { PRIORIDADES_ACTIVIDAD, registrarActividad } from '../../api/actividades.js';
 import Boton from '../../componentes/ui/Boton.jsx';
 import Campo from '../../componentes/ui/Campo.jsx';
 import Confirmacion from '../../componentes/ui/Confirmacion.jsx';
@@ -13,7 +13,14 @@ import {
   useProyectosComoOpciones,
 } from './componentes/useContextoDeProyecto.js';
 
-const VACIO = { proyectoId: '', etapaId: '', desarrolladorId: '', descripcion: '' };
+const VACIO = {
+  proyectoId: '',
+  etapaId: '',
+  desarrolladorId: '',
+  descripcion: '',
+  prioridad: '',
+  fechaPlanificada: '',
+};
 
 /**
  * Registro de una actividad (RF-019, HU-13 C01 y C02).
@@ -63,6 +70,10 @@ export default function PaginaRegistroActividad() {
           etapaId: valores.etapaId ? Number(valores.etapaId) : null,
           desarrolladorId: valores.desarrolladorId ? Number(valores.desarrolladorId) : null,
           descripcion: valores.descripcion,
+          // Opcionales: las pide RF-038 para el panel del desarrollador, no
+          // RF-019 para el registro. Vacias viajan como null.
+          prioridad: valores.prioridad || null,
+          fechaPlanificada: valores.fechaPlanificada || null,
         },
         confirmado,
       );
@@ -158,6 +169,30 @@ export default function PaginaRegistroActividad() {
           onChange={alCambiar}
           error={errores.descripcion}
         />
+
+        {/* Prioridad y dia: los pide RF-038 para el panel «Mi Dia» del
+            desarrollador. No son obligatorios, porque RF-019 no los exige al
+            registrar; sin ellos la actividad no aparece en el panel del dia. */}
+        <div className={estilos.criterios}>
+          <Campo
+            etiqueta="Prioridad"
+            nombre="prioridad"
+            opciones={PRIORIDADES_ACTIVIDAD}
+            value={valores.prioridad}
+            onChange={alCambiar}
+            error={errores.prioridad}
+            pista="Opcional. Ordena las actividades en el panel del desarrollador."
+          />
+          <Campo
+            etiqueta="Dia planificado"
+            nombre="fechaPlanificada"
+            tipo="date"
+            value={valores.fechaPlanificada}
+            onChange={alCambiar}
+            error={errores.fechaPlanificada}
+            pista="Opcional. Es el dia en que la actividad aparece en el panel."
+          />
+        </div>
 
         <div className={estilos.accionesBuscador}>
           <Boton type="submit" icono={Save} disabled={guardando}>

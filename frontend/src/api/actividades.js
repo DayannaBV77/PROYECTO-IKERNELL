@@ -14,6 +14,26 @@ import { api, construirConsulta } from './cliente.js';
  */
 
 /**
+ * Prioridades con que el lider planifica una actividad.
+ *
+ * PROPUESTA pendiente de confirmar (D-29): ningun documento las enumera. RF-038
+ * exige mostrar las actividades del dia "ordenadas por prioridad" y da el dato
+ * por registrado, pero no dice cuales son los valores. El orden del arreglo es
+ * el de severidad, de mayor a menor.
+ */
+export const PRIORIDADES_ACTIVIDAD = [
+  { valor: 'ALTA', texto: 'Alta' },
+  { valor: 'MEDIA', texto: 'Media' },
+  { valor: 'BAJA', texto: 'Baja' },
+];
+
+export const ETIQUETA_PRIORIDAD = {
+  ALTA: 'Alta',
+  MEDIA: 'Media',
+  BAJA: 'Baja',
+};
+
+/**
  * RF-019, HU-13 C01: registra una actividad en una etapa del proyecto.
  *
  * `confirmado` cubre D-24: si el desarrollador no esta asignado al proyecto, el
@@ -37,8 +57,10 @@ export function obtenerActividad(id, opciones) {
 /**
  * RF-021, HU-13 C05: modifica la actividad ante una eventualidad.
  *
- * Admite etapa y descripcion. El desarrollador no se puede cambiar: RF-021
- * ordena conservar esa asociacion, y el servidor no acepta el campo.
+ * Admite etapa, descripcion, prioridad y fecha planificada: replanificar ante
+ * una eventualidad es justamente mover el dia o cambiar la prioridad. El
+ * desarrollador no se puede cambiar: RF-021 ordena conservar esa asociacion, y
+ * el servidor no acepta el campo.
  */
 export function modificarActividad(id, datos) {
   return api.reemplazar(`/api/actividades/${id}`, datos);

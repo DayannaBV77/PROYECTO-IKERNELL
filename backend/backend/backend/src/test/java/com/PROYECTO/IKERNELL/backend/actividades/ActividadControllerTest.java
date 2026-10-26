@@ -310,7 +310,8 @@ class ActividadControllerTest {
 	@DisplayName("open-in-view=false: la actividad llega con etapa, proyecto y desarrollador cargados")
 	void laActividadLlegaConSusRelacionesCargadas() {
 		Actividad registrada = servicioActividades.registrar(proyecto.getId(),
-				new RegistroActividadRequest(etapa.getId(), desarrollador.getId(), "Actividad de prueba"),
+				new RegistroActividadRequest(etapa.getId(), desarrollador.getId(), "Actividad de prueba",
+						null, null),
 				false);
 
 		// Al registrar, la respuesta se construye con la entidad recien guardada:
@@ -343,6 +344,66 @@ class ActividadControllerTest {
 		assertThat(Hibernate.isInitialized(encontradas.get(0).getEtapa())).isTrue();
 		assertThat(Hibernate.isInitialized(encontradas.get(0).getEtapa().getProyecto())).isTrue();
 		assertThat(Hibernate.isInitialized(encontradas.get(0).getDesarrollador())).isTrue();
+	}
+
+	// ----------------------------------------------- Prioridad y fecha (RF-038)
+
+	@Test
+	@DisplayName("RF-038: el lider registra la actividad con prioridad y fecha planificada")
+	void registraConPrioridadYFecha() throws Exception {
+		mockMvc.perform(post("/api/actividades/proyecto/" + proyecto.getId())
+				.with(csrf()).with(authentication(lider))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{"etapaId":%d,"desarrolladorId":%d,"descripcion":"Tarea del dia",
+						 "prioridad":"ALTA","fechaPlanificada":"2026-10-25"}
+						""".formatted(etapa.getId(), desarrollador.getId())))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.prioridad").value("ALTA"))
+				.andExpect(jsonPath("$.fechaPlanificada").value("2026-10-25"));
+	}
+
+	@Test
+	@DisplayName("RF-019: sin prioridad ni fecha la actividad se registra igual")
+	void registraSinPrioridadNiFecha() throws Exception {
+		// Las dos las anade RF-038 para el panel del desarrollador; RF-019 no las
+		// exige, de modo que exigirlas aqui inventaria una obligacion.
+		mockMvc.perform(post("/api/actividades/proyecto/" + proyecto.getId())
+				.with(csrf()).with(authentication(lider))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(cuerpoRegistro(etapa.getId(), desarrollador.getId(), "Tarea sin planificar")))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.prioridad").doesNotExist())
+				.andExpect(jsonPath("$.fechaPlanificada").doesNotExist());
+	}
+
+	@Test
+	@DisplayName("RF-021: replanificar cambia la prioridad y el dia de la actividad")
+	void replanificaPrioridadYFecha() throws Exception {
+		Long id = registrarActividad("Tarea a replanificar");
+
+		mockMvc.perform(put("/api/actividades/" + id).with(csrf()).with(authentication(lider))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{"etapaId":%d,"descripcion":"Tarea a replanificar",
+						 "prioridad":"BAJA","fechaPlanificada":"2026-11-02"}
+						""".formatted(etapa.getId())))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.prioridad").value("BAJA"))
+				.andExpect(jsonPath("$.fechaPlanificada").value("2026-11-02"));
+	}
+
+	@Test
+	@DisplayName("D-29: una prioridad fuera de los valores propuestos se rechaza")
+	void rechazaUnaPrioridadDesconocida() throws Exception {
+		mockMvc.perform(post("/api/actividades/proyecto/" + proyecto.getId())
+				.with(csrf()).with(authentication(lider))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{"etapaId":%d,"desarrolladorId":%d,"descripcion":"Tarea",
+						 "prioridad":"URGENTISIMA"}
+						""".formatted(etapa.getId(), desarrollador.getId())))
+				.andExpect(status().isBadRequest());
 	}
 
 }

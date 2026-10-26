@@ -109,7 +109,7 @@ class ReporteControllerTest {
 	}
 
 	private Actividad nuevaActividad(Trabajador asignado, String descripcion) {
-		return actividades.saveAndFlush(new Actividad(etapa, asignado, descripcion));
+		return actividades.saveAndFlush(new Actividad(etapa, asignado, descripcion, null, null));
 	}
 
 	private void registrarEjecucion(Long actividadId, boolean finalizada) throws Exception {

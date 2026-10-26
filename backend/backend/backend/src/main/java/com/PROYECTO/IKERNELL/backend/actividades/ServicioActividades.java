@@ -73,7 +73,8 @@ public class ServicioActividades {
 					List.of("%s no tiene una asignacion activa como desarrollador en el proyecto '%s'."
 							.formatted(desarrollador.nombreCompleto(), etapa.getProyecto().getNombre())));
 		}
-		return actividades.save(new Actividad(etapa, desarrollador, peticion.descripcion()));
+		return actividades.save(new Actividad(etapa, desarrollador, peticion.descripcion(),
+				peticion.prioridad(), peticion.fechaPlanificada()));
 	}
 
 	/** RF-020, HU-13 C03 y C04. */
@@ -103,6 +104,12 @@ public class ServicioActividades {
 
 		actividad.setEtapa(nuevaEtapa);
 		actividad.setDescripcion(peticion.descripcion());
+		// RF-021: replanificar ante una eventualidad incluye mover el dia y cambiar
+		// la prioridad. Se asignan tal cual llegan, nulos incluidos, porque el
+		// formulario envia siempre los dos campos y vaciarlos es una decision del
+		// lider, no un dato que falte.
+		actividad.setPrioridad(peticion.prioridad());
+		actividad.setFechaPlanificada(peticion.fechaPlanificada());
 		return actividades.save(actividad);
 	}
 
