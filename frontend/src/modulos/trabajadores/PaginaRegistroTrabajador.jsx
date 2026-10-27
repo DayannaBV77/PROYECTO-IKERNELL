@@ -12,7 +12,9 @@ import Campo from '../../componentes/ui/Campo.jsx';
 import Seccion from '../../componentes/ui/Seccion.jsx';
 import estilos from '../../estilos/gestion.module.css';
 import { aFechaIso } from '../../utilidades/formato.js';
+import SelectorHabilidades from './componentes/SelectorHabilidades.jsx';
 import archivo from './componentes/SubidaFotografia.module.css';
+import { validarCampoTrabajador, validarTrabajador } from './validaciones.js';
 
 const VACIO = {
   identificacion: '',
@@ -23,6 +25,7 @@ const VACIO = {
   profesion: '',
   especialidadDesarrollo: '',
   tipoTrabajador: '',
+  habilidades: [],
 };
 
 /**
@@ -32,8 +35,9 @@ const VACIO = {
  * responde 400 con el detalle por campo, y cuando la identificacion ya existe
  * responde 409 con su mensaje. En los dos casos (C02 y C03) el formulario marca
  * lo que corresponde y conserva lo escrito, que es justo lo que los criterios
- * exigen (RN-13). Por eso no se valida nada antes de enviar: repetir aqui las
- * reglas del servidor solo llevaria a que los dos lados discrepen.
+ * exigen (RN-13). Los campos se validan en el cliente mientras se editan para
+ * orientar al usuario; el backend conserva la validacion autoritativa y la
+ * comprobacion de identificaciones duplicadas.
  *
  * La fecha de nacimiento es el unico dato que no viaja tal cual: se normaliza a
  * ISO (AAAA-MM-DD) con `aFechaIso`, que es el formato que el servidor convierte
@@ -60,11 +64,29 @@ export default function PaginaRegistroTrabajador() {
   function alCambiar(evento) {
     const { name, value } = evento.target;
     setValores((previos) => ({ ...previos, [name]: value }));
-    setErrores((previos) => (previos[name] ? { ...previos, [name]: undefined } : previos));
+    setFallo(null);
+    const error = validarCampoTrabajador(name, value);
+    setErrores((previos) => {
+      const siguientes = { ...previos };
+      if (error) {
+        siguientes[name] = error;
+      } else {
+        delete siguientes[name];
+      }
+      return siguientes;
+    });
   }
 
   async function alEnviar(evento) {
     evento.preventDefault();
+
+    const erroresLocales = validarTrabajador(valores);
+    if (Object.keys(erroresLocales).length > 0) {
+      setErrores(erroresLocales);
+      setFallo(null);
+      return;
+    }
+
     setGuardando(true);
     setFallo(null);
     setErrores({});
@@ -75,6 +97,8 @@ export default function PaginaRegistroTrabajador() {
     } catch (error) {
       if (error.campos) {
         setErrores(error.campos);
+      } else if (error.estado === 409 && !error.advertencias) {
+        setErrores({ identificacion: error.message });
       }
       setFallo(error.message);
       setGuardando(false);
@@ -125,7 +149,9 @@ export default function PaginaRegistroTrabajador() {
             value={valores.identificacion}
             onChange={alCambiar}
             error={errores.identificacion}
-            pista="No se podra modificar despues."
+            pista="Solo digitos; maximo 11. No se podra modificar despues."
+            maxLength={11}
+            inputMode="numeric"
           />
           <Campo
             etiqueta="Nombre"
@@ -134,6 +160,7 @@ export default function PaginaRegistroTrabajador() {
             value={valores.nombre}
             onChange={alCambiar}
             error={errores.nombre}
+            maxLength={100}
           />
           <Campo
             etiqueta="Apellido"
@@ -142,6 +169,7 @@ export default function PaginaRegistroTrabajador() {
             value={valores.apellido}
             onChange={alCambiar}
             error={errores.apellido}
+            maxLength={100}
           />
           <Campo
             etiqueta="Fecha de nacimiento"
@@ -159,6 +187,8 @@ export default function PaginaRegistroTrabajador() {
             value={valores.direccion}
             onChange={alCambiar}
             error={errores.direccion}
+            pista="Se valida el formato, no se comprueba que la direccion exista."
+            maxLength={200}
           />
           <Campo
             etiqueta="Profesion"
@@ -167,6 +197,7 @@ export default function PaginaRegistroTrabajador() {
             value={valores.profesion}
             onChange={alCambiar}
             error={errores.profesion}
+            maxLength={100}
           />
           <Campo
             etiqueta="Especialidad de desarrollo"
@@ -175,6 +206,8 @@ export default function PaginaRegistroTrabajador() {
             value={valores.especialidadDesarrollo}
             onChange={alCambiar}
             error={errores.especialidadDesarrollo}
+            maxLength={100}
+            pista="Este campo de texto se conserva; las areas y tecnologias se eligen abajo."
           />
           <Campo
             etiqueta="Tipo de trabajador"
@@ -186,6 +219,11 @@ export default function PaginaRegistroTrabajador() {
             error={errores.tipoTrabajador}
           />
         </div>
+
+        <SelectorHabilidades
+          seleccionadas={valores.habilidades}
+          onChange={(habilidades) => setValores((previos) => ({ ...previos, habilidades }))}
+        />
 
         <div className={archivo.campoArchivo}>
           <label className={estilos.rotulo} htmlFor="fotografia-nueva">

@@ -19,6 +19,7 @@ import estilos from '../../estilos/gestion.module.css';
 import { usePeticion } from '../../hooks/usePeticion.js';
 import { formatearFecha } from '../../utilidades/formato.js';
 import SubidaFotografia from './componentes/SubidaFotografia.jsx';
+import SelectorHabilidades from './componentes/SelectorHabilidades.jsx';
 
 /** Los tres campos que RF-005 autoriza a modificar. */
 function editablesDe(trabajador) {
@@ -26,6 +27,7 @@ function editablesDe(trabajador) {
     direccion: trabajador.direccion || '',
     especialidadDesarrollo: trabajador.especialidadDesarrollo || '',
     tipoTrabajador: trabajador.tipoTrabajador || '',
+    habilidades: trabajador.habilidades || [],
   };
 }
 
@@ -123,6 +125,11 @@ function PerfilCargado({ inicial }) {
     const { name, value } = evento.target;
     setEditables((previos) => ({ ...previos, [name]: value }));
     setErrores((previos) => (previos[name] ? { ...previos, [name]: undefined } : previos));
+    setConfirmado(null);
+  }
+
+  function alCambiarHabilidades(habilidades) {
+    setEditables((previos) => ({ ...previos, habilidades }));
     setConfirmado(null);
   }
 
@@ -257,6 +264,7 @@ function PerfilCargado({ inicial }) {
             value={editables.especialidadDesarrollo}
             onChange={alCambiar}
             error={errores.especialidadDesarrollo}
+            pista="El texto historico se conserva; las nuevas habilidades se gestionan abajo."
           />
           <Campo
             etiqueta="Tipo de trabajador"
@@ -266,6 +274,11 @@ function PerfilCargado({ inicial }) {
             value={editables.tipoTrabajador}
             onChange={alCambiar}
             error={errores.tipoTrabajador}
+          />
+
+          <SelectorHabilidades
+            seleccionadas={editables.habilidades}
+            onChange={alCambiarHabilidades}
           />
 
           <div className={estilos.accionesPerfil}>

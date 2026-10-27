@@ -1,5 +1,7 @@
 package com.PROYECTO.IKERNELL.backend.proyectos;
 
+import java.time.LocalDate;
+
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -83,6 +85,82 @@ class ProyectoControllerTest {
 				.andExpect(jsonPath("$.nombre").value("Portal de clientes"))
 				// HU-08 C04: queda habilitado y disponible
 				.andExpect(jsonPath("$.estadoHabilitacion").value("HABILITADO"));
+	}
+
+	@Test
+	@DisplayName("El lider inicia la ejecucion y no puede volver a iniciarla")
+	void registraInicioRealUnaSolaVez() throws Exception {
+		Long id = registrarProyecto("Proyecto por iniciar");
+		String hoy = LocalDate.now().toString();
+
+		mockMvc.perform(post("/api/proyectos/" + id + "/inicio").with(csrf()).with(authentication(lider)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.estadoOperativo").value("EN_EJECUCION"))
+				.andExpect(jsonPath("$.fechaInicioReal").value(hoy))
+				.andExpect(jsonPath("$.fechaFinReal").doesNotExist());
+
+		mockMvc.perform(post("/api/proyectos/" + id + "/inicio").with(csrf()).with(authentication(lider)))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.mensaje").value(
+						"El proyecto ya tiene un estado operativo y no se puede iniciar nuevamente."));
+	}
+
+	@Test
+	@DisplayName("El lider finaliza un proyecto iniciado y quedan guardadas ambas fechas")
+	void registraFinalizacionReal() throws Exception {
+		Long id = registrarProyecto("Proyecto por finalizar");
+		String hoy = LocalDate.now().toString();
+
+		mockMvc.perform(post("/api/proyectos/" + id + "/inicio").with(csrf()).with(authentication(lider)))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(post("/api/proyectos/" + id + "/finalizacion")
+				.with(csrf()).with(authentication(lider)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.estadoOperativo").value("FINALIZADO"))
+				.andExpect(jsonPath("$.fechaInicioReal").value(hoy))
+				.andExpect(jsonPath("$.fechaFinReal").value(hoy))
+				.andExpect(jsonPath("$.excedeSeisAnios").value(false));
+	}
+
+	@Test
+	@DisplayName("Permite finalizar despues de seis anos e informa que se excedio el limite")
+	void permiteYAdvierteCuandoSuperaSeisAnios() throws Exception {
+		Long id = registrarProyecto("Proyecto de larga duracion");
+		Proyecto proyecto = proyectos.findById(id).orElseThrow();
+		proyecto.iniciar(LocalDate.now().minusYears(6).minusDays(1));
+		proyectos.saveAndFlush(proyecto);
+
+		mockMvc.perform(post("/api/proyectos/" + id + "/finalizacion")
+				.with(csrf()).with(authentication(lider)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.estadoOperativo").value("FINALIZADO"))
+				.andExpect(jsonPath("$.excedeSeisAnios").value(true));
+	}
+
+	@Test
+	@DisplayName("No se puede finalizar un proyecto que no esta en ejecucion")
+	void rechazaFinalizacionAntesDelInicio() throws Exception {
+		Long id = registrarProyecto("Proyecto aun no iniciado");
+
+		mockMvc.perform(post("/api/proyectos/" + id + "/finalizacion")
+				.with(csrf()).with(authentication(lider)))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.mensaje").value("Solo se puede finalizar un proyecto en ejecucion."));
+	}
+
+	@Test
+	@DisplayName("La duracion exacta de seis anos no excede el limite y un dia mas si")
+	void calculaExcesoDeSeisAnios() {
+		Proyecto enLimite = new Proyecto("En el limite", null, null);
+		enLimite.iniciar(LocalDate.of(2020, 3, 1));
+		enLimite.finalizar(LocalDate.of(2026, 3, 1));
+		org.assertj.core.api.Assertions.assertThat(enLimite.excedeSeisAnios()).isFalse();
+
+		Proyecto sobreLimite = new Proyecto("Sobre el limite", null, null);
+		sobreLimite.iniciar(LocalDate.of(2020, 3, 1));
+		sobreLimite.finalizar(LocalDate.of(2026, 3, 2));
+		org.assertj.core.api.Assertions.assertThat(sobreLimite.excedeSeisAnios()).isTrue();
 	}
 
 	@Test
@@ -250,7 +328,7 @@ class ProyectoControllerTest {
 				.andExpect(jsonPath("$.mensajeAvance")
 						.value("El proyecto aun no tiene datos de avance registrados."))
 				// La respuesta explica por que no hay porcentaje (C-04, D-03).
-				.andExpect(jsonPath("$.datosPendientes.length()").value(4));
+				.andExpect(jsonPath("$.datosPendientes.length()").value(3));
 	}
 
 	@Test

@@ -14,6 +14,13 @@ export const ESTADOS_HABILITACION = [
   { valor: 'INHABILITADO', texto: 'Inhabilitado' },
 ];
 
+export function etiquetaEstadoOperativo(estado) {
+  return {
+    EN_EJECUCION: 'En ejecución',
+    FINALIZADO: 'Finalizado',
+  }[estado] || estado || 'Sin iniciar';
+}
+
 /** RF-013, HU-09 C01 y C02: busca por identificador, nombre o estado. */
 export function buscarProyectos(criterios, opciones) {
   return api.obtener(`/api/proyectos${construirConsulta(criterios)}`, opciones);
@@ -37,6 +44,16 @@ export function registrarProyecto(datos) {
 /** RF-014, HU-09 C03: modifica nombre y descripcion. */
 export function modificarProyecto(id, datos) {
   return api.reemplazar(`/api/proyectos/${id}`, datos);
+}
+
+/** Registra la fecha real de inicio del proyecto. */
+export function iniciarProyecto(id) {
+  return api.crear(`/api/proyectos/${id}/inicio`);
+}
+
+/** Registra la fecha real de finalizacion del proyecto. */
+export function finalizarProyecto(id) {
+  return api.crear(`/api/proyectos/${id}/finalizacion`);
 }
 
 /**

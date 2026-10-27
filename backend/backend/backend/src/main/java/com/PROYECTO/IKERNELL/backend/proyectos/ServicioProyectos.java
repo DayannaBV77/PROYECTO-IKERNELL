@@ -1,5 +1,6 @@
 package com.PROYECTO.IKERNELL.backend.proyectos;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -35,8 +36,7 @@ public class ServicioProyectos {
 	private static final List<String> DATOS_PENDIENTES_PARA_AVANCE = List.of(
 			"Los estados posibles de una actividad (D-04).",
 			"La formula de avance: por actividades cerradas, por etapas o ponderada (D-03).",
-			"Si las etapas tienen peso relativo (D-03).",
-			"Los valores posibles del estado operativo del proyecto (D-03).");
+			"Si las etapas tienen peso relativo (D-03).");
 
 	/** Los dos registros que HU-12 C02 nombra para decidir si hay datos de avance. */
 	private static final List<String> CONTEOS_QUE_DEFINEN_AVANCE = List.of(
@@ -94,6 +94,34 @@ public class ServicioProyectos {
 		Proyecto proyecto = obtener(id);
 		proyecto.setNombre(peticion.nombre());
 		proyecto.setDescripcion(peticion.descripcion());
+		return proyectos.save(proyecto);
+	}
+
+	/** Registra la fecha real en que empieza la ejecucion del proyecto. */
+	@Transactional
+	public Proyecto iniciar(Long id) {
+		Proyecto proyecto = obtener(id);
+		if (proyecto.getEstadoOperativo() != null) {
+			throw new ReglaNegocioException(
+					"El proyecto ya tiene un estado operativo y no se puede iniciar nuevamente.");
+		}
+		proyecto.iniciar(LocalDate.now());
+		return proyectos.save(proyecto);
+	}
+
+	/** Registra la fecha real de finalizacion y conserva el aviso si excede seis anos. */
+	@Transactional
+	public Proyecto finalizar(Long id) {
+		Proyecto proyecto = obtener(id);
+		if (!Proyecto.ESTADO_EN_EJECUCION.equals(proyecto.getEstadoOperativo())
+				|| proyecto.getFechaInicioReal() == null) {
+			throw new ReglaNegocioException("Solo se puede finalizar un proyecto en ejecucion.");
+		}
+		LocalDate fechaFin = LocalDate.now();
+		if (fechaFin.isBefore(proyecto.getFechaInicioReal())) {
+			throw new ReglaNegocioException("La fecha de finalizacion no puede ser anterior al inicio.");
+		}
+		proyecto.finalizar(fechaFin);
 		return proyectos.save(proyecto);
 	}
 
@@ -164,6 +192,9 @@ public class ServicioProyectos {
 				proyecto.getNombre(),
 				proyecto.getEstadoHabilitacion(),
 				proyecto.getEstadoOperativo(),
+				proyecto.getFechaInicioReal(),
+				proyecto.getFechaFinReal(),
+				proyecto.excedeSeisAnios(),
 				datosDisponibles,
 				mensajeAvance,
 				DATOS_PENDIENTES_PARA_AVANCE);

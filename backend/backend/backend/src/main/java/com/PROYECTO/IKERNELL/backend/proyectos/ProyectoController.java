@@ -105,6 +105,18 @@ public class ProyectoController {
 		return ProyectoResponse.de(servicio.modificar(id, peticion));
 	}
 
+	/** Registra la activacion real del proyecto por un lider. */
+	@PostMapping("/{id}/inicio")
+	public ProyectoResponse iniciar(@PathVariable Long id) {
+		return ProyectoResponse.de(servicio.iniciar(id));
+	}
+
+	/** Registra la finalizacion real del proyecto por un lider. */
+	@PostMapping("/{id}/finalizacion")
+	public ProyectoResponse finalizar(@PathVariable Long id) {
+		return ProyectoResponse.de(servicio.finalizar(id));
+	}
+
 	/**
 	 * Advertencias previas a la inhabilitacion (HU-09 C05).
 	 *

@@ -25,6 +25,7 @@ import com.PROYECTO.IKERNELL.backend.shared.domain.EstadoHabilitacion;
 import com.PROYECTO.IKERNELL.backend.trabajadores.ServicioTrabajadores.FotografiaGuardada;
 import com.PROYECTO.IKERNELL.backend.shared.dto.PaginaResponse;
 import com.PROYECTO.IKERNELL.backend.trabajadores.domain.TipoTrabajador;
+import com.PROYECTO.IKERNELL.backend.trabajadores.domain.Trabajador;
 import com.PROYECTO.IKERNELL.backend.trabajadores.dto.CriteriosBusquedaTrabajador;
 import com.PROYECTO.IKERNELL.backend.trabajadores.dto.ModificacionTrabajadorRequest;
 import com.PROYECTO.IKERNELL.backend.trabajadores.dto.RegistroTrabajadorRequest;
@@ -64,7 +65,7 @@ public class TrabajadorController {
 	@PostMapping
 	@ResponseStatus(HttpStatus.CREATED)
 	public TrabajadorResponse registrar(@Valid @RequestBody RegistroTrabajadorRequest peticion) {
-		return TrabajadorResponse.de(servicio.registrar(peticion));
+		return respuesta(servicio.registrar(peticion));
 	}
 
 	/**
@@ -101,19 +102,18 @@ public class TrabajadorController {
 	/** RF-004: abre el perfil elegido en la lista de resultados (HU-05 C01). */
 	@GetMapping("/{id}")
 	public TrabajadorResponse obtener(@PathVariable Long id) {
-		return TrabajadorResponse.de(servicio.obtener(id));
+		return respuesta(servicio.obtener(id));
 	}
 
 	/**
 	 * RF-005, HU-05 C03: modifica los campos autorizados.
 	 *
-	 * <p>El cuerpo solo admite direccion, especialidad y tipo. La identificacion
-	 * no es editable y no tiene representacion en la peticion.
+	 * <p>La identificacion no es editable y no tiene representacion en la peticion.
 	 */
 	@PutMapping("/{id}")
 	public TrabajadorResponse modificar(@PathVariable Long id,
 			@Valid @RequestBody ModificacionTrabajadorRequest peticion) {
-		return TrabajadorResponse.de(servicio.modificar(id, peticion));
+		return respuesta(servicio.modificar(id, peticion));
 	}
 
 	/**
@@ -125,7 +125,7 @@ public class TrabajadorController {
 	 */
 	@PostMapping("/{id}/inhabilitacion")
 	public TrabajadorResponse inhabilitar(@PathVariable Long id) {
-		return TrabajadorResponse.de(servicio.inhabilitar(id));
+		return respuesta(servicio.inhabilitar(id));
 	}
 
 	/**
@@ -165,7 +165,10 @@ public class TrabajadorController {
 	@PostMapping("/{id}/fotografia")
 	public TrabajadorResponse adjuntarFotografia(@PathVariable Long id,
 			@RequestPart("fotografia") MultipartFile fotografia) {
-		return TrabajadorResponse.de(servicio.adjuntarFotografia(id, fotografia));
+		return respuesta(servicio.adjuntarFotografia(id, fotografia));
 	}
 
+	private TrabajadorResponse respuesta(Trabajador trabajador) {
+		return TrabajadorResponse.de(trabajador, servicio.habilidadesDe(trabajador.getId()));
+	}
 }

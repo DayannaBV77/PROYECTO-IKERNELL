@@ -28,6 +28,8 @@ import org.springframework.web.context.WebApplicationContext;
 
 import com.PROYECTO.IKERNELL.backend.trabajadores.domain.TipoTrabajador;
 import com.PROYECTO.IKERNELL.backend.trabajadores.domain.Trabajador;
+import com.PROYECTO.IKERNELL.backend.trabajadores.domain.CategoriaHabilidad;
+import com.PROYECTO.IKERNELL.backend.trabajadores.domain.HabilidadTrabajador;
 
 /**
  * Gestion de trabajadores: un metodo por condicion de aceptacion de HU-04
@@ -46,6 +48,9 @@ class TrabajadorControllerTest {
 	@Autowired
 	private TrabajadorRepository trabajadores;
 
+	@Autowired
+	private HabilidadTrabajadorRepository habilidades;
+
 	private MockMvc mockMvc;
 
 	@BeforeEach
@@ -56,18 +61,22 @@ class TrabajadorControllerTest {
 	}
 
 	private String perfilCompleto(String identificacion, String tipo) {
+		return perfilCompleto(identificacion, tipo, "Calle 45 # 12-30");
+	}
+
+	private String perfilCompleto(String identificacion, String tipo, String direccion) {
 		return """
 				{
 				  "identificacion": "%s",
 				  "nombre": "Laura",
 				  "apellido": "Moreno",
 				  "fechaNacimiento": "1994-07-12",
-				  "direccion": "Calle 45 # 12-30",
+				  "direccion": "%s",
 				  "profesion": "Ingenieria de sistemas",
 				  "especialidadDesarrollo": "Backend",
 				  "tipoTrabajador": "%s"
 				}
-				""".formatted(identificacion, tipo);
+				""".formatted(identificacion, direccion, tipo);
 	}
 
 	private Trabajador registrarDirecto(String identificacion, String nombre, String apellido,
@@ -90,6 +99,66 @@ class TrabajadorControllerTest {
 				.andExpect(jsonPath("$.identificacion").value("4000000001"))
 				.andExpect(jsonPath("$.estado").value("HABILITADO"))
 				.andExpect(jsonPath("$.tieneFotografia").value(false));
+	}
+
+	@Test
+	@WithMockUser(roles = "COORDINADOR")
+	@DisplayName("Registra y consulta habilidades de categorias independientes")
+	void registraYConsultaHabilidades() throws Exception {
+		String perfilConHabilidades = perfilCompleto("4000000017", "DESARROLLADOR")
+				.replace("\"tipoTrabajador\": \"DESARROLLADOR\"",
+						"\"tipoTrabajador\": \"DESARROLLADOR\", \"habilidades\": ["
+								+ "{\"categoria\":\"AREA\",\"nombre\":\"Frontend\"},"
+								+ "{\"categoria\":\"LENGUAJE\",\"nombre\":\"Java\"},"
+								+ "{\"categoria\":\"FRAMEWORK\",\"nombre\":\"Django\"},"
+								+ "{\"categoria\":\"BASE_DATOS\",\"nombre\":\"PostgreSQL\"}]");
+
+		mockMvc.perform(post("/api/trabajadores").with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(perfilConHabilidades))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.habilidades.length()").value(4))
+				.andExpect(jsonPath("$.especialidadDesarrollo").value("Backend"));
+
+		Trabajador registrado = trabajadores.findByIdentificacion("4000000017").orElseThrow();
+		mockMvc.perform(get("/api/trabajadores/" + registrado.getId()))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.habilidades[0].categoria").value("AREA"))
+				.andExpect(jsonPath("$.habilidades[0].nombre").value("Frontend"));
+	}
+
+	@Test
+	@WithMockUser(roles = "COORDINADOR")
+	@DisplayName("Acepta nomenclatura urbana colombiana con ciudad")
+	void aceptaDireccionUrbanaConCiudad() throws Exception {
+		mockMvc.perform(post("/api/trabajadores").with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(perfilCompleto("4000000014", "DESARROLLADOR", "Calle 45 # 12-30, Bogotá")))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.direccion").value("Calle 45 # 12-30, Bogotá"));
+	}
+
+	@Test
+	@WithMockUser(roles = "COORDINADOR")
+	@DisplayName("Acepta referencias rurales")
+	void aceptaDireccionRural() throws Exception {
+		mockMvc.perform(post("/api/trabajadores").with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(perfilCompleto("4000000015", "DESARROLLADOR", "Vereda San Isidro, Finca El Porvenir")))
+				.andExpect(status().isCreated());
+	}
+
+	@Test
+	@WithMockUser(roles = "COORDINADOR")
+	@DisplayName("Rechaza direcciones con caracteres y formato no admitidos")
+	void rechazaDireccionConFormatoInvalido() throws Exception {
+		mockMvc.perform(post("/api/trabajadores").with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(perfilCompleto("4000000016", "DESARROLLADOR", "A@#")))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.campos.direccion").exists());
+
+		org.assertj.core.api.Assertions.assertThat(trabajadores.existsByIdentificacion("4000000016")).isFalse();
 	}
 
 	@Test
@@ -185,6 +254,32 @@ class TrabajadorControllerTest {
 				.content(perfilCompleto("4000000003", "DESARROLLADOR")))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.mensaje").value("La identificacion 4000000003 ya esta registrada."));
+	}
+
+	@Test
+	@WithMockUser(roles = "COORDINADOR")
+	@DisplayName("Rechaza identificaciones con caracteres que no son digitos")
+	void rechazaIdentificacionConLetras() throws Exception {
+		mockMvc.perform(post("/api/trabajadores").with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(perfilCompleto("AB-123", "DESARROLLADOR")))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.campos.identificacion").value("La identificacion solo puede contener digitos."));
+
+		org.assertj.core.api.Assertions.assertThat(trabajadores.existsByIdentificacion("AB-123")).isFalse();
+	}
+
+	@Test
+	@WithMockUser(roles = "COORDINADOR")
+	@DisplayName("Rechaza identificaciones de mas de once digitos")
+	void rechazaIdentificacionDeMasDeOnceDigitos() throws Exception {
+		mockMvc.perform(post("/api/trabajadores").with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(perfilCompleto("123456789012", "DESARROLLADOR")))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.campos.identificacion").value("La identificacion admite hasta 11 digitos."));
+
+		org.assertj.core.api.Assertions.assertThat(trabajadores.existsByIdentificacion("123456789012")).isFalse();
 	}
 
 	@Test
@@ -312,6 +407,54 @@ class TrabajadorControllerTest {
 				.andExpect(jsonPath("$.direccion").value("Avenida 68 # 10-20"))
 				.andExpect(jsonPath("$.especialidadDesarrollo").value("Frontend"))
 				.andExpect(jsonPath("$.tipoTrabajador").value("LIDER"));
+	}
+
+	@Test
+	@WithMockUser(roles = "COORDINADOR")
+	@DisplayName("Actualiza y retira selecciones sin modificar la especialidad historica")
+	void actualizaYRetiraHabilidades() throws Exception {
+		Trabajador trabajador = registrarDirecto("4100000017", "Ana", "Perez", "Ingenieria",
+				TipoTrabajador.DESARROLLADOR);
+		habilidades.saveAndFlush(new HabilidadTrabajador(
+				trabajador, CategoriaHabilidad.AREA, "Backend"));
+
+		mockMvc.perform(put("/api/trabajadores/" + trabajador.getId()).with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{"direccion":"Calle 2","especialidadDesarrollo":"Backend","tipoTrabajador":"DESARROLLADOR",
+						 "habilidades":[{"categoria":"LENGUAJE","nombre":"TypeScript"}]}
+						"""))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.habilidades.length()").value(1))
+				.andExpect(jsonPath("$.habilidades[0].nombre").value("TypeScript"))
+				.andExpect(jsonPath("$.especialidadDesarrollo").value("Backend"));
+
+		mockMvc.perform(put("/api/trabajadores/" + trabajador.getId()).with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{"direccion":"Calle 2","especialidadDesarrollo":"Backend","tipoTrabajador":"DESARROLLADOR",
+						 "habilidades":[]}
+						"""))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.habilidades.length()").value(0));
+	}
+
+	@Test
+	@WithMockUser(roles = "COORDINADOR")
+	@DisplayName("Rechaza habilidades que no pertenecen al catalogo autorizado")
+	void rechazaHabilidadFueraDelCatalogo() throws Exception {
+		String perfilConHabilidadInvalida = perfilCompleto("4000000018", "DESARROLLADOR")
+				.replace("\"tipoTrabajador\": \"DESARROLLADOR\"",
+						"\"tipoTrabajador\": \"DESARROLLADOR\", \"habilidades\": ["
+								+ "{\"categoria\":\"LENGUAJE\",\"nombre\":\"Ruby\"}]");
+
+		mockMvc.perform(post("/api/trabajadores").with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(perfilConHabilidadInvalida))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.mensaje").value("La habilidad seleccionada no pertenece al catalogo disponible."));
+
+		org.assertj.core.api.Assertions.assertThat(trabajadores.existsByIdentificacion("4000000018")).isFalse();
 	}
 
 	@Test

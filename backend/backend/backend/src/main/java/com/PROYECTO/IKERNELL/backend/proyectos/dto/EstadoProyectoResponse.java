@@ -1,5 +1,6 @@
 package com.PROYECTO.IKERNELL.backend.proyectos.dto;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -29,6 +30,9 @@ public record EstadoProyectoResponse(
 		String nombre,
 		EstadoHabilitacion estadoHabilitacion,
 		String estadoOperativo,
+		LocalDate fechaInicioReal,
+		LocalDate fechaFinReal,
+		boolean excedeSeisAnios,
 		Map<String, Long> datosDisponibles,
 		String mensajeAvance,
 		List<String> datosPendientes) {

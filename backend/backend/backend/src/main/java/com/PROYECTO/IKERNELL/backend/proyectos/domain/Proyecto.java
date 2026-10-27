@@ -1,5 +1,7 @@
 package com.PROYECTO.IKERNELL.backend.proyectos.domain;
 
+import java.time.LocalDate;
+
 import com.PROYECTO.IKERNELL.backend.shared.domain.EstadoHabilitacion;
 import com.PROYECTO.IKERNELL.backend.trabajadores.domain.Trabajador;
 
@@ -23,12 +25,15 @@ import jakarta.persistence.Table;
  *
  * <p>Separa deliberadamente dos nociones de estado (decision C-04):
  * {@code estadoHabilitacion}, confirmado y de dominio cerrado, y
- * {@code estadoOperativo}, cuyos valores debe definir la empresa (D-03). El
- * avance no es un atributo: se calcula al consultarlo.
+ * {@code estadoOperativo}, que registra el ciclo real de ejecucion. El avance
+ * no es un atributo: se calcula al consultarlo.
  */
 @Entity
 @Table(name = "proyecto")
 public class Proyecto {
+
+	public static final String ESTADO_EN_EJECUCION = "EN_EJECUCION";
+	public static final String ESTADO_FINALIZADO = "FINALIZADO";
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -44,13 +49,14 @@ public class Proyecto {
 	@Column(name = "estado_habilitacion", nullable = false, length = 15)
 	private EstadoHabilitacion estadoHabilitacion = EstadoHabilitacion.HABILITADO;
 
-	/**
-	 * Estado operativo registrado. Es {@code String} y no un enum porque los
-	 * valores posibles siguen sin definirse (D-03); convertirlo en enum ahora
-	 * seria inventar el dominio.
-	 */
 	@Column(name = "estado_operativo", length = 30)
 	private String estadoOperativo;
+
+	@Column(name = "fecha_inicio_real")
+	private LocalDate fechaInicioReal;
+
+	@Column(name = "fecha_fin_real")
+	private LocalDate fechaFinReal;
 
 	/**
 	 * Lider que registro el proyecto. Dato capturado pero todavia sin efecto en
@@ -111,8 +117,28 @@ public class Proyecto {
 		return estadoOperativo;
 	}
 
-	public void setEstadoOperativo(String estadoOperativo) {
-		this.estadoOperativo = estadoOperativo;
+	public LocalDate getFechaInicioReal() {
+		return fechaInicioReal;
+	}
+
+	public LocalDate getFechaFinReal() {
+		return fechaFinReal;
+	}
+
+	public void iniciar(LocalDate fecha) {
+		this.estadoOperativo = ESTADO_EN_EJECUCION;
+		this.fechaInicioReal = fecha;
+	}
+
+	public void finalizar(LocalDate fecha) {
+		this.estadoOperativo = ESTADO_FINALIZADO;
+		this.fechaFinReal = fecha;
+	}
+
+	public boolean excedeSeisAnios() {
+		return fechaInicioReal != null
+				&& fechaFinReal != null
+				&& fechaFinReal.isAfter(fechaInicioReal.plusYears(6));
 	}
 
 	public Trabajador getLiderResponsable() {

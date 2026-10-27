@@ -1,0 +1,113 @@
+.selector {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  padding: var(--s-4);
+  border: 1px solid var(--c-borde);
+  border-radius: var(--r-md);
+}
+
+.titulo,
+.seleccionadas h4 {
+  color: var(--c-marino-titulo);
+  font-size: var(--t-md);
+}
+
+.pista,
+.sinResultados,
+.seleccionadas p {
+  color: var(--c-texto-tenue);
+  font-size: var(--t-sm);
+}
+
+.etiqueta {
+  color: var(--c-marino-titulo);
+  font-size: var(--t-sm);
+  font-weight: var(--p-semi);
+}
+
+.busqueda {
+  width: 100%;
+  padding: var(--s-3) var(--s-4);
+  border: 1px solid var(--c-borde-campo);
+  border-radius: var(--r-md);
+  font: inherit;
+}
+
+.busqueda:focus {
+  outline: none;
+  border-color: var(--c-turquesa-fuerte);
+  box-shadow: var(--anillo-foco);
+}
+
+.categorias {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: var(--s-3);
+}
+
+.categoria {
+  min-width: 0;
+  padding: var(--s-3);
+  border: 1px solid var(--c-borde);
+  border-radius: var(--r-md);
+}
+
+.categoria legend {
+  padding-inline: var(--s-2);
+  color: var(--c-marino-titulo);
+  font-size: var(--t-sm);
+  font-weight: var(--p-semi);
+}
+
+.opciones {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--s-2);
+}
+
+.opcion {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: 36px;
+  font-size: var(--t-sm);
+}
+
+.opcion input {
+  accent-color: var(--c-turquesa-fuerte);
+}
+
+.seleccionadas {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.seleccionadas ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  padding: 0;
+  list-style: none;
+}
+
+.seleccionadas li {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-1) var(--s-2);
+  border: 1px solid var(--c-borde-tarjeta);
+  border-radius: var(--r-full);
+  background: var(--c-superficie-tenue);
+  font-size: var(--t-xs);
+}
+
+.seleccionadas button {
+  border: 0;
+  padding: var(--s-1);
+  color: var(--c-marino-titulo);
+  background: transparent;
+  text-decoration: underline;
+  cursor: pointer;
+}

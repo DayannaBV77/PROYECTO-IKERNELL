@@ -2,7 +2,11 @@ import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FolderKanban, FolderPlus, Search } from 'lucide-react';
 
-import { ESTADOS_HABILITACION, buscarProyectos } from '../../api/proyectos.js';
+import {
+  ESTADOS_HABILITACION,
+  buscarProyectos,
+  etiquetaEstadoOperativo,
+} from '../../api/proyectos.js';
 import EstadoCarga from '../../componentes/estados/EstadoCarga.jsx';
 import EstadoError from '../../componentes/estados/EstadoError.jsx';
 import EstadoVacio from '../../componentes/estados/EstadoVacio.jsx';
@@ -134,9 +138,7 @@ export default function PaginaProyectos() {
                     <td>
                       <EtiquetaEstado estado={proyecto.estadoHabilitacion} />
                     </td>
-                    {/* Los valores del estado operativo los define la empresa
-                        (D-03); mientras no existan, la columna queda vacia. */}
-                    <td>{proyecto.estadoOperativo || '—'}</td>
+                    <td>{etiquetaEstadoOperativo(proyecto.estadoOperativo)}</td>
                     <td>
                       <Link className={estilos.abrir} to={`/app/proyectos/${proyecto.id}`}>
                         Abrir detalle

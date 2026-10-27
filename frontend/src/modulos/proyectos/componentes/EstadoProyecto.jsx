@@ -1,7 +1,10 @@
 import { useCallback } from 'react';
 import { Activity, RefreshCw } from 'lucide-react';
 
-import { obtenerEstadoProyecto } from '../../../api/proyectos.js';
+import {
+  etiquetaEstadoOperativo,
+  obtenerEstadoProyecto,
+} from '../../../api/proyectos.js';
 import EstadoCarga from '../../../componentes/estados/EstadoCarga.jsx';
 import EstadoError from '../../../componentes/estados/EstadoError.jsx';
 import EstadoVacio from '../../../componentes/estados/EstadoVacio.jsx';
@@ -80,9 +83,23 @@ export default function EstadoProyecto({ proyecto }) {
             </div>
             <div>
               <dt>Estado operativo</dt>
-              <dd>{datos.estadoOperativo || 'Sin definir'}</dd>
+              <dd>{etiquetaEstadoOperativo(datos.estadoOperativo)}</dd>
+            </div>
+            <div>
+              <dt>Inicio real</dt>
+              <dd>{datos.fechaInicioReal || 'Sin iniciar'}</dd>
+            </div>
+            <div>
+              <dt>Finalización real</dt>
+              <dd>{datos.fechaFinReal || 'Pendiente'}</dd>
             </div>
           </dl>
+
+          {datos.excedeSeisAnios && (
+            <p className={estilos.avisoExito} role="status">
+              El proyecto finalizó después de seis años; se registró la excepción.
+            </p>
+          )}
 
           <p className={estilos.rotulo}>Datos de avance</p>
 

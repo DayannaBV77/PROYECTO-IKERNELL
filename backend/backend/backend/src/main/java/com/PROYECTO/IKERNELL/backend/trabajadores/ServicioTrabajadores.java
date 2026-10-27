@@ -1,6 +1,8 @@
 package com.PROYECTO.IKERNELL.backend.trabajadores;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
@@ -12,9 +14,13 @@ import org.springframework.web.multipart.MultipartFile;
 import com.PROYECTO.IKERNELL.backend.shared.domain.EstadoHabilitacion;
 import com.PROYECTO.IKERNELL.backend.shared.error.RecursoNoEncontradoException;
 import com.PROYECTO.IKERNELL.backend.shared.error.ReglaNegocioException;
+import com.PROYECTO.IKERNELL.backend.trabajadores.domain.CategoriaHabilidad;
+import com.PROYECTO.IKERNELL.backend.trabajadores.domain.HabilidadTrabajador;
 import com.PROYECTO.IKERNELL.backend.trabajadores.domain.TipoTrabajador;
 import com.PROYECTO.IKERNELL.backend.trabajadores.domain.Trabajador;
 import com.PROYECTO.IKERNELL.backend.trabajadores.dto.CriteriosBusquedaTrabajador;
+import com.PROYECTO.IKERNELL.backend.trabajadores.dto.HabilidadTrabajadorRequest;
+import com.PROYECTO.IKERNELL.backend.trabajadores.dto.HabilidadTrabajadorResponse;
 import com.PROYECTO.IKERNELL.backend.trabajadores.dto.ModificacionTrabajadorRequest;
 import com.PROYECTO.IKERNELL.backend.trabajadores.dto.RegistroTrabajadorRequest;
 
@@ -32,11 +38,21 @@ import com.PROYECTO.IKERNELL.backend.trabajadores.dto.RegistroTrabajadorRequest;
 @Service
 public class ServicioTrabajadores {
 
+	private static final Map<CategoriaHabilidad, Set<String>> CATALOGO_HABILIDADES = Map.of(
+			CategoriaHabilidad.AREA, Set.of("Frontend", "Backend", "Full Stack", "Desarrollo 1"),
+			CategoriaHabilidad.LENGUAJE,
+			Set.of("Java", "JavaScript", "TypeScript", "PHP", "Python", "C#", "C++", "C", "Kotlin", "Swift"),
+			CategoriaHabilidad.FRAMEWORK, Set.of("React", "Laravel", "Spring Boot", "Angular", "Django"),
+			CategoriaHabilidad.BASE_DATOS, Set.of("MySQL", "PostgreSQL", "SQL Server", "MongoDB"));
+
 	private final TrabajadorRepository trabajadores;
+	private final HabilidadTrabajadorRepository habilidades;
 	private final AlmacenFotografias almacenFotografias;
 
-	public ServicioTrabajadores(TrabajadorRepository trabajadores, AlmacenFotografias almacenFotografias) {
+	public ServicioTrabajadores(TrabajadorRepository trabajadores,
+			HabilidadTrabajadorRepository habilidades, AlmacenFotografias almacenFotografias) {
 		this.trabajadores = trabajadores;
+		this.habilidades = habilidades;
 		this.almacenFotografias = almacenFotografias;
 	}
 
@@ -52,6 +68,7 @@ public class ServicioTrabajadores {
 		if (trabajadores.existsByIdentificacion(peticion.identificacion())) {
 			throw new ReglaNegocioException("La identificacion " + peticion.identificacion() + " ya esta registrada.");
 		}
+		validarHabilidades(peticion.habilidades());
 		Trabajador trabajador = new Trabajador(
 				peticion.identificacion(),
 				peticion.nombre(),
@@ -61,7 +78,9 @@ public class ServicioTrabajadores {
 				peticion.profesion(),
 				peticion.especialidadDesarrollo(),
 				peticion.tipoTrabajador());
-		return trabajadores.save(trabajador);
+		Trabajador guardado = trabajadores.save(trabajador);
+		reemplazarHabilidades(guardado, peticion.habilidades());
+		return guardado;
 	}
 
 	/** Busqueda por uno o varios criterios (RF-004, HU-05 C01 y C02). */
@@ -76,19 +95,58 @@ public class ServicioTrabajadores {
 				.orElseThrow(() -> new RecursoNoEncontradoException("No existe un trabajador con el id " + id + "."));
 	}
 
+	@Transactional(readOnly = true)
+	public List<HabilidadTrabajadorResponse> habilidadesDe(Long trabajadorId) {
+		return habilidades.findByTrabajador_IdOrderByCategoriaAscNombreAsc(trabajadorId).stream()
+				.map(HabilidadTrabajadorResponse::de)
+				.toList();
+	}
+
 	/**
 	 * Modifica los campos autorizados (RF-005, HU-05 C03).
 	 *
-	 * <p>Solo direccion, especialidad y tipo. La identificacion no es editable,
-	 * de modo que no hay nada que revalidar sobre su unicidad al modificar.
+	 * <p>Los campos de perfil autorizados por RF-005 son direccion, especialidad
+	 * y tipo. La lista de habilidades se reemplaza solo cuando viene en la
+	 * peticion, para mantener compatibilidad con clientes anteriores. La
+	 * identificacion no es editable.
 	 */
 	@Transactional
 	public Trabajador modificar(Long id, ModificacionTrabajadorRequest peticion) {
 		Trabajador trabajador = obtener(id);
+		if (peticion.habilidades() != null) {
+			validarHabilidades(peticion.habilidades());
+		}
 		trabajador.setDireccion(peticion.direccion());
 		trabajador.setEspecialidadDesarrollo(peticion.especialidadDesarrollo());
 		trabajador.setTipoTrabajador(peticion.tipoTrabajador());
+		if (peticion.habilidades() != null) {
+			reemplazarHabilidades(trabajador, peticion.habilidades());
+		}
 		return trabajadores.save(trabajador);
+	}
+
+	private void reemplazarHabilidades(Trabajador trabajador, List<HabilidadTrabajadorRequest> seleccionadas) {
+		List<HabilidadTrabajadorRequest> lista = seleccionadas == null ? List.of() : seleccionadas;
+		habilidades.deleteByTrabajador_Id(trabajador.getId());
+		habilidades.flush();
+		List<HabilidadTrabajador> entidades = lista.stream()
+				.map(habilidad -> new HabilidadTrabajador(trabajador, habilidad.categoria(), habilidad.nombre()))
+				.toList();
+		habilidades.saveAll(entidades);
+	}
+
+	private void validarHabilidades(List<HabilidadTrabajadorRequest> seleccionadas) {
+		List<HabilidadTrabajadorRequest> lista = seleccionadas == null ? List.of() : seleccionadas;
+		Set<HabilidadTrabajadorRequest> unicas = Set.copyOf(lista);
+		if (unicas.size() != lista.size()) {
+			throw new ReglaNegocioException("No se puede seleccionar dos veces la misma habilidad.");
+		}
+		for (HabilidadTrabajadorRequest habilidad : lista) {
+			if (habilidad.categoria() == null
+					|| !CATALOGO_HABILIDADES.get(habilidad.categoria()).contains(habilidad.nombre())) {
+				throw new ReglaNegocioException("La habilidad seleccionada no pertenece al catalogo disponible.");
+			}
+		}
 	}
 
 	/**

@@ -1,6 +1,7 @@
 package com.PROYECTO.IKERNELL.backend.trabajadores.dto;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import com.PROYECTO.IKERNELL.backend.shared.domain.EstadoHabilitacion;
 import com.PROYECTO.IKERNELL.backend.trabajadores.domain.TipoTrabajador;
@@ -21,9 +22,10 @@ public record TrabajadorResponse(
 		String especialidadDesarrollo,
 		TipoTrabajador tipoTrabajador,
 		EstadoHabilitacion estado,
-		boolean tieneFotografia) {
+		boolean tieneFotografia,
+		List<HabilidadTrabajadorResponse> habilidades) {
 
-	public static TrabajadorResponse de(Trabajador trabajador) {
+	public static TrabajadorResponse de(Trabajador trabajador, List<HabilidadTrabajadorResponse> habilidades) {
 		return new TrabajadorResponse(
 				trabajador.getId(),
 				trabajador.getIdentificacion(),
@@ -35,7 +37,8 @@ public record TrabajadorResponse(
 				trabajador.getEspecialidadDesarrollo(),
 				trabajador.getTipoTrabajador(),
 				trabajador.getEstado(),
-				trabajador.getFotoRuta() != null);
+				trabajador.getFotoRuta() != null,
+				habilidades);
 	}
 
 }

@@ -85,6 +85,8 @@ abandonaron; su enunciado no se puede reconstruir.
 | D-34 | «Mi Día» es una sección de la pantalla de inicio (`/app`), no una ruta aparte, porque RF-038 lo pide «como parte de su pantalla de inicio». | `PaginaPanel.jsx` |
 | D-35 | Del correo se informa el **estado del acceso**, no un contador de no leídos. Ver «Lo que no se puede cumplir». | `NotificacionesResponse` |
 | D-37 | Las incidencias registradas antes de D-36 conservan su fase antigua en `fase_historica` y quedan con `etapa_id` nulo. No se remapean: las etapas son distintas en cada proyecto y emparejar por nombre sería inventar una regla. | V9 |
+| D-38 | Se ofrece el catálogo de áreas y tecnologías solicitado para nuevas selecciones, con categorías independientes. Las selecciones se almacenan aparte y no se convierten ni sobrescriben los textos históricos de especialidad. | Decisión autorizada el 2026-10-27; V12 y gestión de trabajadores |
+| D-39 | El estado operativo registra `EN_EJECUCION` al iniciar y `FINALIZADO` al cerrar. Las fechas reales se fijan en esas acciones; los proyectos existentes quedan sin fechas. Se permite finalizar después de seis años y se informa el exceso. Los líderes pueden ejecutar ambas acciones según el rol actual del módulo. | Decisión autorizada el 2026-10-27; V13 y ciclo de vida de proyectos |
 
 ### Pendientes de la empresa
 
@@ -93,14 +95,14 @@ Cada una está señalada en el código en el punto exacto donde habrá que aplic
 | ID | Qué falta decidir | Bloquea |
 |---|---|---|
 | D-02 | Qué campos del proyecto son modificables si la lista se amplía. | RF-014 |
-| D-03 | Valores del estado operativo del proyecto y fórmula de avance (por actividades cerradas, por etapas, ponderada; si las etapas tienen peso). | RF-016, HU-12 |
+| D-03 | Fórmula de avance (por actividades cerradas, por etapas, ponderada; si las etapas tienen peso). Los estados operativos se resolvieron en D-39. | RF-016, HU-12 |
 | D-04 | **Los estados posibles de una actividad.** La columna existe pero ninguna operación la escribe. | RF-022, y de rebote D-09 y D-31 |
 | D-06 | Los tipos de error. | RF-023 |
 | D-07 | Los tipos de interrupción y la unidad de duración. Se guarda valor + unidad para no migrar datos cuando se decida. | RF-024, RF-017 |
 | D-09 | Qué indicadores debe mostrar el reporte de desempeño. | RF-006, HU-07 |
 | D-12 | **Qué funciones tendrá el chat corporativo y si vive dentro del aplicativo o fuera.** | RF-028 |
 | D-13 | **Cómo se integra el correo corporativo.** Hoy es un enlace configurable. | RF-031, y el contador de «Mi Día» |
-| D-17 | Si profesión y especialidad son texto libre o catálogos cerrados. | RF-001 |
+| D-17 | Si profesión y el campo histórico de especialidad son texto libre o catálogos cerrados. El catálogo nuevo de áreas y tecnologías se gestiona aparte por D-38. | RF-001 |
 | D-18 | Cómo se aprovisiona la primera cuenta de coordinador y con qué contraseña inicial. | RF-027 |
 | D-19 | Si el correo de acceso es el mismo del servicio de correo de RF-031. | RF-027, RF-031 |
 | D-23 | Cómo deja de estar activa una asignación. Hoy sólo se crean activas. | RF-003 |
@@ -135,7 +137,7 @@ Puntos donde los documentos admiten más de una lectura y el código eligió una
 | ID | Contradicción | Resolución |
 |---|---|---|
 | C-03 | RF-005 lista los campos editables de un trabajador, y la identificación no está entre ellos aunque RF-001 la pida al registrar. | La identificación **no es editable**: el cliente no tiene forma de enviarla. |
-| C-04 | «Estado del proyecto» designa dos cosas distintas en los documentos. | Se separan: `estadoHabilitacion` (dominio cerrado) y `estadoOperativo` (pendiente, D-03). |
+| C-04 | «Estado del proyecto» designa dos cosas distintas en los documentos. | Se separan: `estadoHabilitacion` (dominio cerrado) y `estadoOperativo` (ciclo de ejecución resuelto en D-39). |
 | C-06 | HU-17 C05 y HU-18 C05 dicen que «sólo el desarrollador» registra incidencias, pero el Caso de Estudio permite que un líder sea desarrollador de otro proyecto. | Se comprueba la **asignación** y no el tipo global: el coordinador y el líder quedan fuera, pero el líder asignado como desarrollador sí puede registrar allí. |
 
 **C-01, C-02 y C-05 no se citan en ninguna parte del código.**

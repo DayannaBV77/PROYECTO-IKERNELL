@@ -1,9 +1,20 @@
 import { useCallback, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
-import { ArrowLeft, CircleCheck, FolderX, Save, TriangleAlert } from 'lucide-react';
+import {
+  ArrowLeft,
+  CircleCheck,
+  Flag,
+  FolderX,
+  Play,
+  Save,
+  TriangleAlert,
+} from 'lucide-react';
 
 import {
   advertenciasDeInhabilitacion,
+  etiquetaEstadoOperativo,
+  finalizarProyecto,
+  iniciarProyecto,
   inhabilitarProyecto,
   modificarProyecto,
   obtenerProyecto,
@@ -96,6 +107,7 @@ function ProyectoCargado({ inicial }) {
   const [fallo, setFallo] = useState(null);
   const [confirmado, setConfirmado] = useState(null);
   const [guardando, setGuardando] = useState(false);
+  const [confirmarFinalizacion, setConfirmarFinalizacion] = useState(false);
 
   // Dialogo de inhabilitacion: null cuando esta cerrado.
   const [dialogo, setDialogo] = useState(null);
@@ -135,6 +147,39 @@ function ProyectoCargado({ inicial }) {
       if (error.campos) {
         setErrores(error.campos);
       }
+      setFallo(error.message);
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  async function alIniciar() {
+    setGuardando(true);
+    setFallo(null);
+    setConfirmado(null);
+    try {
+      aplicar(await iniciarProyecto(proyecto.id), 'La ejecución del proyecto quedó iniciada.');
+    } catch (error) {
+      setFallo(error.message);
+    } finally {
+      setGuardando(false);
+    }
+  }
+
+  async function alFinalizar() {
+    setGuardando(true);
+    setFallo(null);
+    setConfirmado(null);
+    try {
+      const actualizado = await finalizarProyecto(proyecto.id);
+      aplicar(
+        actualizado,
+        actualizado.excedeSeisAnios
+          ? 'El proyecto quedó finalizado. Su duración superó seis años; se registró la excepción.'
+          : 'El proyecto quedó finalizado.',
+      );
+      setConfirmarFinalizacion(false);
+    } catch (error) {
       setFallo(error.message);
     } finally {
       setGuardando(false);
@@ -204,6 +249,13 @@ function ProyectoCargado({ inicial }) {
         </p>
       )}
 
+      {proyecto.excedeSeisAnios && (
+        <p className={estilos.avisoExito} role="status">
+          <TriangleAlert size={18} aria-hidden="true" />
+          El proyecto finalizó después de seis años; se registró la excepción.
+        </p>
+      )}
+
       <div className={estilos.perfil}>
         <div className={estilos.ficha}>
           <p className={estilos.rotulo}>Datos del proyecto</p>
@@ -220,9 +272,15 @@ function ProyectoCargado({ inicial }) {
             </div>
             <div>
               <dt>Estado operativo</dt>
-              {/* Sus valores los define la empresa (D-03); hasta entonces el
-                  campo existe pero llega vacio. */}
-              <dd>{proyecto.estadoOperativo || 'Sin definir'}</dd>
+              <dd>{etiquetaEstadoOperativo(proyecto.estadoOperativo)}</dd>
+            </div>
+            <div>
+              <dt>Inicio real</dt>
+              <dd>{proyecto.fechaInicioReal || 'Sin iniciar'}</dd>
+            </div>
+            <div>
+              <dt>Finalización real</dt>
+              <dd>{proyecto.fechaFinReal || 'Pendiente'}</dd>
             </div>
             <div>
               <dt>Lider responsable</dt>
@@ -261,6 +319,24 @@ function ProyectoCargado({ inicial }) {
               {guardando ? 'Guardando...' : 'Guardar cambios'}
             </Boton>
 
+            {!proyecto.estadoOperativo && (
+              <Boton type="button" icono={Play} onClick={alIniciar} disabled={guardando}>
+                Iniciar ejecución
+              </Boton>
+            )}
+
+            {proyecto.estadoOperativo === 'EN_EJECUCION' && (
+              <Boton
+                type="button"
+                variante="secundario"
+                icono={Flag}
+                onClick={() => setConfirmarFinalizacion(true)}
+                disabled={guardando}
+              >
+                Finalizar proyecto
+              </Boton>
+            )}
+
             {habilitado && (
               <Boton
                 type="button"
@@ -277,11 +353,28 @@ function ProyectoCargado({ inicial }) {
 
       {/* RF-016, HU-12 y RF-009, HU-10: cada seccion consulta lo suyo, de modo
           que actualizar una no obliga a recargar el resto de la pantalla. */}
-      <EstadoProyecto proyecto={proyecto} />
+      <EstadoProyecto
+        key={`${proyecto.id}-${proyecto.estadoOperativo || 'SIN_INICIAR'}`}
+        proyecto={proyecto}
+      />
 
       <EtapasProyecto proyecto={proyecto} />
 
       <EquipoProyecto proyecto={proyecto} />
+
+      <Confirmacion
+        abierto={confirmarFinalizacion}
+        titulo="Finalizar el proyecto"
+        textoConfirmar="Finalizar"
+        ocupado={guardando}
+        alConfirmar={alFinalizar}
+        alCancelar={() => setConfirmarFinalizacion(false)}
+      >
+        <p>
+          Se guardará la fecha real de finalización de hoy. Si la duración supera seis años, se
+          permitirá finalizar y el sistema lo indicará.
+        </p>
+      </Confirmacion>
 
       <Confirmacion
         abierto={dialogo !== null}

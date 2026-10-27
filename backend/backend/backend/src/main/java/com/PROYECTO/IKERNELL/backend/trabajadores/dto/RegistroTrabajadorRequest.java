@@ -1,13 +1,17 @@
 package com.PROYECTO.IKERNELL.backend.trabajadores.dto;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import com.PROYECTO.IKERNELL.backend.trabajadores.domain.TipoTrabajador;
+import com.PROYECTO.IKERNELL.backend.trabajadores.validacion.DireccionColombiana;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Past;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.Valid;
 
 /**
  * Datos para registrar el perfil de un trabajador (RF-001, HU-04 C01).
@@ -20,7 +24,8 @@ import jakarta.validation.constraints.Size;
 public record RegistroTrabajadorRequest(
 
 		@NotBlank(message = "Debe indicar la identificacion.")
-		@Size(max = 20, message = "La identificacion admite hasta 20 caracteres.")
+		@Pattern(regexp = "[0-9]*", message = "La identificacion solo puede contener digitos.")
+		@Size(max = 11, message = "La identificacion admite hasta 11 digitos.")
 		String identificacion,
 
 		@NotBlank(message = "Debe indicar el nombre.")
@@ -37,6 +42,7 @@ public record RegistroTrabajadorRequest(
 
 		@NotBlank(message = "Debe indicar la direccion.")
 		@Size(max = 200, message = "La direccion admite hasta 200 caracteres.")
+		@DireccionColombiana
 		String direccion,
 
 		@NotBlank(message = "Debe indicar la profesion.")
@@ -48,5 +54,8 @@ public record RegistroTrabajadorRequest(
 		String especialidadDesarrollo,
 
 		@NotNull(message = "Debe indicar el tipo de trabajador.")
-		TipoTrabajador tipoTrabajador) {
+		TipoTrabajador tipoTrabajador,
+
+		@Size(max = 23, message = "Se admiten hasta 23 habilidades.")
+		List<@NotNull @Valid HabilidadTrabajadorRequest> habilidades) {
 }

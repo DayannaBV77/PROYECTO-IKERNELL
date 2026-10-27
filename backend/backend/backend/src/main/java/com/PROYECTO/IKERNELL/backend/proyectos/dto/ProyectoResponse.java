@@ -1,5 +1,7 @@
 package com.PROYECTO.IKERNELL.backend.proyectos.dto;
 
+import java.time.LocalDate;
+
 import com.PROYECTO.IKERNELL.backend.proyectos.domain.Proyecto;
 import com.PROYECTO.IKERNELL.backend.shared.domain.EstadoHabilitacion;
 
@@ -13,6 +15,9 @@ public record ProyectoResponse(
 		String descripcion,
 		EstadoHabilitacion estadoHabilitacion,
 		String estadoOperativo,
+		LocalDate fechaInicioReal,
+		LocalDate fechaFinReal,
+		boolean excedeSeisAnios,
 		Long liderResponsableId) {
 
 	public static ProyectoResponse de(Proyecto proyecto) {
@@ -22,6 +27,9 @@ public record ProyectoResponse(
 				proyecto.getDescripcion(),
 				proyecto.getEstadoHabilitacion(),
 				proyecto.getEstadoOperativo(),
+				proyecto.getFechaInicioReal(),
+				proyecto.getFechaFinReal(),
+				proyecto.excedeSeisAnios(),
 				proyecto.getLiderResponsable() != null ? proyecto.getLiderResponsable().getId() : null);
 	}
 
