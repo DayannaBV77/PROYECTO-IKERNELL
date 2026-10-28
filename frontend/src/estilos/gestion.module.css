@@ -26,6 +26,38 @@
   box-shadow: var(--b-sutil);
 }
 
+.filtrosBarra {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  padding: var(--s-4);
+  margin-bottom: var(--s-5);
+  background: var(--c-fondo-franja);
+  border: 1px solid var(--c-borde);
+  border-radius: var(--r-md);
+}
+
+.filtrosCabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.filtrosGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--s-3);
+  align-items: end;
+}
+
+.filtrosAcciones {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+}
+
 /*
  * Rejilla que se adapta al ancho disponible: con siete criterios, columnas
  * fijas obligarian a desplazamiento lateral en pantallas medianas.
@@ -202,9 +234,14 @@
     justify-content: stretch;
   }
 
+  .filtrosAcciones,
   .accionesBuscador {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .filtrosGrid {
+    grid-template-columns: 1fr;
   }
 
   .paginacion {

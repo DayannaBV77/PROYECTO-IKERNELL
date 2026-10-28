@@ -18,10 +18,59 @@ import Campo from '../../componentes/ui/Campo.jsx';
 import Confirmacion from '../../componentes/ui/Confirmacion.jsx';
 import Seccion from '../../componentes/ui/Seccion.jsx';
 import estilos from '../../estilos/gestion.module.css';
+import { ESPECIALIDADES_DESARROLLO } from '../trabajadores/catalogoEspecialidades.js';
+import { PROFESIONES } from '../trabajadores/catalogoProfesiones.js';
 import { usePeticion } from '../../hooks/usePeticion.js';
 import { formatearFecha } from '../../utilidades/formato.js';
 
 const VACIO = { trabajadorId: '', proyectoId: '', rolEnProyecto: '' };
+const FILTROS_TRABAJADOR_VACIOS = {
+  identificacion: '',
+  especialidadDesarrollo: '',
+  profesion: '',
+  nombre: '',
+  apellido: '',
+};
+
+const OPCIONES_PROFESIONES = [
+  { valor: '', texto: 'Todas las profesiones' },
+  ...PROFESIONES.map((profesion) => ({ valor: profesion, texto: profesion })),
+];
+
+const OPCIONES_ESPECIALIDADES = [
+  { valor: '', texto: 'Todas las especialidades' },
+  ...ESPECIALIDADES_DESARROLLO.map((especialidad) => ({ valor: especialidad, texto: especialidad })),
+];
+
+function normalizarTexto(valor = '') {
+  return String(valor ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+function filtrarTrabajadores(trabajadores, filtros = FILTROS_TRABAJADOR_VACIOS) {
+  const criterios = Object.entries(filtros).filter(([, valor]) => String(valor ?? '').trim() !== '');
+
+  if (criterios.length === 0) {
+    return trabajadores;
+  }
+
+  return trabajadores.filter((trabajador) => {
+    return criterios.every(([campo, valor]) => {
+      const texto = {
+        identificacion: trabajador.identificacion ?? '',
+        especialidadDesarrollo: trabajador.especialidadDesarrollo ?? '',
+        profesion: trabajador.profesion ?? '',
+        nombre: trabajador.nombre ?? '',
+        apellido: trabajador.apellido ?? '',
+      }[campo];
+
+      return normalizarTexto(texto).includes(normalizarTexto(valor));
+    });
+  });
+}
 
 /**
  * Asignacion de trabajadores a proyectos (RF-003, HU-06).
@@ -44,6 +93,8 @@ export default function PaginaAsignaciones() {
   const [guardando, setGuardando] = useState(false);
   const [advertencias, setAdvertencias] = useState(null);
   const [recarga, setRecarga] = useState(0);
+  const [filtrosTrabajador, setFiltrosTrabajador] = useState(FILTROS_TRABAJADOR_VACIOS);
+  const [filtrosAplicados, setFiltrosAplicados] = useState(FILTROS_TRABAJADOR_VACIOS);
 
   const cargarTrabajadores = useCallback(
     ({ senal }) => buscarTrabajadores({ estado: 'HABILITADO', tamano: 100 }, { senal }),
@@ -54,7 +105,8 @@ export default function PaginaAsignaciones() {
   const cargarProyectos = useCallback(({ senal }) => obtenerProyectosAsignables({ senal }), []);
   const proyectos = usePeticion(cargarProyectos, []);
 
-  const opcionesDeTrabajador = (trabajadores.datos?.contenido || []).map((trabajador) => ({
+  const trabajadoresFiltrados = filtrarTrabajadores(trabajadores.datos?.contenido || [], filtrosAplicados);
+  const opcionesDeTrabajador = trabajadoresFiltrados.map((trabajador) => ({
     valor: String(trabajador.id),
     texto: `${trabajador.nombreCompleto} (${trabajador.identificacion})`,
   }));
@@ -67,6 +119,27 @@ export default function PaginaAsignaciones() {
     const { name, value } = evento.target;
     setValores((previos) => ({ ...previos, [name]: value }));
     setErrores((previos) => (previos[name] ? { ...previos, [name]: undefined } : previos));
+  }
+
+  function alCambiarFiltroTrabajador(evento) {
+    const { name, value } = evento.target;
+    setFiltrosTrabajador((previos) => ({ ...previos, [name]: value }));
+    if (valores.trabajadorId && !filtrarTrabajadores(trabajadores.datos?.contenido || [], filtrosAplicados).some((trabajador) => String(trabajador.id) === String(valores.trabajadorId))) {
+      setValores((previos) => ({ ...previos, trabajadorId: '' }));
+    }
+  }
+
+  function aplicarFiltrosTrabajadores() {
+    setFiltrosAplicados({ ...filtrosTrabajador });
+    if (valores.trabajadorId && !filtrarTrabajadores(trabajadores.datos?.contenido || [], { ...filtrosTrabajador }).some((trabajador) => String(trabajador.id) === String(valores.trabajadorId))) {
+      setValores((previos) => ({ ...previos, trabajadorId: '' }));
+    }
+  }
+
+  function limpiarFiltrosTrabajadores() {
+    setFiltrosTrabajador(FILTROS_TRABAJADOR_VACIOS);
+    setFiltrosAplicados(FILTROS_TRABAJADOR_VACIOS);
+    setValores((previos) => ({ ...previos, trabajadorId: '' }));
   }
 
   async function guardar(confirmacion) {
@@ -118,6 +191,60 @@ export default function PaginaAsignaciones() {
         descripcion="Deja registrado en que proyecto participa cada persona y con que rol."
         id="asignaciones"
       >
+        <div className={estilos.filtrosBarra}>
+          <div className={estilos.filtrosCabecera}>
+            <span className={estilos.rotulo}>Filtrar trabajadores</span>
+          </div>
+          <div className={estilos.filtrosGrid}>
+            <Campo
+              etiqueta="Identificacion"
+              nombre="identificacion"
+              value={filtrosTrabajador.identificacion}
+              onChange={alCambiarFiltroTrabajador}
+            />
+            <Campo
+              etiqueta="Especialidad"
+              nombre="especialidadDesarrollo"
+              opciones={OPCIONES_ESPECIALIDADES}
+              value={filtrosTrabajador.especialidadDesarrollo}
+              onChange={alCambiarFiltroTrabajador}
+            />
+            <Campo
+              etiqueta="Profesion"
+              nombre="profesion"
+              opciones={OPCIONES_PROFESIONES}
+              value={filtrosTrabajador.profesion}
+              onChange={alCambiarFiltroTrabajador}
+            />
+            <Campo
+              etiqueta="Nombre"
+              nombre="nombre"
+              value={filtrosTrabajador.nombre}
+              onChange={alCambiarFiltroTrabajador}
+            />
+            <Campo
+              etiqueta="Apellido"
+              nombre="apellido"
+              value={filtrosTrabajador.apellido}
+              onChange={alCambiarFiltroTrabajador}
+            />
+          </div>
+          <div className={estilos.filtrosAcciones}>
+            <Boton type="button" icono={Search} onClick={aplicarFiltrosTrabajadores}>
+              Buscar
+            </Boton>
+            <Boton type="button" variante="texto" onClick={limpiarFiltrosTrabajadores}>
+              Limpiar filtros
+            </Boton>
+          </div>
+        </div>
+
+        {filtrosAplicados && Object.values(filtrosAplicados).some((valor) => String(valor).trim() !== '') && trabajadoresFiltrados.length === 0 && (
+          <div style={{ marginBottom: 'var(--s-5)' }}>
+            <EstadoVacio mensaje="No hay trabajadores que coincidan con los filtros indicados." icono={Search} />
+          </div>
+        )}
+
         {confirmado && (
           <p className={estilos.avisoExito} role="status">
             <CircleCheck size={18} aria-hidden="true" />
@@ -214,7 +341,7 @@ export default function PaginaAsignaciones() {
 
       {/* C05: consultar las asignaciones de un trabajador o de un proyecto. */}
       <ConsultaDeAsignaciones
-        opcionesDeTrabajador={opcionesDeTrabajador}
+        trabajadoresHabilitados={trabajadores.datos?.contenido || []}
         opcionesDeProyecto={opcionesDeProyecto}
         recarga={recarga}
       />
@@ -229,10 +356,12 @@ export default function PaginaAsignaciones() {
  * nombra las dos: "consulto las asignaciones de ese trabajador o de ese
  * proyecto".
  */
-function ConsultaDeAsignaciones({ opcionesDeTrabajador, opcionesDeProyecto, recarga }) {
+function ConsultaDeAsignaciones({ trabajadoresHabilitados, opcionesDeProyecto, recarga }) {
   const [por, setPor] = useState('trabajador');
   const [id, setId] = useState('');
   const [consulta, setConsulta] = useState(null);
+  const [filtrosTrabajador, setFiltrosTrabajador] = useState(FILTROS_TRABAJADOR_VACIOS);
+  const [filtrosAplicados, setFiltrosAplicados] = useState(FILTROS_TRABAJADOR_VACIOS);
 
   const cargar = useCallback(
     ({ senal }) =>
@@ -245,7 +374,33 @@ function ConsultaDeAsignaciones({ opcionesDeTrabajador, opcionesDeProyecto, reca
   );
   const { datos, error, cargando, reintentar } = usePeticion(cargar, [consulta, recarga]);
 
+  const opcionesDeTrabajador = filtrarTrabajadores(trabajadoresHabilitados, filtrosAplicados).map(
+    (trabajador) => ({
+      valor: String(trabajador.id),
+      texto: `${trabajador.nombreCompleto} (${trabajador.identificacion})`,
+    }),
+  );
   const opciones = por === 'trabajador' ? opcionesDeTrabajador : opcionesDeProyecto;
+
+  function alCambiarFiltroTrabajador(evento) {
+    const { name, value } = evento.target;
+    setFiltrosTrabajador((previos) => ({ ...previos, [name]: value }));
+  }
+
+  function aplicarFiltrosTrabajador() {
+    setFiltrosAplicados({ ...filtrosTrabajador });
+    if (id && !opciones.some((opcion) => opcion.valor === String(id))) {
+      setId('');
+      setConsulta(null);
+    }
+  }
+
+  function limpiarFiltrosTrabajador() {
+    setFiltrosTrabajador(FILTROS_TRABAJADOR_VACIOS);
+    setFiltrosAplicados(FILTROS_TRABAJADOR_VACIOS);
+    setId('');
+    setConsulta(null);
+  }
 
   return (
     <Seccion
@@ -263,6 +418,65 @@ function ConsultaDeAsignaciones({ opcionesDeTrabajador, opcionesDeProyecto, reca
           }
         }}
       >
+        <div className={estilos.filtrosBarra}>
+          <div className={estilos.filtrosCabecera}>
+            <span className={estilos.rotulo}>Filtrar trabajadores</span>
+          </div>
+          {por === 'trabajador' && (
+            <div className={estilos.filtrosGrid}>
+              <Campo
+                etiqueta="Identificacion"
+                nombre="identificacion"
+                value={filtrosTrabajador.identificacion}
+                onChange={alCambiarFiltroTrabajador}
+              />
+              <Campo
+                etiqueta="Especialidad"
+                nombre="especialidadDesarrollo"
+                opciones={OPCIONES_ESPECIALIDADES}
+                value={filtrosTrabajador.especialidadDesarrollo}
+                onChange={alCambiarFiltroTrabajador}
+              />
+              <Campo
+                etiqueta="Profesion"
+                nombre="profesion"
+                opciones={OPCIONES_PROFESIONES}
+                value={filtrosTrabajador.profesion}
+                onChange={alCambiarFiltroTrabajador}
+              />
+              <Campo
+                etiqueta="Nombre"
+                nombre="nombre"
+                value={filtrosTrabajador.nombre}
+                onChange={alCambiarFiltroTrabajador}
+              />
+              <Campo
+                etiqueta="Apellido"
+                nombre="apellido"
+                value={filtrosTrabajador.apellido}
+                onChange={alCambiarFiltroTrabajador}
+              />
+            </div>
+          )}
+          <div className={estilos.filtrosAcciones}>
+            <Boton type="button" icono={Search} onClick={aplicarFiltrosTrabajador}>
+              Buscar
+            </Boton>
+            <Boton type="button" variante="texto" onClick={limpiarFiltrosTrabajador}>
+              Limpiar filtros
+            </Boton>
+          </div>
+        </div>
+
+        {por === 'trabajador' &&
+          filtrosAplicados &&
+          Object.values(filtrosAplicados).some((valor) => String(valor).trim() !== '') &&
+          opcionesDeTrabajador.length === 0 && (
+            <div style={{ marginBottom: 'var(--s-5)' }}>
+              <EstadoVacio mensaje="No hay trabajadores que coincidan con los filtros indicados." icono={Search} />
+            </div>
+          )}
+
         <div className={estilos.criterios}>
           <Campo
             etiqueta="Consultar por"
