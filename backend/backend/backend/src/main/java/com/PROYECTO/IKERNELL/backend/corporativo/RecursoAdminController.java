@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -69,6 +70,12 @@ public class RecursoAdminController {
 	public RecursoResumenResponse cambiarPublicacion(@PathVariable Long id,
 			@RequestParam boolean publicada) {
 		return RecursoResumenResponse.administrativa(servicio.cambiarPublicacion(id, publicada));
+	}
+
+	@DeleteMapping("/{id}")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void eliminar(@PathVariable Long id) {
+		servicio.eliminar(id);
 	}
 
 }

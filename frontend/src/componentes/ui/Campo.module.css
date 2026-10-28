@@ -60,6 +60,10 @@
   box-shadow: 0 0 0 3px rgb(220 38 38 / 0.25);
 }
 
+.conExito {
+  border-color: var(--c-exito, #16a34a);
+}
+
 .area {
   min-height: 130px;
   resize: vertical;
@@ -71,6 +75,22 @@
   gap: var(--s-2);
   font-size: var(--t-sm);
   color: var(--c-error);
+}
+
+.exito {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--t-sm);
+  color: var(--c-exito, #16a34a);
+}
+
+.validando {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--t-sm);
+  color: var(--c-turquesa-fuerte);
 }
 
 /*

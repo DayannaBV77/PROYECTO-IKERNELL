@@ -18,6 +18,8 @@ import Seccion from '../../componentes/ui/Seccion.jsx';
 import estilos from '../../estilos/gestion.module.css';
 import { usePeticion } from '../../hooks/usePeticion.js';
 import { formatearFecha } from '../../utilidades/formato.js';
+import SelectorEspecialidades from './componentes/SelectorEspecialidades.jsx';
+import SelectorProfesiones from './componentes/SelectorProfesiones.jsx';
 import SubidaFotografia from './componentes/SubidaFotografia.jsx';
 import SelectorHabilidades from './componentes/SelectorHabilidades.jsx';
 
@@ -25,6 +27,7 @@ import SelectorHabilidades from './componentes/SelectorHabilidades.jsx';
 function editablesDe(trabajador) {
   return {
     direccion: trabajador.direccion || '',
+    profesion: trabajador.profesion || '',
     especialidadDesarrollo: trabajador.especialidadDesarrollo || '',
     tipoTrabajador: trabajador.tipoTrabajador || '',
     habilidades: trabajador.habilidades || [],
@@ -257,14 +260,39 @@ function PerfilCargado({ inicial }) {
             onChange={alCambiar}
             error={errores.direccion}
           />
-          <Campo
-            etiqueta="Especialidad de desarrollo"
-            nombre="especialidadDesarrollo"
+          <SelectorProfesiones
+            value={editables.profesion}
+            onChange={(valor) => {
+              setEditables((previos) => ({ ...previos, profesion: valor }));
+              setErrores((previos) => {
+                if (!previos.profesion) {
+                  return previos;
+                }
+                const siguiente = { ...previos };
+                delete siguiente.profesion;
+                return siguiente;
+              });
+              setConfirmado(null);
+            }}
+            error={errores.profesion}
             obligatorio
+          />
+          <SelectorEspecialidades
             value={editables.especialidadDesarrollo}
-            onChange={alCambiar}
+            onChange={(valor) => {
+              setEditables((previos) => ({ ...previos, especialidadDesarrollo: valor }));
+              setErrores((previos) => {
+                if (!previos.especialidadDesarrollo) {
+                  return previos;
+                }
+                const siguiente = { ...previos };
+                delete siguiente.especialidadDesarrollo;
+                return siguiente;
+              });
+              setConfirmado(null);
+            }}
             error={errores.especialidadDesarrollo}
-            pista="El texto historico se conserva; las nuevas habilidades se gestionan abajo."
+            obligatorio
           />
           <Campo
             etiqueta="Tipo de trabajador"

@@ -33,12 +33,13 @@ export default function ListaRecursos({
   rutaBase,
   iconoVacio,
   id,
+  recarga = 0,
 }) {
   const [termino, setTermino] = useState('');
   const busqueda = useDebounce(termino, 350);
 
   const cargar = useCallback(({ senal }) => obtener(busqueda, { senal }), [obtener, busqueda]);
-  const { datos, error, cargando, reintentar } = usePeticion(cargar, [busqueda]);
+  const { datos, error, cargando, reintentar } = usePeticion(cargar, [busqueda, recarga]);
 
   return (
     <Seccion titulo={titulo} descripcion={descripcion} id={id}>

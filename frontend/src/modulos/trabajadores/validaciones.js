@@ -9,6 +9,7 @@ const REFERENCIA_RURAL =
   /\b(?:vereda|corregimiento|finca|hacienda|caser[ií]o|inspecci[oó]n|resguardo|km|kil[oó]metro)\s+[\p{L}\p{M}\d]/iu;
 
 const TIPOS_TRABAJADOR_VALIDOS = new Set(['COORDINADOR', 'LIDER', 'DESARROLLADOR']);
+export const FECHA_MAXIMA_NACIMIENTO = '2007-12-31';
 
 export function esFormatoDireccionColombiana(direccion) {
   if (typeof direccion !== 'string' || !direccion.trim() || direccion.length > 200) {
@@ -39,13 +40,8 @@ function fechaNacimientoInvalida(valor) {
     return true;
   }
 
-  const hoy = new Date();
-  const hoyIso = [
-    hoy.getFullYear(),
-    String(hoy.getMonth() + 1).padStart(2, '0'),
-    String(hoy.getDate()).padStart(2, '0'),
-  ].join('-');
-  return iso >= hoyIso;
+  const limite = new Date(Date.UTC(2007, 11, 31));
+  return fecha > limite;
 }
 
 export function validarCampoTrabajador(nombre, valor) {
@@ -74,8 +70,11 @@ export function validarCampoTrabajador(nombre, valor) {
     if (!/^[0-9]+$/.test(texto)) {
       return 'La identificacion solo puede contener digitos.';
     }
-    if (texto.length > 11) {
-      return 'La identificacion admite hasta 11 digitos.';
+    if (texto.length > 10) {
+      return 'La identificacion admite maximo 10 digitos.';
+    }
+    if (texto.length < 10) {
+      return `Faltan ${10 - texto.length} digitos para completar la identificacion.`;
     }
   }
 
@@ -92,7 +91,7 @@ export function validarCampoTrabajador(nombre, valor) {
   }
 
   if (nombre === 'fechaNacimiento' && fechaNacimientoInvalida(texto)) {
-    return 'La fecha de nacimiento debe ser una fecha valida anterior a hoy.';
+    return 'La fecha de nacimiento no es válida. Debe ser del 31/12/2007 o anterior';
   }
 
   if (nombre === 'direccion' && !esFormatoDireccionColombiana(texto)) {

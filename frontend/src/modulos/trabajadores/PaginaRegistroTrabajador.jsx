@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, TriangleAlert } from 'lucide-react';
 
 import {
   TIPOS_TRABAJADOR,
   adjuntarFotografia,
+  consultarDisponibilidadIdentificacion,
   registrarTrabajador,
 } from '../../api/trabajadores.js';
 import Boton from '../../componentes/ui/Boton.jsx';
@@ -12,9 +13,14 @@ import Campo from '../../componentes/ui/Campo.jsx';
 import Seccion from '../../componentes/ui/Seccion.jsx';
 import estilos from '../../estilos/gestion.module.css';
 import { aFechaIso } from '../../utilidades/formato.js';
-import SelectorHabilidades from './componentes/SelectorHabilidades.jsx';
+import SelectorEspecialidades from './componentes/SelectorEspecialidades.jsx';
+import SelectorProfesiones from './componentes/SelectorProfesiones.jsx';
 import archivo from './componentes/SubidaFotografia.module.css';
-import { validarCampoTrabajador, validarTrabajador } from './validaciones.js';
+import {
+  FECHA_MAXIMA_NACIMIENTO,
+  validarCampoTrabajador,
+  validarTrabajador,
+} from './validaciones.js';
 
 const VACIO = {
   identificacion: '',
@@ -25,7 +31,6 @@ const VACIO = {
   profesion: '',
   especialidadDesarrollo: '',
   tipoTrabajador: '',
-  habilidades: [],
 };
 
 /**
@@ -54,35 +59,111 @@ const VACIO = {
  */
 export default function PaginaRegistroTrabajador() {
   const navegar = useNavigate();
+  const controladorIdentificacion = useRef(null);
+  const ultimaIdentificacionValidada = useRef('');
 
   const [valores, setValores] = useState(VACIO);
   const [fotografia, setFotografia] = useState(null);
   const [errores, setErrores] = useState({});
   const [fallo, setFallo] = useState(null);
   const [guardando, setGuardando] = useState(false);
+  const [identificacionEstado, setIdentificacionEstado] = useState({ tipo: 'inicio', mensaje: '' });
 
-  function alCambiar(evento) {
-    const { name, value } = evento.target;
-    setValores((previos) => ({ ...previos, [name]: value }));
-    setFallo(null);
-    const error = validarCampoTrabajador(name, value);
+  const hayErroresFormulario = Object.keys(validarTrabajador(valores)).length > 0;
+  const identificacionPendiente = identificacionEstado.tipo === 'validando';
+  const identificacionBloqueada = /^\d{10}$/.test(valores.identificacion) && identificacionEstado.tipo === 'error';
+  const identificacionDuplicada = errores.identificacion === 'Este número de documento ya existe en el sistema';
+  const deshabilitarRegistro =
+    guardando || hayErroresFormulario || identificacionPendiente || identificacionBloqueada || identificacionDuplicada;
+
+  function actualizarErroresCampo(nombre, error) {
     setErrores((previos) => {
       const siguientes = { ...previos };
       if (error) {
-        siguientes[name] = error;
+        siguientes[nombre] = error;
       } else {
-        delete siguientes[name];
+        delete siguientes[nombre];
       }
       return siguientes;
     });
   }
 
+  function alCambiar(evento) {
+    const { name, value } = evento.target;
+    const siguienteValor = name === 'identificacion' ? value.replace(/\D/g, '').slice(0, 10) : value;
+    setValores((previos) => ({ ...previos, [name]: siguienteValor }));
+    setFallo(null);
+
+    const error = validarCampoTrabajador(name, siguienteValor);
+    if (name === 'identificacion') {
+      if (!siguienteValor) {
+        setIdentificacionEstado({ tipo: 'inicio', mensaje: '' });
+      } else if (!/^\d{10}$/.test(siguienteValor)) {
+        setIdentificacionEstado({ tipo: 'error', mensaje: error || 'La identificacion debe tener 10 digitos.' });
+      } else {
+        setIdentificacionEstado({ tipo: 'validando', mensaje: 'Validando identificacion...' });
+      }
+    }
+    actualizarErroresCampo(name, error);
+  }
+
+  useEffect(() => {
+    const texto = valores.identificacion.trim();
+    if (!/^\d{10}$/.test(texto)) {
+      if (!texto) {
+        setIdentificacionEstado({ tipo: 'inicio', mensaje: '' });
+      }
+      return undefined;
+    }
+
+    const controlador = new AbortController();
+    controladorIdentificacion.current?.abort();
+    controladorIdentificacion.current = controlador;
+    ultimaIdentificacionValidada.current = texto;
+
+    const temporizador = setTimeout(async () => {
+      try {
+        const respuesta = await consultarDisponibilidadIdentificacion(texto, { senal: controlador.signal });
+        if (controlador.signal.aborted || ultimaIdentificacionValidada.current !== texto) {
+          return;
+        }
+
+        if (!respuesta?.disponible) {
+          const mensaje = respuesta?.mensaje || 'Este número de documento ya existe en el sistema';
+          setIdentificacionEstado({ tipo: 'error', mensaje });
+          setErrores((previos) => ({ ...previos, identificacion: mensaje }));
+          return;
+        }
+
+        setIdentificacionEstado({ tipo: 'exito', mensaje: 'Identificación disponible y válida.' });
+        setErrores((previos) => {
+          const siguientes = { ...previos };
+          delete siguientes.identificacion;
+          return siguientes;
+        });
+      } catch (error) {
+        if (error?.name === 'AbortError') {
+          return;
+        }
+        setIdentificacionEstado({
+          tipo: 'error',
+          mensaje: 'No se pudo validar la identificacion. Intentalo de nuevo.',
+        });
+      }
+    }, 400);
+
+    return () => {
+      clearTimeout(temporizador);
+      controlador.abort();
+    };
+  }, [valores.identificacion]);
+
   async function alEnviar(evento) {
     evento.preventDefault();
 
     const erroresLocales = validarTrabajador(valores);
-    if (Object.keys(erroresLocales).length > 0) {
-      setErrores(erroresLocales);
+    if (Object.keys(erroresLocales).length > 0 || identificacionPendiente || identificacionBloqueada) {
+      setErrores({ ...errores, ...erroresLocales });
       setFallo(null);
       return;
     }
@@ -149,8 +230,10 @@ export default function PaginaRegistroTrabajador() {
             value={valores.identificacion}
             onChange={alCambiar}
             error={errores.identificacion}
-            pista="Solo digitos; maximo 11. No se podra modificar despues."
-            maxLength={11}
+            exito={identificacionEstado.tipo === 'exito' ? identificacionEstado.mensaje : undefined}
+            validando={identificacionEstado.tipo === 'validando'}
+            pista="Solo digitos; maximo 10. No se podra modificar despues."
+            maxLength={10}
             inputMode="numeric"
           />
           <Campo
@@ -179,6 +262,7 @@ export default function PaginaRegistroTrabajador() {
             value={valores.fechaNacimiento}
             onChange={alCambiar}
             error={errores.fechaNacimiento}
+            max={FECHA_MAXIMA_NACIMIENTO}
           />
           <Campo
             etiqueta="Direccion"
@@ -190,24 +274,27 @@ export default function PaginaRegistroTrabajador() {
             pista="Se valida el formato, no se comprueba que la direccion exista."
             maxLength={200}
           />
-          <Campo
-            etiqueta="Profesion"
-            nombre="profesion"
-            obligatorio
+          <SelectorProfesiones
             value={valores.profesion}
-            onChange={alCambiar}
+            onChange={(valor) => {
+              setValores((previos) => ({ ...previos, profesion: valor }));
+              const error = validarCampoTrabajador('profesion', valor);
+              actualizarErroresCampo('profesion', error);
+              setFallo(null);
+            }}
             error={errores.profesion}
-            maxLength={100}
-          />
-          <Campo
-            etiqueta="Especialidad de desarrollo"
-            nombre="especialidadDesarrollo"
             obligatorio
+          />
+          <SelectorEspecialidades
             value={valores.especialidadDesarrollo}
-            onChange={alCambiar}
+            onChange={(valor) => {
+              setValores((previos) => ({ ...previos, especialidadDesarrollo: valor }));
+              const error = validarCampoTrabajador('especialidadDesarrollo', valor);
+              actualizarErroresCampo('especialidadDesarrollo', error);
+              setFallo(null);
+            }}
             error={errores.especialidadDesarrollo}
-            maxLength={100}
-            pista="Este campo de texto se conserva; las areas y tecnologias se eligen abajo."
+            obligatorio
           />
           <Campo
             etiqueta="Tipo de trabajador"
@@ -219,11 +306,6 @@ export default function PaginaRegistroTrabajador() {
             error={errores.tipoTrabajador}
           />
         </div>
-
-        <SelectorHabilidades
-          seleccionadas={valores.habilidades}
-          onChange={(habilidades) => setValores((previos) => ({ ...previos, habilidades }))}
-        />
 
         <div className={archivo.campoArchivo}>
           <label className={estilos.rotulo} htmlFor="fotografia-nueva">
@@ -242,7 +324,7 @@ export default function PaginaRegistroTrabajador() {
         </div>
 
         <div className={estilos.accionesBuscador}>
-          <Boton type="submit" icono={Save} disabled={guardando}>
+          <Boton type="submit" icono={Save} disabled={deshabilitarRegistro}>
             {guardando ? 'Guardando...' : 'Guardar perfil'}
           </Boton>
         </div>

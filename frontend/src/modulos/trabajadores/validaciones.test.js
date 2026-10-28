@@ -6,6 +6,14 @@ import {
   validarCampoTrabajador,
   validarTrabajador,
 } from './validaciones.js';
+import {
+  listarEspecialidades,
+  serializarEspecialidades,
+} from './catalogoEspecialidades.js';
+import {
+  listarProfesiones,
+  serializarProfesiones,
+} from './catalogoProfesiones.js';
 import { CATEGORIAS_HABILIDADES, claveHabilidad } from './catalogoHabilidades.js';
 
 test('acepta nomenclatura urbana colombiana con ciudad', () => {
@@ -24,13 +32,15 @@ test('rechaza caracteres y textos sin una estructura de direccion reconocida', (
 test('valida campos requeridos y los limites actuales del backend', () => {
   assert.equal(validarCampoTrabajador('nombre', '   '), 'Debe indicar el nombre.');
   assert.equal(validarCampoTrabajador('identificacion', 'AB-123'), 'La identificacion solo puede contener digitos.');
-  assert.equal(validarCampoTrabajador('identificacion', '123456789012'), 'La identificacion admite hasta 11 digitos.');
-  assert.equal(validarCampoTrabajador('identificacion', '12345678901'), null);
+  assert.equal(validarCampoTrabajador('identificacion', '123456789012'), 'La identificacion admite maximo 10 digitos.');
+  assert.equal(validarCampoTrabajador('identificacion', '123456789'), 'Faltan 1 digitos para completar la identificacion.');
+  assert.equal(validarCampoTrabajador('identificacion', '1234567890'), null);
 });
 
 test('valida fecha de nacimiento y tipo de trabajador', () => {
-  assert.equal(validarCampoTrabajador('fechaNacimiento', '2999-01-01'), 'La fecha de nacimiento debe ser una fecha valida anterior a hoy.');
-  assert.equal(validarCampoTrabajador('fechaNacimiento', '2000-02-30'), 'La fecha de nacimiento debe ser una fecha valida anterior a hoy.');
+  assert.equal(validarCampoTrabajador('fechaNacimiento', '2008-01-01'), 'La fecha de nacimiento no es válida. Debe ser del 31/12/2007 o anterior');
+  assert.equal(validarCampoTrabajador('fechaNacimiento', '2026-05-01'), 'La fecha de nacimiento no es válida. Debe ser del 31/12/2007 o anterior');
+  assert.equal(validarCampoTrabajador('fechaNacimiento', '2007-12-31'), null);
   assert.equal(validarCampoTrabajador('tipoTrabajador', ''), 'Debe indicar el tipo de trabajador.');
   assert.equal(validarCampoTrabajador('tipoTrabajador', 'DESARROLLADOR'), null);
 });
@@ -49,6 +59,24 @@ test('devuelve errores de todos los campos sin alterar los valores', () => {
 
   assert.equal(Object.keys(validarTrabajador(valores)).length, 8);
   assert.equal(valores.nombre, '');
+});
+
+test('serializa y normaliza la seleccion de especialidades para enviar al backend', () => {
+  assert.deepEqual(listarEspecialidades('Frontend, Backend, Frontend'), ['Frontend', 'Backend']);
+  assert.equal(serializarEspecialidades(['Frontend', 'Backend']), 'Frontend, Backend');
+  assert.equal(validarCampoTrabajador('especialidadDesarrollo', ''), 'Debe indicar la especialidad de desarrollo.');
+});
+
+test('serializa y normaliza la seleccion de profesiones para un backend de texto unico', () => {
+  assert.deepEqual(listarProfesiones('Ingeniero de sistemas, Analista de sistemas'), [
+    'Ingeniero de sistemas',
+    'Analista de sistemas',
+  ]);
+  assert.equal(
+    serializarProfesiones(['Ingeniero de sistemas', 'Otra profesión: Diseñador industrial']),
+    'Ingeniero de sistemas, Otra profesión: Diseñador industrial',
+  );
+  assert.equal(validarCampoTrabajador('profesion', ''), 'Debe indicar la profesion.');
 });
 
 test('expone el catalogo solicitado sin imponer asociaciones entre categorias', () => {

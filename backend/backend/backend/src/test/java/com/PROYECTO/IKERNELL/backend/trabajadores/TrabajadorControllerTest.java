@@ -103,6 +103,30 @@ class TrabajadorControllerTest {
 
 	@Test
 	@WithMockUser(roles = "COORDINADOR")
+	@DisplayName("Valida la identificacion duplicada antes de guardar")
+	void validaDisponibilidadIdentificacionDuplicada() throws Exception {
+		registrarDirecto("4000000033", "Ana", "Ramos", "Ingenieria de sistemas", TipoTrabajador.DESARROLLADOR);
+
+		mockMvc.perform(get("/api/trabajadores/validacion/identificacion").param("identificacion", "4000000033"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.disponible").value(false))
+				.andExpect(jsonPath("$.mensaje").value("Este número de documento ya existe en el sistema"));
+	}
+
+	@Test
+	@WithMockUser(roles = "COORDINADOR")
+	@DisplayName("Rechaza fechas de nacimiento posteriores al limite autorizado")
+	void rechazaFechaNacimientoPosteriorAlLimite() throws Exception {
+		mockMvc.perform(post("/api/trabajadores").with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(perfilCompleto("4000000034", "DESARROLLADOR")
+						.replace("\"fechaNacimiento\": \"1994-07-12\"", "\"fechaNacimiento\": \"2008-01-01\"")))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.mensaje").value("La fecha de nacimiento no es válida. Debe ser del 31/12/2007 o anterior"));
+	}
+
+	@Test
+	@WithMockUser(roles = "COORDINADOR")
 	@DisplayName("Registra y consulta habilidades de categorias independientes")
 	void registraYConsultaHabilidades() throws Exception {
 		String perfilConHabilidades = perfilCompleto("4000000017", "DESARROLLADOR")
@@ -253,7 +277,7 @@ class TrabajadorControllerTest {
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(perfilCompleto("4000000003", "DESARROLLADOR")))
 				.andExpect(status().isConflict())
-				.andExpect(jsonPath("$.mensaje").value("La identificacion 4000000003 ya esta registrada."));
+				.andExpect(jsonPath("$.mensaje").value("Este número de documento ya existe en el sistema"));
 	}
 
 	@Test
@@ -264,22 +288,22 @@ class TrabajadorControllerTest {
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(perfilCompleto("AB-123", "DESARROLLADOR")))
 				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.campos.identificacion").value("La identificacion solo puede contener digitos."));
+				.andExpect(jsonPath("$.campos.identificacion").value("La identificacion debe tener exactamente 10 digitos."));
 
 		org.assertj.core.api.Assertions.assertThat(trabajadores.existsByIdentificacion("AB-123")).isFalse();
 	}
 
 	@Test
 	@WithMockUser(roles = "COORDINADOR")
-	@DisplayName("Rechaza identificaciones de mas de once digitos")
-	void rechazaIdentificacionDeMasDeOnceDigitos() throws Exception {
+	@DisplayName("Rechaza identificaciones de mas de diez digitos")
+	void rechazaIdentificacionDeMasDeDiezDigitos() throws Exception {
 		mockMvc.perform(post("/api/trabajadores").with(csrf())
 				.contentType(MediaType.APPLICATION_JSON)
-				.content(perfilCompleto("123456789012", "DESARROLLADOR")))
+				.content(perfilCompleto("12345678901", "DESARROLLADOR")))
 				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.campos.identificacion").value("La identificacion admite hasta 11 digitos."));
+				.andExpect(jsonPath("$.campos.identificacion").value("La identificacion debe tener exactamente 10 digitos."));
 
-		org.assertj.core.api.Assertions.assertThat(trabajadores.existsByIdentificacion("123456789012")).isFalse();
+		org.assertj.core.api.Assertions.assertThat(trabajadores.existsByIdentificacion("12345678901")).isFalse();
 	}
 
 	@Test

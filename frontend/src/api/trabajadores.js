@@ -41,6 +41,12 @@ export function obtenerTrabajador(id, opciones) {
   return api.obtener(`/api/trabajadores/${id}`, opciones);
 }
 
+/** Valida si la identificacion ya existe en la base de datos. */
+export function consultarDisponibilidadIdentificacion(identificacion, opciones) {
+  const texto = encodeURIComponent(identificacion ?? '');
+  return api.obtener(`/api/trabajadores/validacion/identificacion?identificacion=${texto}`, opciones);
+}
+
 /** RF-001, HU-04 C01: registra el perfil. Responde 201 con el perfil creado. */
 export function registrarTrabajador(datos) {
   return api.crear('/api/trabajadores', datos);

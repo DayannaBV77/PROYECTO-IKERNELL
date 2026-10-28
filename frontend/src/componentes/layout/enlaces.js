@@ -84,6 +84,12 @@ export function enlacesPara(sesion) {
     return ENLACES_PUBLICOS;
   }
 
+  if (sesion.tipoTrabajador === 'COORDINADOR') {
+    return ENLACES_PRIVADOS.filter(
+      ({ tipos }) => !tipos || tipos.includes(sesion.tipoTrabajador),
+    );
+  }
+
   const propios = ENLACES_PRIVADOS.filter(
     ({ tipos }) => !tipos || tipos.includes(sesion.tipoTrabajador),
   );

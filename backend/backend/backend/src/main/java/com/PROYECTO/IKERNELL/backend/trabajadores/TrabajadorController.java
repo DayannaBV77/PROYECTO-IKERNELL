@@ -27,6 +27,7 @@ import com.PROYECTO.IKERNELL.backend.shared.dto.PaginaResponse;
 import com.PROYECTO.IKERNELL.backend.trabajadores.domain.TipoTrabajador;
 import com.PROYECTO.IKERNELL.backend.trabajadores.domain.Trabajador;
 import com.PROYECTO.IKERNELL.backend.trabajadores.dto.CriteriosBusquedaTrabajador;
+import com.PROYECTO.IKERNELL.backend.trabajadores.dto.DisponibilidadIdentificacionResponse;
 import com.PROYECTO.IKERNELL.backend.trabajadores.dto.ModificacionTrabajadorRequest;
 import com.PROYECTO.IKERNELL.backend.trabajadores.dto.RegistroTrabajadorRequest;
 import com.PROYECTO.IKERNELL.backend.trabajadores.dto.TrabajadorResponse;
@@ -66,6 +67,18 @@ public class TrabajadorController {
 	@ResponseStatus(HttpStatus.CREATED)
 	public TrabajadorResponse registrar(@Valid @RequestBody RegistroTrabajadorRequest peticion) {
 		return respuesta(servicio.registrar(peticion));
+	}
+
+	@GetMapping("/validacion/identificacion")
+	public DisponibilidadIdentificacionResponse validarIdentificacion(@RequestParam String identificacion) {
+		String texto = identificacion == null ? "" : identificacion.trim();
+		if (!texto.matches("\\d{10}")) {
+			return new DisponibilidadIdentificacionResponse(false,
+					"La identificacion debe tener exactamente 10 digitos.");
+		}
+		boolean disponible = !servicio.existeIdentificacion(texto);
+		return new DisponibilidadIdentificacionResponse(disponible,
+				disponible ? "Identificacion disponible y valida." : "Este número de documento ya existe en el sistema");
 	}
 
 	/**

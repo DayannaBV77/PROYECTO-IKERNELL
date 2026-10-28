@@ -27,6 +27,8 @@ export default function Campo({
   area = false,
   obligatorio = false,
   error,
+  exito,
+  validando,
   pista,
   opciones,
   textoVacio = 'Seleccione una opcion',
@@ -37,6 +39,8 @@ export default function Campo({
   const idError = `${idControl}-error`;
   const idPista = `${idControl}-pista`;
 
+  const mensaje = error || exito || (validando ? 'Validando...' : null);
+  const tipoMensaje = error ? 'error' : exito ? 'exito' : validando ? 'validando' : null;
   const descritoPor = [error ? idError : null, pista ? idPista : null].filter(Boolean).join(' ');
 
   const Control = opciones ? 'select' : area ? 'textarea' : 'input';
@@ -65,7 +69,7 @@ export default function Campo({
         type={Control === 'input' ? tipo : undefined}
         className={`${estilos.control} ${area ? estilos.area : ''} ${
           opciones ? estilos.lista : ''
-        } ${error ? estilos.conError : ''}`}
+        } ${error ? estilos.conError : ''} ${exito ? estilos.conExito : ''}`}
         aria-invalid={error ? 'true' : undefined}
         aria-describedby={descritoPor || undefined}
         aria-required={obligatorio || undefined}
@@ -83,10 +87,10 @@ export default function Campo({
         )}
       </Control>
 
-      {error && (
-        <p className={estilos.error} id={idError}>
-          <TriangleAlert size={14} aria-hidden="true" />
-          {error}
+      {mensaje && (
+        <p className={tipoMensaje === 'error' ? estilos.error : tipoMensaje === 'exito' ? estilos.exito : estilos.validando} id={idError}>
+          {tipoMensaje === 'error' && <TriangleAlert size={14} aria-hidden="true" />}
+          {mensaje}
         </p>
       )}
     </div>

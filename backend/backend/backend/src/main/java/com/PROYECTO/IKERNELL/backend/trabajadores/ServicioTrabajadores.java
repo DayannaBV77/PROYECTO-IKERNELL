@@ -44,6 +44,7 @@ public class ServicioTrabajadores {
 			Set.of("Java", "JavaScript", "TypeScript", "PHP", "Python", "C#", "C++", "C", "Kotlin", "Swift"),
 			CategoriaHabilidad.FRAMEWORK, Set.of("React", "Laravel", "Spring Boot", "Angular", "Django"),
 			CategoriaHabilidad.BASE_DATOS, Set.of("MySQL", "PostgreSQL", "SQL Server", "MongoDB"));
+	private static final java.time.LocalDate FECHA_MAXIMA_NACIMIENTO = java.time.LocalDate.of(2007, 12, 31);
 
 	private final TrabajadorRepository trabajadores;
 	private final HabilidadTrabajadorRepository habilidades;
@@ -65,12 +66,19 @@ public class ServicioTrabajadores {
 	 */
 	@Transactional
 	public Trabajador registrar(RegistroTrabajadorRequest peticion) {
-		if (trabajadores.existsByIdentificacion(peticion.identificacion())) {
-			throw new ReglaNegocioException("La identificacion " + peticion.identificacion() + " ya esta registrada.");
+		String identificacion = peticion.identificacion();
+		if (!identificacion.matches("\\d{10}")) {
+			throw new ReglaNegocioException("La identificacion debe tener exactamente 10 digitos.");
+		}
+		if (trabajadores.existsByIdentificacion(identificacion)) {
+			throw new ReglaNegocioException("Este número de documento ya existe en el sistema");
+		}
+		if (peticion.fechaNacimiento() == null || peticion.fechaNacimiento().isAfter(FECHA_MAXIMA_NACIMIENTO)) {
+			throw new ReglaNegocioException("La fecha de nacimiento no es válida. Debe ser del 31/12/2007 o anterior");
 		}
 		validarHabilidades(peticion.habilidades());
 		Trabajador trabajador = new Trabajador(
-				peticion.identificacion(),
+				identificacion,
 				peticion.nombre(),
 				peticion.apellido(),
 				peticion.fechaNacimiento(),
@@ -81,6 +89,14 @@ public class ServicioTrabajadores {
 		Trabajador guardado = trabajadores.save(trabajador);
 		reemplazarHabilidades(guardado, peticion.habilidades());
 		return guardado;
+	}
+
+	@Transactional(readOnly = true)
+	public boolean existeIdentificacion(String identificacion) {
+		if (identificacion == null) {
+			return false;
+		}
+		return trabajadores.existsByIdentificacion(identificacion.trim());
 	}
 
 	/** Busqueda por uno o varios criterios (RF-004, HU-05 C01 y C02). */

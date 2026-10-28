@@ -24,8 +24,8 @@ import jakarta.validation.Valid;
 public record RegistroTrabajadorRequest(
 
 		@NotBlank(message = "Debe indicar la identificacion.")
-		@Pattern(regexp = "[0-9]*", message = "La identificacion solo puede contener digitos.")
-		@Size(max = 11, message = "La identificacion admite hasta 11 digitos.")
+		@Pattern(regexp = "[0-9]{10}", message = "La identificacion debe tener exactamente 10 digitos.")
+		@Size(max = 10, message = "La identificacion admite maximo 10 digitos.")
 		String identificacion,
 
 		@NotBlank(message = "Debe indicar el nombre.")

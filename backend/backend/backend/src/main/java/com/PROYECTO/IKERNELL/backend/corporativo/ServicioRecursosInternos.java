@@ -37,9 +37,9 @@ public class ServicioRecursosInternos {
 	 */
 	@Transactional(readOnly = true)
 	public List<RecursoInterno> listar(TipoRecurso tipo, String busqueda) {
-		return StringUtils.hasText(busqueda)
-				? recursos.findByTipoAndPublicadaTrueAndTituloContainingIgnoreCaseOrderByOrdenAscTituloAsc(
-						tipo, busqueda.trim())
+		String texto = StringUtils.hasText(busqueda) ? busqueda.trim() : null;
+		return texto != null && !texto.isBlank()
+				? recursos.buscarPublicadosPorTexto(tipo, texto)
 				: recursos.findByTipoAndPublicadaTrueOrderByOrdenAscTituloAsc(tipo);
 	}
 
@@ -94,6 +94,12 @@ public class ServicioRecursosInternos {
 		RecursoInterno recurso = obtener(id);
 		recurso.cambiarPublicacion(publicada);
 		return recursos.save(recurso);
+	}
+
+	@Transactional
+	public void eliminar(Long id) {
+		RecursoInterno recurso = obtener(id);
+		recursos.delete(recurso);
 	}
 
 	/**
