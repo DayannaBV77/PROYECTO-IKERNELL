@@ -91,9 +91,21 @@
   margin-top: var(--s-4);
 }
 
+.accionesSesion {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+  justify-content: flex-end;
+  margin-top: var(--s-4);
+}
+
 @media (max-width: 720px) {
   .identidad {
     flex-direction: column;
     text-align: center;
+  }
+
+  .accionesSesion {
+    justify-content: center;
   }
 }

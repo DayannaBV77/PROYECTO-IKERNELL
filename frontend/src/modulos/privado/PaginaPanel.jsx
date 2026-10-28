@@ -1,10 +1,11 @@
 import { useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   BarChart3,
   FileDown,
   FileText,
   Bug,
+  House,
   Link2,
   ClipboardCheck,
   ClipboardList,
@@ -12,6 +13,7 @@ import {
   FolderKanban,
   GraduationCap,
   Library,
+  LogOut,
   Mail,
   MessagesSquare,
   Users,
@@ -19,6 +21,7 @@ import {
 
 import { ETIQUETA_SERVICIO, ETIQUETA_TIPO } from '../../api/autenticacion.js';
 import { obtenerAccesoCorreo } from '../../api/corporativo.js';
+import Boton from '../../componentes/ui/Boton.jsx';
 import Seccion, { Rejilla } from '../../componentes/ui/Seccion.jsx';
 import Tarjeta from '../../componentes/ui/Tarjeta.jsx';
 import { usePeticion } from '../../hooks/usePeticion.js';
@@ -153,7 +156,13 @@ const SERVICIOS = {
 };
 
 export default function PaginaPanel() {
-  const { sesion } = useSesion();
+  const { sesion, salir } = useSesion();
+  const navegar = useNavigate();
+
+  async function alSalir() {
+    await salir();
+    navegar('/', { replace: true });
+  }
 
   const cargarCorreo = useCallback(({ senal }) => obtenerAccesoCorreo({ senal }), []);
   const correo = usePeticion(cargarCorreo, []);
@@ -177,6 +186,15 @@ export default function PaginaPanel() {
               {ETIQUETA_TIPO[sesion.tipoTrabajador] || sesion.tipoTrabajador}
             </span>
           </div>
+        </div>
+
+        <div className={estilos.accionesSesion}>
+          <Boton a="/" variante="secundario" icono={House}>
+            Volver a la pagina principal
+          </Boton>
+          <Boton variante="texto" icono={LogOut} onClick={alSalir}>
+            Cerrar sesion
+          </Boton>
         </div>
       </Seccion>
 
