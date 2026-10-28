@@ -60,6 +60,8 @@ class ServiciosCorporativosControllerTest {
 		this.mockMvc = MockMvcBuilders.webAppContextSetup(contexto)
 				.apply(SecurityMockMvcConfigurers.springSecurity())
 				.build();
+		this.recursos.deleteAll();
+		this.recursos.flush();
 		this.desarrollador = AutenticacionDePrueba.comoTrabajador(trabajadores, cuentas,
 				"9500000001", "dev.corp@ikernell.com", TipoTrabajador.DESARROLLADOR);
 		this.coordinador = AutenticacionDePrueba.comoTrabajador(trabajadores, cuentas,

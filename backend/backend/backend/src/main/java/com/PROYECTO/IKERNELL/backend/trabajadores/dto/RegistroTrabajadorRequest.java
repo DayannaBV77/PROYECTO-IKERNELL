@@ -25,7 +25,6 @@ public record RegistroTrabajadorRequest(
 
 		@NotBlank(message = "Debe indicar la identificacion.")
 		@Pattern(regexp = "[0-9]{10}", message = "La identificacion debe tener exactamente 10 digitos.")
-		@Size(max = 10, message = "La identificacion admite maximo 10 digitos.")
 		String identificacion,
 
 		@NotBlank(message = "Debe indicar el nombre.")

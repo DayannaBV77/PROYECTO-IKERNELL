@@ -110,9 +110,6 @@ export default function PaginaRegistroTrabajador() {
   useEffect(() => {
     const texto = valores.identificacion.trim();
     if (!/^\d{10}$/.test(texto)) {
-      if (!texto) {
-        setIdentificacionEstado({ tipo: 'inicio', mensaje: '' });
-      }
       return undefined;
     }
 

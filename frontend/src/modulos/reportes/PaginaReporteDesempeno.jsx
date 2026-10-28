@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ClipboardList, Search, TriangleAlert } from 'lucide-react';
 
-import { asignacionesDeTrabajador, obtenerProyectosAsignables } from '../../api/asignaciones.js';
+import { asignacionesDeTrabajador } from '../../api/asignaciones.js';
 import { reporteDeDesempeno } from '../../api/reportes.js';
 import { buscarTrabajadores } from '../../api/trabajadores.js';
 import EstadoCarga from '../../componentes/estados/EstadoCarga.jsx';
@@ -84,7 +84,7 @@ export default function PaginaReporteDesempeno() {
   const [criterios, setCriterios] = useState(null);
   const [filtrosDesarrollador, setFiltrosDesarrollador] = useState(FILTROS_DESARROLLADOR_VACIOS);
   const [filtrosAplicados, setFiltrosAplicados] = useState(FILTROS_DESARROLLADOR_VACIOS);
-  const [desarrolladoresDisponibles, setDesarrolladoresDisponibles] = useState([]);
+  const [desarrolladoresBuscados, setDesarrolladoresBuscados] = useState(null);
   const [proyectosDelDesarrollador, setProyectosDelDesarrollador] = useState([]);
   const [buscandoDesarrolladores, setBuscandoDesarrolladores] = useState(false);
   const [mensajeProyecto, setMensajeProyecto] = useState('');
@@ -96,18 +96,7 @@ export default function PaginaReporteDesempeno() {
   );
   const trabajadores = usePeticion(cargarTrabajadores, []);
 
-  useEffect(() => {
-    const lista = trabajadores.datos?.contenido || [];
-    setDesarrolladoresDisponibles(lista);
-    if (!borrador.desarrolladorId || !lista.some((trabajador) => String(trabajador.id) === String(borrador.desarrolladorId))) {
-      setBorrador((previos) => ({ ...previos, desarrolladorId: '', proyectoId: '' }));
-      setProyectosDelDesarrollador([]);
-      setMensajeProyecto('');
-    }
-  }, [trabajadores.datos, borrador.desarrolladorId]);
-
-  const cargarProyectos = useCallback(({ senal }) => obtenerProyectosAsignables({ senal }), []);
-  const proyectos = usePeticion(cargarProyectos, []);
+  const desarrolladoresDisponibles = desarrolladoresBuscados ?? (trabajadores.datos?.contenido || []);
 
   const cargar = useCallback(
     ({ senal }) => (criterios ? reporteDeDesempeno(criterios, { senal }) : Promise.resolve(null)),
@@ -117,8 +106,6 @@ export default function PaginaReporteDesempeno() {
 
   useEffect(() => {
     if (!borrador.desarrolladorId) {
-      setProyectosDelDesarrollador([]);
-      setMensajeProyecto('');
       return undefined;
     }
 
@@ -153,9 +140,11 @@ export default function PaginaReporteDesempeno() {
         }
 
         setMensajeProyecto('Selecciona el proyecto habilitado al que se le quiere consultar el rendimiento.');
-        if (borrador.proyectoId && !validas.some((proyecto) => proyecto.valor === String(borrador.proyectoId))) {
-          setBorrador((previos) => ({ ...previos, proyectoId: '' }));
-        }
+        setBorrador((previos) =>
+          previos.proyectoId && !validas.some((proyecto) => proyecto.valor === String(previos.proyectoId))
+            ? { ...previos, proyectoId: '' }
+            : previos,
+        );
       } catch (errorCargar) {
         if (!cancelado) {
           setProyectosDelDesarrollador([]);
@@ -170,23 +159,22 @@ export default function PaginaReporteDesempeno() {
     };
   }, [borrador.desarrolladorId]);
 
-  useEffect(() => {
-    if (!borrador.proyectoId) {
-      return;
-    }
-
-    const proyectoValido = proyectosDelDesarrollador.some(
-      (proyecto) => proyecto.valor === String(borrador.proyectoId),
-    );
-
-    if (!proyectoValido) {
-      setBorrador((previos) => ({ ...previos, proyectoId: '' }));
-      setMensajeProyecto('El proyecto seleccionado no corresponde a una asignacion valida del desarrollador.');
-    }
-  }, [borrador.proyectoId, proyectosDelDesarrollador]);
-
   function alCambiar(evento) {
     const { name, value } = evento.target;
+    if (name === 'desarrolladorId') {
+      setBorrador((previos) => ({ ...previos, desarrolladorId: value, proyectoId: '' }));
+      setProyectosDelDesarrollador([]);
+      setMensajeProyecto('');
+      setCriterios(null);
+      return;
+    }
+    if (name === 'proyectoId') {
+      if (value && !proyectosDelDesarrollador.some((proyecto) => proyecto.valor === String(value))) {
+        setBorrador((previos) => ({ ...previos, proyectoId: '' }));
+        setMensajeProyecto('El proyecto seleccionado no corresponde a una asignacion valida del desarrollador.');
+        return;
+      }
+    }
     setBorrador((previos) => ({ ...previos, [name]: value }));
     setCriterios(null);
   }
@@ -197,7 +185,7 @@ export default function PaginaReporteDesempeno() {
   }
 
   async function buscarDesarrolladoresConFiltros() {
-    const criterios = Object.fromEntries(
+    const criteriosBusqueda = Object.fromEntries(
       Object.entries(filtrosDesarrollador).filter(([, valor]) => String(valor ?? '').trim() !== ''),
     );
 
@@ -207,11 +195,11 @@ export default function PaginaReporteDesempeno() {
       const respuesta = await buscarTrabajadores({
         tipoTrabajador: 'DESARROLLADOR',
         estado: 'HABILITADO',
-        ...criterios,
+        ...criteriosBusqueda,
         tamano: 100,
       });
       const lista = respuesta?.contenido || [];
-      setDesarrolladoresDisponibles(lista);
+      setDesarrolladoresBuscados(lista);
       setFiltrosAplicados({ ...filtrosDesarrollador });
 
       if (borrador.desarrolladorId && !lista.some((trabajador) => String(trabajador.id) === String(borrador.desarrolladorId))) {
@@ -219,10 +207,10 @@ export default function PaginaReporteDesempeno() {
         setProyectosDelDesarrollador([]);
         setMensajeProyecto('');
       }
-    } catch (error) {
-      setDesarrolladoresDisponibles([]);
+    } catch (errorBusqueda) {
+      setDesarrolladoresBuscados([]);
       setFiltrosAplicados({ ...filtrosDesarrollador });
-      setMensajeProyecto(error?.message || 'No se pudieron cargar los desarrolladores con los filtros indicados.');
+      setMensajeProyecto(errorBusqueda?.message || 'No se pudieron cargar los desarrolladores con los filtros indicados.');
     } finally {
       setBuscandoDesarrolladores(false);
     }
@@ -231,8 +219,9 @@ export default function PaginaReporteDesempeno() {
   function limpiarFiltrosDesarrollador() {
     setFiltrosDesarrollador(FILTROS_DESARROLLADOR_VACIOS);
     setFiltrosAplicados(FILTROS_DESARROLLADOR_VACIOS);
-    setDesarrolladoresDisponibles(trabajadores.datos?.contenido || []);
-    if (borrador.desarrolladorId && !trabajadores.datos?.contenido?.some((trabajador) => String(trabajador.id) === String(borrador.desarrolladorId))) {
+    setDesarrolladoresBuscados(null);
+    const listaBase = trabajadores.datos?.contenido || [];
+    if (borrador.desarrolladorId && !listaBase.some((trabajador) => String(trabajador.id) === String(borrador.desarrolladorId))) {
       setBorrador((previos) => ({ ...previos, desarrolladorId: '', proyectoId: '' }));
       setProyectosDelDesarrollador([]);
       setMensajeProyecto('');

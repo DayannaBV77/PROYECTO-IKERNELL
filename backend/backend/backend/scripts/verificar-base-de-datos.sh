@@ -53,11 +53,15 @@ CLAVE="${IKERNELL_DB_PASSWORD:-}"
 API="${IKERNELL_API:-http://localhost:8080}"
 CONTENEDOR="${IKERNELL_CONTENEDOR:-ikernell-postgres}"
 
-# psql se ejecuta dentro del contenedor: asi no hace falta instalarlo en el
-# equipo. PGPASSWORD evita que pida la clave de forma interactiva.
+# psql se ejecuta dentro del contenedor si esta corriendo, o contra el servidor
+# local directamente. PGPASSWORD evita que pida la clave de forma interactiva.
 psql_() {
-	podman exec -e PGPASSWORD="$CLAVE" "$CONTENEDOR" \
-		psql -h 127.0.0.1 -U "$USUARIO" -d "$BASE" -tAc "$1" 2>&1
+	if command -v podman >/dev/null 2>&1 && podman ps --format '{{.Names}}' 2>/dev/null | grep -qx "$CONTENEDOR"; then
+		podman exec -e PGPASSWORD="$CLAVE" "$CONTENEDOR" \
+			psql -h 127.0.0.1 -U "$USUARIO" -d "$BASE" -tAc "$1" 2>&1
+	else
+		PGPASSWORD="$CLAVE" psql -h "$HOST" -p "$PUERTO" -U "$USUARIO" -d "$BASE" -tAc "$1" 2>&1
+	fi
 }
 
 echo -e "${AZUL}=========================================================${FIN}"
@@ -71,12 +75,11 @@ echo "  API      : $API"
 titulo "PARTE 1 - Base de datos"
 # =============================================================================
 
-if ! podman ps --format '{{.Names}}' | grep -qx "$CONTENEDOR"; then
-	fallo "El contenedor '$CONTENEDOR' no esta corriendo."
-	echo -e "        Arranquelo con: ${AMARILLO}systemctl --user start ikernell-postgres${FIN}"
-	exit 1
+if command -v podman >/dev/null 2>&1 && podman ps --format '{{.Names}}' 2>/dev/null | grep -qx "$CONTENEDOR"; then
+	ok "Contenedor '$CONTENEDOR' corriendo."
+else
+	ok "Usando servidor PostgreSQL directo en $HOST:$PUERTO."
 fi
-ok "Contenedor '$CONTENEDOR' corriendo."
 
 VERSION=$(psql_ "SELECT version();")
 if [[ "$VERSION" == PostgreSQL* ]]; then
@@ -163,11 +166,11 @@ else
 fi
 
 # --- La prueba que importa: escribir por la API y confirmarlo en SQL --------
-IDENT="TEST$(date +%s)"
+IDENT="$(date +%s | tail -c 11)"
 CREACION=$(curl -s -b "$GALLETAS" -c "$GALLETAS" -X POST "$API/api/trabajadores" \
 	-H "Content-Type: application/json" -H "X-XSRF-TOKEN: $(token)" \
 	-d "{\"identificacion\":\"$IDENT\",\"nombre\":\"Prueba\",\"apellido\":\"Conexion\",
-	     \"fechaNacimiento\":\"1990-01-01\",\"direccion\":\"Calle 1\",
+	     \"fechaNacimiento\":\"1990-01-01\",\"direccion\":\"Calle 10 # 5-20, Bogota\",
 	     \"profesion\":\"Ingeniero de sistemas\",\"especialidadDesarrollo\":\"Backend\",
 	     \"tipoTrabajador\":\"DESARROLLADOR\"}")
 
