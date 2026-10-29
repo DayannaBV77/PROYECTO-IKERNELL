@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { CircleCheck, Link2, Search, TriangleAlert } from 'lucide-react';
 
 import {
@@ -18,12 +18,14 @@ import Campo from '../../componentes/ui/Campo.jsx';
 import Confirmacion from '../../componentes/ui/Confirmacion.jsx';
 import Seccion from '../../componentes/ui/Seccion.jsx';
 import estilos from '../../estilos/gestion.module.css';
-import { ESPECIALIDADES_DESARROLLO } from '../trabajadores/catalogoEspecialidades.js';
+import { listarEspecialidades } from '../trabajadores/catalogoEspecialidades.js';
+import SelectorEspecialidades from '../trabajadores/componentes/SelectorEspecialidades.jsx';
 import { PROFESIONES } from '../trabajadores/catalogoProfesiones.js';
 import { usePeticion } from '../../hooks/usePeticion.js';
 import { formatearFecha } from '../../utilidades/formato.js';
 
 const VACIO = { trabajadorId: '', proyectoId: '', rolEnProyecto: '' };
+const RETRASO_FILTRO_MS = 300;
 const FILTROS_TRABAJADOR_VACIOS = {
   identificacion: '',
   especialidadDesarrollo: '',
@@ -37,10 +39,9 @@ const OPCIONES_PROFESIONES = [
   ...PROFESIONES.map((profesion) => ({ valor: profesion, texto: profesion })),
 ];
 
-const OPCIONES_ESPECIALIDADES = [
-  { valor: '', texto: 'Todas las especialidades' },
-  ...ESPECIALIDADES_DESARROLLO.map((especialidad) => ({ valor: especialidad, texto: especialidad })),
-];
+function FiltroEspecialidad({ value, onChange }) {
+  return <SelectorEspecialidades etiqueta="Especialidad" value={value} onChange={onChange} />;
+}
 
 function normalizarTexto(valor = '') {
   return String(valor ?? '')
@@ -67,9 +68,24 @@ function filtrarTrabajadores(trabajadores, filtros = FILTROS_TRABAJADOR_VACIOS) 
         apellido: trabajador.apellido ?? '',
       }[campo];
 
+      if (campo === 'especialidadDesarrollo') {
+        const especialidades = listarEspecialidades(valor);
+        if (especialidades.length === 0) {
+          return true;
+        }
+
+        return especialidades.some((especialidad) =>
+          normalizarTexto(texto).includes(normalizarTexto(especialidad)),
+        );
+      }
+
       return normalizarTexto(texto).includes(normalizarTexto(valor));
     });
   });
+}
+
+function hayFiltrosActivos(filtros = FILTROS_TRABAJADOR_VACIOS) {
+  return Object.values(filtros).some((valor) => String(valor ?? '').trim() !== '');
 }
 
 /**
@@ -115,6 +131,22 @@ export default function PaginaAsignaciones() {
     texto: proyecto.nombre,
   }));
 
+  useEffect(() => {
+    const idRetardo = window.setTimeout(() => {
+      setFiltrosAplicados({ ...filtrosTrabajador });
+
+      if (valores.trabajadorId && !filtrarTrabajadores(trabajadores.datos?.contenido || [], filtrosTrabajador).some((trabajador) => String(trabajador.id) === String(valores.trabajadorId))) {
+        setValores((previos) => ({ ...previos, trabajadorId: '' }));
+      }
+
+      if (valores.proyectoId && !opcionesDeProyecto.some((proyecto) => proyecto.valor === String(valores.proyectoId))) {
+        setValores((previos) => ({ ...previos, proyectoId: '' }));
+      }
+    }, RETRASO_FILTRO_MS);
+
+    return () => window.clearTimeout(idRetardo);
+  }, [filtrosTrabajador, valores.trabajadorId, valores.proyectoId, opcionesDeProyecto, trabajadores.datos?.contenido]);
+
   function alCambiar(evento) {
     const { name, value } = evento.target;
     setValores((previos) => ({ ...previos, [name]: value }));
@@ -124,9 +156,6 @@ export default function PaginaAsignaciones() {
   function alCambiarFiltroTrabajador(evento) {
     const { name, value } = evento.target;
     setFiltrosTrabajador((previos) => ({ ...previos, [name]: value }));
-    if (valores.trabajadorId && !filtrarTrabajadores(trabajadores.datos?.contenido || [], filtrosAplicados).some((trabajador) => String(trabajador.id) === String(valores.trabajadorId))) {
-      setValores((previos) => ({ ...previos, trabajadorId: '' }));
-    }
   }
 
   function aplicarFiltrosTrabajadores() {
@@ -139,7 +168,7 @@ export default function PaginaAsignaciones() {
   function limpiarFiltrosTrabajadores() {
     setFiltrosTrabajador(FILTROS_TRABAJADOR_VACIOS);
     setFiltrosAplicados(FILTROS_TRABAJADOR_VACIOS);
-    setValores((previos) => ({ ...previos, trabajadorId: '' }));
+    setValores((previos) => ({ ...previos, trabajadorId: '', proyectoId: '' }));
   }
 
   async function guardar(confirmacion) {
@@ -200,33 +229,30 @@ export default function PaginaAsignaciones() {
               etiqueta="Identificacion"
               nombre="identificacion"
               value={filtrosTrabajador.identificacion}
-              onChange={alCambiarFiltroTrabajador}
+              onInput={alCambiarFiltroTrabajador}
             />
-            <Campo
-              etiqueta="Especialidad"
-              nombre="especialidadDesarrollo"
-              opciones={OPCIONES_ESPECIALIDADES}
+            <FiltroEspecialidad
               value={filtrosTrabajador.especialidadDesarrollo}
-              onChange={alCambiarFiltroTrabajador}
+              onChange={(valor) => setFiltrosTrabajador((previos) => ({ ...previos, especialidadDesarrollo: valor }))}
             />
             <Campo
               etiqueta="Profesion"
               nombre="profesion"
               opciones={OPCIONES_PROFESIONES}
               value={filtrosTrabajador.profesion}
-              onChange={alCambiarFiltroTrabajador}
+              onInput={alCambiarFiltroTrabajador}
             />
             <Campo
               etiqueta="Nombre"
               nombre="nombre"
               value={filtrosTrabajador.nombre}
-              onChange={alCambiarFiltroTrabajador}
+              onInput={alCambiarFiltroTrabajador}
             />
             <Campo
               etiqueta="Apellido"
               nombre="apellido"
               value={filtrosTrabajador.apellido}
-              onChange={alCambiarFiltroTrabajador}
+              onInput={alCambiarFiltroTrabajador}
             />
           </div>
           <div className={estilos.filtrosAcciones}>
@@ -239,7 +265,7 @@ export default function PaginaAsignaciones() {
           </div>
         </div>
 
-        {filtrosAplicados && Object.values(filtrosAplicados).some((valor) => String(valor).trim() !== '') && trabajadoresFiltrados.length === 0 && (
+        {filtrosAplicados && hayFiltrosActivos(filtrosAplicados) && trabajadoresFiltrados.length === 0 && (
           <div style={{ marginBottom: 'var(--s-5)' }}>
             <EstadoVacio mensaje="No hay trabajadores que coincidan con los filtros indicados." icono={Search} />
           </div>
@@ -382,6 +408,18 @@ function ConsultaDeAsignaciones({ trabajadoresHabilitados, opcionesDeProyecto, r
   );
   const opciones = por === 'trabajador' ? opcionesDeTrabajador : opcionesDeProyecto;
 
+  useEffect(() => {
+    const idRetardo = window.setTimeout(() => {
+      setFiltrosAplicados({ ...filtrosTrabajador });
+      if (id && !opciones.some((opcion) => opcion.valor === String(id))) {
+        setId('');
+        setConsulta(null);
+      }
+    }, RETRASO_FILTRO_MS);
+
+    return () => window.clearTimeout(idRetardo);
+  }, [filtrosTrabajador, id, opciones]);
+
   function alCambiarFiltroTrabajador(evento) {
     const { name, value } = evento.target;
     setFiltrosTrabajador((previos) => ({ ...previos, [name]: value }));
@@ -428,33 +466,30 @@ function ConsultaDeAsignaciones({ trabajadoresHabilitados, opcionesDeProyecto, r
                 etiqueta="Identificacion"
                 nombre="identificacion"
                 value={filtrosTrabajador.identificacion}
-                onChange={alCambiarFiltroTrabajador}
+                onInput={alCambiarFiltroTrabajador}
               />
-              <Campo
-                etiqueta="Especialidad"
-                nombre="especialidadDesarrollo"
-                opciones={OPCIONES_ESPECIALIDADES}
+              <FiltroEspecialidad
                 value={filtrosTrabajador.especialidadDesarrollo}
-                onChange={alCambiarFiltroTrabajador}
+                onChange={(valor) => setFiltrosTrabajador((previos) => ({ ...previos, especialidadDesarrollo: valor }))}
               />
               <Campo
                 etiqueta="Profesion"
                 nombre="profesion"
                 opciones={OPCIONES_PROFESIONES}
                 value={filtrosTrabajador.profesion}
-                onChange={alCambiarFiltroTrabajador}
+                onInput={alCambiarFiltroTrabajador}
               />
               <Campo
                 etiqueta="Nombre"
                 nombre="nombre"
                 value={filtrosTrabajador.nombre}
-                onChange={alCambiarFiltroTrabajador}
+                onInput={alCambiarFiltroTrabajador}
               />
               <Campo
                 etiqueta="Apellido"
                 nombre="apellido"
                 value={filtrosTrabajador.apellido}
-                onChange={alCambiarFiltroTrabajador}
+                onInput={alCambiarFiltroTrabajador}
               />
             </div>
           )}
@@ -470,7 +505,7 @@ function ConsultaDeAsignaciones({ trabajadoresHabilitados, opcionesDeProyecto, r
 
         {por === 'trabajador' &&
           filtrosAplicados &&
-          Object.values(filtrosAplicados).some((valor) => String(valor).trim() !== '') &&
+          hayFiltrosActivos(filtrosAplicados) &&
           opcionesDeTrabajador.length === 0 && (
             <div style={{ marginBottom: 'var(--s-5)' }}>
               <EstadoVacio mensaje="No hay trabajadores que coincidan con los filtros indicados." icono={Search} />

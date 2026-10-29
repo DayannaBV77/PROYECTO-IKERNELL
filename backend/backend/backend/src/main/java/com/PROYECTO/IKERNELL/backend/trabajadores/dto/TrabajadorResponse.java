@@ -23,9 +23,11 @@ public record TrabajadorResponse(
 		TipoTrabajador tipoTrabajador,
 		EstadoHabilitacion estado,
 		boolean tieneFotografia,
+		String correoCorporativo,
 		List<HabilidadTrabajadorResponse> habilidades) {
 
-	public static TrabajadorResponse de(Trabajador trabajador, List<HabilidadTrabajadorResponse> habilidades) {
+	public static TrabajadorResponse de(Trabajador trabajador, List<HabilidadTrabajadorResponse> habilidades,
+			String correoCorporativo) {
 		return new TrabajadorResponse(
 				trabajador.getId(),
 				trabajador.getIdentificacion(),
@@ -38,6 +40,7 @@ public record TrabajadorResponse(
 				trabajador.getTipoTrabajador(),
 				trabajador.getEstado(),
 				trabajador.getFotoRuta() != null,
+				correoCorporativo,
 				habilidades);
 	}
 

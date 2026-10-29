@@ -11,6 +11,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.PROYECTO.IKERNELL.backend.auth.CuentaAccesoRepository;
+import com.PROYECTO.IKERNELL.backend.auth.domain.CuentaAcceso;
+import com.PROYECTO.IKERNELL.backend.corporativo.ServicioProvisionamientoCorreo;
+import com.PROYECTO.IKERNELL.backend.corporativo.ServicioProvisionamientoCorreo.CorreoProvisionado;
 import com.PROYECTO.IKERNELL.backend.shared.domain.EstadoHabilitacion;
 import com.PROYECTO.IKERNELL.backend.shared.error.RecursoNoEncontradoException;
 import com.PROYECTO.IKERNELL.backend.shared.error.ReglaNegocioException;
@@ -49,12 +53,19 @@ public class ServicioTrabajadores {
 	private final TrabajadorRepository trabajadores;
 	private final HabilidadTrabajadorRepository habilidades;
 	private final AlmacenFotografias almacenFotografias;
+	private final CuentaAccesoRepository cuentas;
+	private final ServicioProvisionamientoCorreo provisionamientoCorreo;
 
 	public ServicioTrabajadores(TrabajadorRepository trabajadores,
-			HabilidadTrabajadorRepository habilidades, AlmacenFotografias almacenFotografias) {
+			HabilidadTrabajadorRepository habilidades,
+			AlmacenFotografias almacenFotografias,
+			CuentaAccesoRepository cuentas,
+			ServicioProvisionamientoCorreo provisionamientoCorreo) {
 		this.trabajadores = trabajadores;
 		this.habilidades = habilidades;
 		this.almacenFotografias = almacenFotografias;
+		this.cuentas = cuentas;
+		this.provisionamientoCorreo = provisionamientoCorreo;
 	}
 
 	/**
@@ -88,6 +99,10 @@ public class ServicioTrabajadores {
 				peticion.tipoTrabajador());
 		Trabajador guardado = trabajadores.save(trabajador);
 		reemplazarHabilidades(guardado, peticion.habilidades());
+		CorreoProvisionado correo = provisionamientoCorreo.provisionarPara(guardado);
+		if (correo == null || !correo.correoCorporativo().contains("@")) {
+			throw new ReglaNegocioException("No se pudo crear la cuenta de correo corporativo del trabajador.");
+		}
 		return guardado;
 	}
 
@@ -109,6 +124,13 @@ public class ServicioTrabajadores {
 	public Trabajador obtener(Long id) {
 		return trabajadores.findById(id)
 				.orElseThrow(() -> new RecursoNoEncontradoException("No existe un trabajador con el id " + id + "."));
+	}
+
+	@Transactional(readOnly = true)
+	public String correoCorporativoDe(Long trabajadorId) {
+		return cuentas.findByTrabajadorId(trabajadorId)
+				.map(CuentaAcceso::getCorreoCorporativo)
+				.orElse(null);
 	}
 
 	@Transactional(readOnly = true)

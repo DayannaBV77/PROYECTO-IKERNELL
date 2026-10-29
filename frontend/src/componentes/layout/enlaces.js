@@ -9,6 +9,8 @@
  * Vive en su propio modulo para que el archivo del layout exporte unicamente
  * componentes.
  */
+const CORREO_CORPORATIVO_URL = 'https://correo.ikernell.com';
+
 export const ENLACES_PUBLICOS = [
   { a: '/', texto: 'Inicio', exacto: true },
   { a: '/lineamientos', texto: 'Nosotros' },
@@ -65,33 +67,50 @@ export const ENLACES_PRIVADOS = [
   // permiso es la asignacion en el proyecto, no el tipo de trabajador.
   { a: '/app/chat', texto: 'Conversaciones' },
   { a: '/app/biblioteca', texto: 'Biblioteca' },
+  { a: CORREO_CORPORATIVO_URL, texto: 'Correo corporativo', externo: true },
   { a: '/app/tutoriales', texto: 'Tutoriales' },
+];
+
+export const ENLACES_LIDER = [
+  { a: '/app', texto: 'Panel', exacto: true },
+  { a: '/app/proyectos', texto: 'Proyectos' },
+  { a: '/app/actividades', texto: 'Actividades' },
+  { a: '/app/reportes/proyecto', texto: 'Reportes' },
+  { a: '/app/reportes/archivo-plano', texto: 'Archivo plano' },
+  { a: '/app/mis-actividades', texto: 'Mis actividades' },
+  { a: '/app/incidencias', texto: 'Incidencias' },
+  { a: '/app/chat', texto: 'Conversaciones' },
 ];
 
 /**
  * Menu que corresponde a la sesion.
  *
- * HU-03 C02: el trabajador autenticado "sigue viendo la informacion empresarial
- * publica y, ademas, ve los servicios internos". La sesion anade entradas, no
- * las sustituye, que es tambien lo que muestran los mockups.
+ * El rol de LIDER DE PROYECTOS y los demas roles autenticados muestran
+ * exclusivamente las opciones internas de su espacio de trabajo, eliminando
+ * las entradas del menu publico (Inicio, Nosotros, Portafolio, etc.) para
+ * mantener la navegacion limpia y enfocada.
  *
- * El mismo criterio pide mostrar las funciones de su tipo "y ninguna de las que
- * corresponden a otro tipo", de ahi el filtrado. Ocultar la entrada no es la
- * medida de seguridad: el servidor rechaza la operacion de todos modos.
+ * Sin sesion se retorna el catalogo publico.
  */
 export function enlacesPara(sesion) {
   if (!sesion) {
     return ENLACES_PUBLICOS;
   }
 
+  // Líder de Proyectos: únicamente sus módulos y herramientas de gestión
+  if (sesion.tipoTrabajador === 'LIDER') {
+    return ENLACES_LIDER;
+  }
+
+  // Coordinador de Proyectos: únicamente sus herramientas de gestión
   if (sesion.tipoTrabajador === 'COORDINADOR') {
     return ENLACES_PRIVADOS.filter(
       ({ tipos }) => !tipos || tipos.includes(sesion.tipoTrabajador),
     );
   }
 
-  const propios = ENLACES_PRIVADOS.filter(
+  // Otros trabajadores autenticados (Desarrollador, etc.): solo sus servicios autorizados
+  return ENLACES_PRIVADOS.filter(
     ({ tipos }) => !tipos || tipos.includes(sesion.tipoTrabajador),
   );
-  return [...ENLACES_PUBLICOS, ...propios];
 }

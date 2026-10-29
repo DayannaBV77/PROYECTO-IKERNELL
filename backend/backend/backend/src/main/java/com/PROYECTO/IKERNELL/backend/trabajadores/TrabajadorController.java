@@ -182,6 +182,9 @@ public class TrabajadorController {
 	}
 
 	private TrabajadorResponse respuesta(Trabajador trabajador) {
-		return TrabajadorResponse.de(trabajador, servicio.habilidadesDe(trabajador.getId()));
+		return TrabajadorResponse.de(
+				trabajador,
+				servicio.habilidadesDe(trabajador.getId()),
+				servicio.correoCorporativoDe(trabajador.getId()));
 	}
 }

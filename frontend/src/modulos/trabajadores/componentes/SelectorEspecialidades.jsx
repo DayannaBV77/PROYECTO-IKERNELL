@@ -8,7 +8,7 @@ import {
 } from '../catalogoEspecialidades.js';
 import estilos from './SelectorEspecialidades.module.css';
 
-export default function SelectorEspecialidades({ value = '', onChange, error, obligatorio = false }) {
+export default function SelectorEspecialidades({ value = '', onChange, error, obligatorio = false, etiqueta = 'Especialidad de desarrollo' }) {
   const seleccionadas = listarEspecialidades(value);
   const [abierto, setAbierto] = useState(false);
   const [busqueda, setBusqueda] = useState('');
@@ -39,7 +39,7 @@ export default function SelectorEspecialidades({ value = '', onChange, error, ob
   return (
     <div className={`${estilos.selector} ${error ? estilos.conError : ''}`}>
       <label className={estilos.etiqueta} htmlFor="especialidades-desarrollo">
-        Especialidad de desarrollo
+        {etiqueta}
         {obligatorio && (
           <span className={estilos.obligatorio} aria-hidden="true">
             *

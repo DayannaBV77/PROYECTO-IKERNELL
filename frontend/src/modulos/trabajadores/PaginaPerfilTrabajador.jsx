@@ -229,6 +229,12 @@ function PerfilCargado({ inicial }) {
               <dt>Fecha de nacimiento</dt>
               <dd>{formatearFecha(trabajador.fechaNacimiento)}</dd>
             </div>
+            {trabajador.correoCorporativo && (
+              <div>
+                <dt>Correo corporativo</dt>
+                <dd>{trabajador.correoCorporativo}</dd>
+              </div>
+            )}
             <div>
               <dt>Profesion</dt>
               <dd>{trabajador.profesion}</dd>

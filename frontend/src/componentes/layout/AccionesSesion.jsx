@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, LogOut } from 'lucide-react';
 
 import { ETIQUETA_TIPO } from '../../api/autenticacion.js';
@@ -19,6 +19,7 @@ import estilos from './AccionesSesion.module.css';
 export default function AccionesSesion() {
   const { sesion, comprobando, salir } = useSesion();
   const navegar = useNavigate();
+  const ubicacion = useLocation();
 
   if (comprobando) {
     return <span className={estilos.reserva} aria-hidden="true" />;
@@ -39,6 +40,8 @@ export default function AccionesSesion() {
     navegar('/');
   }
 
+  const enZonaPrivada = ubicacion.pathname.startsWith('/app');
+
   return (
     <div className={estilos.sesion}>
       <span className={estilos.identidad}>
@@ -48,9 +51,11 @@ export default function AccionesSesion() {
         </span>
       </span>
 
-      <Boton a="/app" variante="secundario" icono={LayoutDashboard}>
-        Panel
-      </Boton>
+      {!enZonaPrivada && (
+        <Boton a="/app" variante="secundario" icono={LayoutDashboard}>
+          Panel
+        </Boton>
+      )}
 
       <Boton variante="texto" icono={LogOut} onClick={alSalir}>
         Salir
