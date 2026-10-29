@@ -1,0 +1,359 @@
+.filtrosContenedor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  margin-bottom: var(--s-6);
+}
+
+/* Rejilla de métricas y contadores rápidos */
+.resumenGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: var(--s-3);
+  margin-bottom: var(--s-4);
+}
+
+.tarjetaContador {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: var(--s-4);
+  background: var(--c-superficie);
+  border: 1px solid var(--c-borde);
+  border-radius: var(--r-md);
+  box-shadow: var(--b-sutil);
+  cursor: pointer;
+  transition: all var(--tr-rapida);
+  text-align: left;
+  border-left: 4px solid var(--c-neutro);
+}
+
+.tarjetaContador:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--b-media);
+}
+
+.tarjetaActiva {
+  border-color: var(--c-turquesa-fuerte);
+  background: var(--c-superficie-tenue);
+}
+
+.contadorNumero {
+  font-size: var(--t-xl);
+  font-weight: var(--p-bold);
+  color: var(--c-marino-titulo);
+  line-height: var(--i-ajustado);
+}
+
+.contadorRotulo {
+  font-size: var(--t-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--e-nav);
+  font-weight: var(--p-semi);
+  color: var(--c-texto-tenue);
+  margin-top: var(--s-1);
+}
+
+/* Colores laterales de los contadores */
+.bordeTotal { border-left-color: var(--c-marino-medio); }
+.bordePendiente { border-left-color: var(--c-alerta); }
+.bordeEnGestion { border-left-color: var(--c-info); }
+.bordeRespondida { border-left-color: var(--c-exito); }
+.bordeError { border-left-color: var(--c-error); }
+
+/* Barra de búsqueda y selector */
+.barraControl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--s-4);
+  background: var(--c-superficie);
+  border: 1px solid var(--c-borde);
+  border-radius: var(--r-md);
+}
+
+.grupoFiltros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+  align-items: center;
+  flex: 1;
+}
+
+/* Tarjeta individual de consulta */
+.tarjetaConsulta {
+  background: var(--c-superficie);
+  border: 1px solid var(--c-borde);
+  border-radius: var(--r-lg);
+  box-shadow: var(--b-sutil);
+  padding: var(--s-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  transition: border-color var(--tr-rapida);
+}
+
+.tarjetaConsulta:hover {
+  border-color: var(--c-borde-tarjeta);
+}
+
+.cabeceraConsulta {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--s-4);
+  flex-wrap: wrap;
+}
+
+.visitanteNombre {
+  font-size: var(--t-md);
+  font-weight: var(--p-bold);
+  color: var(--c-marino-titulo);
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.identificadorRef {
+  font-size: var(--t-xs);
+  color: var(--c-texto-tenue);
+  font-weight: var(--p-normal);
+}
+
+.metaRecepcion {
+  font-size: var(--t-xs);
+  color: var(--c-texto-tenue);
+  margin-top: var(--s-1);
+}
+
+/* Insignias de estado (Badges) */
+.badgeEstado {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  padding: 4px var(--s-3);
+  border-radius: var(--r-full);
+  font-size: var(--t-xs);
+  font-weight: var(--p-semi);
+  letter-spacing: 0.02em;
+}
+
+.badgePendiente {
+  background: var(--c-alerta-fondo);
+  color: #92400e;
+  border: 1px solid var(--c-alerta);
+}
+
+.badgeEnGestion {
+  background: var(--c-info-fondo);
+  color: #0369a1;
+  border: 1px solid var(--c-info);
+}
+
+.badgeRespondida {
+  background: var(--c-exito-fondo);
+  color: #15803d;
+  border: 1px solid var(--c-exito);
+}
+
+.badgeErrorNotificacion {
+  background: var(--c-error-fondo);
+  color: #b91c1c;
+  border: 1px solid var(--c-error);
+}
+
+/* Cuerpo de la pregunta */
+.preguntaBloque {
+  background: var(--c-fondo);
+  border-left: 3px solid var(--c-turquesa-fuerte);
+  padding: var(--s-3) var(--s-4);
+  border-radius: 0 var(--r-md) var(--r-md) 0;
+}
+
+.preguntaTitulo {
+  font-size: var(--t-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--e-nav);
+  font-weight: var(--p-semi);
+  color: var(--c-texto-tenue);
+  margin-bottom: var(--s-1);
+}
+
+.preguntaTexto {
+  font-size: var(--t-base);
+  color: var(--c-texto);
+  line-height: var(--i-normal);
+  white-space: pre-wrap;
+}
+
+/* Datos de contacto */
+.datosContacto {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-4);
+  align-items: center;
+  font-size: var(--t-sm);
+  color: var(--c-texto-tenue);
+}
+
+.enlaceContacto {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  color: var(--c-marino-medio);
+  text-decoration: underline;
+}
+
+.enlaceContacto:hover {
+  color: var(--c-turquesa-fuerte);
+}
+
+/* Bloque de atención / información de respuesta */
+.infoAtencion {
+  font-size: var(--t-xs);
+  color: var(--c-texto-tenue);
+  padding-top: var(--s-2);
+  border-top: 1px dashed var(--c-borde);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+/* Barra de acciones de la consulta */
+.accionesConsulta {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  flex-wrap: wrap;
+  margin-top: var(--s-2);
+}
+
+/* Panel integrado de redacción y respuesta */
+.panelRedaccion {
+  margin-top: var(--s-4);
+  padding: var(--s-5);
+  background: var(--c-superficie);
+  border: 1px solid var(--c-borde-tarjeta);
+  border-radius: var(--r-md);
+  box-shadow: var(--b-sutil);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.cabeceraRedaccion {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--c-borde);
+  padding-bottom: var(--s-3);
+}
+
+.tituloRedaccion {
+  font-size: var(--t-base);
+  font-weight: var(--p-semi);
+  color: var(--c-marino-titulo);
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.avisoEnvioCorreo {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-2);
+  padding: var(--s-3);
+  background: var(--c-info-fondo);
+  border: 1px solid var(--c-info);
+  border-radius: var(--r-md);
+  font-size: var(--t-xs);
+  color: #075985;
+}
+
+.accionesFormularioRespuesta {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--s-3);
+  flex-wrap: wrap;
+}
+
+/* Historial de respuestas previas */
+.historialContenedor {
+  margin-top: var(--s-4);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--c-borde);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.historialTitulo {
+  font-size: var(--t-sm);
+  font-weight: var(--p-semi);
+  color: var(--c-marino-titulo);
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.itemHistorial {
+  background: var(--c-fondo);
+  border: 1px solid var(--c-borde);
+  border-radius: var(--r-md);
+  padding: var(--s-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.cabeceraItemHistorial {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--t-xs);
+  color: var(--c-texto-tenue);
+}
+
+.cuerpoItemHistorial {
+  font-size: var(--t-sm);
+  color: var(--c-texto);
+  line-height: var(--i-normal);
+  white-space: pre-wrap;
+}
+
+.pieItemHistorial {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--t-xs);
+  margin-top: var(--s-2);
+  padding-top: var(--s-2);
+  border-top: 1px dashed var(--c-borde);
+}
+
+.estadoEnvioExito {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  color: var(--c-exito);
+  font-weight: var(--p-semi);
+}
+
+.estadoEnvioFallo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  color: var(--c-error);
+  font-weight: var(--p-semi);
+}
+
+.detalleFallo {
+  color: #7f1d1d;
+  font-size: var(--t-xs);
+  margin-top: var(--s-1);
+}
+

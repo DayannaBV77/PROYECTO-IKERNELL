@@ -266,4 +266,128 @@ class ContenidoAdminControllerTest {
 				.andExpect(status().isForbidden());
 	}
 
+	@Test
+	@DisplayName("RF-035, HU-02: Se puede cambiar una consulta a estado EN_GESTION")
+	void pasaConsultaAEstadoEnGestion() throws Exception {
+		mockMvc.perform(post("/api/publico/consultas").with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"pregunta\":\"¿Tienen planes para empresas medianas?\",\"nombreContacto\":\"Laura\",\"correoContacto\":\"laura@empresa.com\"}"))
+				.andExpect(status().isCreated());
+
+		String listaResp = mockMvc.perform(get("/api/admin/consultas").with(authentication(coordinador)))
+				.andReturn().getResponse().getContentAsString();
+		Long id = Long.valueOf(listaResp.replaceAll(".*\"id\":(\\d+).*", "$1"));
+
+		mockMvc.perform(post("/api/admin/consultas/" + id + "/en-gestion")
+				.with(csrf()).with(authentication(coordinador)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.estado").value("EN_GESTION"));
+
+		// Filtro por EN_GESTION
+		mockMvc.perform(get("/api/admin/consultas").with(authentication(coordinador))
+				.param("estado", "EN_GESTION"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.total").value(1))
+				.andExpect(jsonPath("$.contenido[0].id").value(id));
+	}
+
+	@Test
+	@DisplayName("RF-035, HU-02: Respuesta exitosa se notifica por correo y marca la consulta como RESPONDIDA")
+	void respuestaExitosaNotificaYMarcaRespondida() throws Exception {
+		mockMvc.perform(post("/api/publico/consultas").with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"pregunta\":\"¿Ofrecen soporte 24/7?\",\"nombreContacto\":\"Andres Botero\",\"correoContacto\":\"andres.botero@cliente.com\"}"))
+				.andExpect(status().isCreated());
+
+		String listaResp = mockMvc.perform(get("/api/admin/consultas").with(authentication(coordinador)))
+				.andReturn().getResponse().getContentAsString();
+		Long id = Long.valueOf(listaResp.replaceAll(".*\"id\":(\\d+).*", "$1"));
+
+		mockMvc.perform(post("/api/admin/consultas/" + id + "/respuestas")
+				.with(csrf()).with(authentication(coordinador))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"respuesta\":\"Hola Andrés, sí ofrecemos soporte especializado 24/7 con acuerdos de nivel de servicio (SLA).\"}"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.exitoso").value(true))
+				.andExpect(jsonPath("$.consulta.estado").value("RESPONDIDA"))
+				.andExpect(jsonPath("$.consulta.atendida").value(true))
+				.andExpect(jsonPath("$.consulta.fechaRespuesta").exists())
+				.andExpect(jsonPath("$.respuesta.enviadaPorCorreo").value(true))
+				.andExpect(jsonPath("$.respuesta.nombreTrabajador").exists());
+
+		// Consultar el historial
+		mockMvc.perform(get("/api/admin/consultas/" + id + "/historial").with(authentication(coordinador)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.length()").value(1))
+				.andExpect(jsonPath("$[0].enviadaPorCorreo").value(true));
+	}
+
+	@Test
+	@DisplayName("RF-035, HU-02: Si el correo falla, la respuesta se conserva y el estado queda en ERROR_NOTIFICACION sin perder la consulta")
+	void falloDeCorreoConservaRespuestaYMarcaErrorNotificacion() throws Exception {
+		// Destinatario con prefijo error. activa la simulación de fallo del servicio de correo
+		mockMvc.perform(post("/api/publico/consultas").with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"pregunta\":\"Pregunta de prueba con fallo de correo\",\"nombreContacto\":\"Tester\",\"correoContacto\":\"error.contacto@empresa.com\"}"))
+				.andExpect(status().isCreated());
+
+		String listaResp = mockMvc.perform(get("/api/admin/consultas").with(authentication(coordinador)))
+				.andReturn().getResponse().getContentAsString();
+		Long id = Long.valueOf(listaResp.replaceAll(".*\"id\":(\\d+).*", "$1"));
+
+		// Enviar respuesta
+		mockMvc.perform(post("/api/admin/consultas/" + id + "/respuestas")
+				.with(csrf()).with(authentication(coordinador))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"respuesta\":\"Esta respuesta no pudo enviarse por fallo en el servidor de correo.\"}"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.exitoso").value(false))
+				.andExpect(jsonPath("$.consulta.estado").value("ERROR_NOTIFICACION"))
+				.andExpect(jsonPath("$.consulta.atendida").value(false))
+				.andExpect(jsonPath("$.respuesta.enviadaPorCorreo").value(false))
+				.andExpect(jsonPath("$.respuesta.detalleError").exists());
+
+		// La consulta NO desaparece, sigue accesible y filtrable por ERROR_NOTIFICACION
+		mockMvc.perform(get("/api/admin/consultas").with(authentication(coordinador))
+				.param("estado", "ERROR_NOTIFICACION"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.total").value(1))
+				.andExpect(jsonPath("$.contenido[0].id").value(id));
+
+		// Y la respuesta redactada SE CONSERVA en la base de datos
+		mockMvc.perform(get("/api/admin/consultas/" + id + "/historial").with(authentication(coordinador)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.length()").value(1))
+				.andExpect(jsonPath("$[0].enviadaPorCorreo").value(false));
+	}
+
+	@Test
+	@DisplayName("Control anti-duplicados: envíos idénticos repetidos en lapso corto son rechazados")
+	void previeneEnviosDuplicadosConsecutivos() throws Exception {
+		mockMvc.perform(post("/api/publico/consultas").with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"pregunta\":\"Pregunta para duplicados\",\"nombreContacto\":\"Juan\",\"correoContacto\":\"juan@empresa.com\"}"))
+				.andExpect(status().isCreated());
+
+		String listaResp = mockMvc.perform(get("/api/admin/consultas").with(authentication(coordinador)))
+				.andReturn().getResponse().getContentAsString();
+		Long id = Long.valueOf(listaResp.replaceAll(".*\"id\":(\\d+).*", "$1"));
+
+		String payload = "{\"respuesta\":\"Respuesta de prueba contra clics repetidos.\"}";
+
+		mockMvc.perform(post("/api/admin/consultas/" + id + "/respuestas")
+				.with(csrf()).with(authentication(coordinador))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(payload))
+				.andExpect(status().isOk());
+
+		// Segundo envío inmediato idéntico es rechazado
+		mockMvc.perform(post("/api/admin/consultas/" + id + "/respuestas")
+				.with(csrf()).with(authentication(coordinador))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(payload))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.mensaje").value("Se detectó un envío duplicado reciente. Por favor espere unos segundos antes de enviar nuevamente."));
+	}
+
 }

@@ -61,12 +61,45 @@ export function cambiarPublicacion(id, publicada) {
   return api.crear(`/api/admin/contenido/${id}/publicacion?publicada=${publicada}`);
 }
 
-/** RF-035: consultas recibidas por el formulario publico. */
-export function obtenerConsultas(atendida, opciones) {
-  return api.obtener(`/api/admin/consultas${construirConsulta({ atendida })}`, opciones);
+/**
+ * RF-035, HU-02: Consultas recibidas por el formulario publico.
+ * Permite filtrar por estado específico (PENDIENTE, EN_GESTION, RESPONDIDA, ERROR_NOTIFICACION)
+ * o por el indicador legacy atendida.
+ */
+export function obtenerConsultas(filtros, opciones) {
+  const parametros =
+    typeof filtros === 'object' && filtros !== null
+      ? filtros
+      : { atendida: filtros };
+  return api.obtener(`/api/admin/consultas${construirConsulta(parametros)}`, opciones);
 }
 
-/** Marca una consulta como atendida y deja constancia de quien la atendio. */
+/** Obtiene una consulta específica por ID con su historial de respuestas. */
+export function obtenerConsulta(id, opciones) {
+  return api.obtener(`/api/admin/consultas/${id}`, opciones);
+}
+
+/** Marca una consulta en estado EN_GESTION. */
+export function marcarConsultaEnGestion(id) {
+  return api.crear(`/api/admin/consultas/${id}/en-gestion`);
+}
+
+/** Redacta y envía la respuesta a una consulta con notificación automática por correo. */
+export function enviarRespuestaConsulta(id, datos) {
+  return api.crear(`/api/admin/consultas/${id}/respuestas`, datos);
+}
+
+/** Reintenta el envío de la notificación por correo de una respuesta fallida previa. */
+export function reintentarNotificacionConsulta(id, respuestaId) {
+  return api.crear(`/api/admin/consultas/${id}/respuestas/${respuestaId}/reintentar`);
+}
+
+/** Obtiene el historial cronológico de respuestas de una consulta. */
+export function obtenerHistorialConsulta(id, opciones) {
+  return api.obtener(`/api/admin/consultas/${id}/historial`, opciones);
+}
+
+/** Marca una consulta como atendida y deja constancia de quien la atendio (compatibilidad). */
 export function marcarConsultaAtendida(id) {
   return api.crear(`/api/admin/consultas/${id}/atencion`);
 }
