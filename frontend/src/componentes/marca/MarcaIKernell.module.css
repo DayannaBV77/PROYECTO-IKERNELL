@@ -48,3 +48,18 @@
   color: var(--c-marino-titulo);
   letter-spacing: -0.01em;
 }
+
+/*
+ * En la zona privada el menu completo (hasta once entradas) manda sobre el
+ * espacio: por debajo de 1600px se conserva la sigla y se libera el resto para
+ * la navegacion y el bloque de sesion.
+ */
+@media (max-width: 1599px) {
+  .compacta {
+    gap: 0;
+  }
+
+  .compacta .nombre {
+    display: none;
+  }
+}

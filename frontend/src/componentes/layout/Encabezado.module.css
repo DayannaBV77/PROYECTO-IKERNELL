@@ -96,7 +96,7 @@
 .barra {
   display: flex;
   align-items: center;
-  gap: var(--s-4);
+  gap: var(--s-3);
   max-width: var(--ancho-contenido);
   min-height: var(--alto-encabezado);
   margin: 0 auto;
@@ -104,36 +104,58 @@
   border-bottom: 1px solid var(--c-borde);
 }
 
+/*
+ * La zona privada necesita todo el ancho de la ventana para que las siete a
+ * once entradas del menu (incluida TUTORIALES) quepan en una sola linea. El
+ * contenido de las paginas conserva su ancho de lectura de 1180px.
+ */
+.conSesion .franjaSuperiorContenido,
+.conSesion .barra {
+  max-width: none;
+  padding-inline: clamp(var(--s-3), 2vw, var(--s-6));
+}
+
 .navegacion {
   display: flex;
   align-items: center;
-  gap: var(--s-1);
+  gap: clamp(1px, 0.25vw, var(--s-1));
+  min-width: 0;
   margin-inline-start: auto;
-  flex-wrap: wrap;
+  /* El menu general nunca salta de linea: se ajustan el hueco y el relleno y,
+     por debajo del punto de ruptura, se pliega en el boton. */
+  flex-wrap: nowrap;
 }
 
 .enlace {
-  padding: var(--s-2) var(--s-3);
+  padding: var(--s-2) clamp(4px, 0.45vw, var(--s-3));
   border: none;
   border-radius: var(--r-sm);
   background: transparent;
   font-size: var(--t-xs);
   font-weight: var(--p-bold);
   letter-spacing: var(--e-nav);
+  line-height: var(--i-ajustado);
   text-transform: uppercase;
   color: var(--c-texto);
   white-space: nowrap;
   cursor: pointer;
   transition:
-    color var(--tr-rapida),
-    background-color var(--tr-rapida),
-    box-shadow var(--tr-rapida);
+    color var(--tr-normal),
+    background-color var(--tr-normal),
+    box-shadow var(--tr-normal);
 }
 
+/* Hover coherente con el indicador activo: misma franja inferior, en cian
+   claro, para anticipar el estado sin competir con la seccion actual. */
 .enlace:hover {
   color: var(--c-marino-titulo);
   background: var(--c-fondo);
+  box-shadow: inset 0 -2px 0 var(--c-cian-claro);
   text-decoration: none;
+}
+
+.enlace:active {
+  background: var(--c-superficie-tenue);
 }
 
 /* El activo se distingue con la paleta menta/azul corporativa:
@@ -145,17 +167,27 @@
   font-weight: var(--p-bold);
 }
 
+.activo:hover {
+  background: var(--c-superficie-tenue);
+  box-shadow: inset 0 -2px 0 var(--c-turquesa-fuerte);
+}
+
 .acciones {
   display: flex;
   align-items: center;
+  align-self: stretch;
   gap: var(--s-3);
-  margin-inline-start: var(--s-2);
+  margin-inline-start: var(--s-1);
+  padding-inline-start: var(--s-4);
+  /* Separador limpio entre la navegacion general y el bloque de perfil. */
+  border-inline-start: 1px solid var(--c-borde);
 }
 
 .interruptor {
   display: none;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
   margin-inline-start: auto;
   padding: var(--s-2);
   border: 1px solid var(--c-borde);
@@ -166,7 +198,7 @@
 }
 
 /* --- Adaptación responsive a pantallas pequeñas --- */
-@media (max-width: 960px) {
+@media (max-width: 1140px) {
   .franjaSuperiorContenido {
     padding-inline: var(--s-3);
   }
@@ -212,9 +244,11 @@
   .accionesAbiertas {
     display: flex;
     flex-direction: column;
+    align-self: auto;
     gap: var(--s-3);
     margin: 0;
     padding: 0 0 var(--s-4);
+    border-inline-start: 0;
     order: 4;
     flex-basis: 100%;
   }

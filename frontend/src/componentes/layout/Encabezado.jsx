@@ -43,7 +43,7 @@ export default function Encabezado({ enlaces, acciones }) {
   }
 
   return (
-    <header className={estilos.encabezado}>
+    <header className={`${estilos.encabezado} ${sesion ? estilos.conSesion : ''}`}>
       {/* 1. Franja superior grafito/oscuro institucional y de rol */}
       <div className={estilos.franjaSuperior}>
         <div className={estilos.franjaSuperiorContenido}>
@@ -76,7 +76,9 @@ export default function Encabezado({ enlaces, acciones }) {
 
       {/* 2. Barra de navegación principal sobre fondo claro */}
       <div className={estilos.barra}>
-        <MarcaIKernell a={sesion ? '/app' : '/'} />
+        {/* En la zona privada el logotipo reduce a su sigla cuando el menu
+            completo necesita el ancho: la franja superior ya rotula IKERNELL. */}
+        <MarcaIKernell a={sesion ? '/app' : '/'} compacta={Boolean(sesion)} />
 
         <nav
           className={`${estilos.navegacion} ${abierto ? estilos.navegacionAbierta : ''}`}

@@ -71,16 +71,15 @@ export const ENLACES_PRIVADOS = [
   { a: '/app/tutoriales', texto: 'Tutoriales' },
 ];
 
-export const ENLACES_LIDER = [
-  { a: '/app', texto: 'Panel', exacto: true },
-  { a: '/app/proyectos', texto: 'Proyectos' },
-  { a: '/app/actividades', texto: 'Actividades' },
-  { a: '/app/reportes/proyecto', texto: 'Reportes' },
-  { a: '/app/reportes/archivo-plano', texto: 'Archivo plano' },
-  { a: '/app/mis-actividades', texto: 'Mis actividades' },
-  { a: '/app/incidencias', texto: 'Incidencias' },
-  { a: '/app/chat', texto: 'Conversaciones' },
-];
+/*
+ * El lider ve lo mismo que cualquier trabajador autenticado (servicios
+ * comunes: biblioteca, tutoriales, conversaciones y correo) mas sus modulos
+ * de gestion. Se deriva del catalogo unico para que las tres areas mantengan
+ * exactamente las mismas entradas comunes y no se desincronicen.
+ */
+export const ENLACES_LIDER = ENLACES_PRIVADOS.filter(
+  ({ tipos }) => !tipos || tipos.includes('LIDER'),
+);
 
 /**
  * Menu que corresponde a la sesion.
