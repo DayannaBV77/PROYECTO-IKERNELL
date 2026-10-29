@@ -41,7 +41,7 @@
   height: 36px;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 1140px) {
   /* En el menu desplegable la identidad cabe completa y se apila. */
   .sesion {
     flex-direction: column;

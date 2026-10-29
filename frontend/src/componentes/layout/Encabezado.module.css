@@ -209,6 +209,10 @@
 
   .interruptor {
     display: inline-flex;
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
+    margin-inline-start: 0;
   }
 
   .navegacion,
@@ -216,15 +220,26 @@
     display: none;
   }
 
-  /* El menú desplegado ocupa una fila propia debajo de la marca */
+  /* Rejilla de dos zonas: marca + botón arriba y menú desplegable a todo el
+     ancho debajo. No se usa flex-wrap: el menú principal nunca se parte. */
   .barra {
-    flex-wrap: wrap;
-    gap: var(--s-3);
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    column-gap: var(--s-3);
+    row-gap: var(--s-3);
     padding-inline: var(--s-4);
+  }
+
+  .barra > :first-child {
+    grid-column: 1;
+    grid-row: 1;
   }
 
   .navegacionAbierta {
     display: flex;
+    grid-column: 1 / -1;
+    grid-row: 2;
     flex-direction: column;
     align-items: stretch;
     gap: var(--s-1);
@@ -232,8 +247,6 @@
     margin: 0;
     padding: var(--s-3) 0 var(--s-4);
     border-top: 1px solid var(--c-borde);
-    order: 3;
-    flex-basis: 100%;
   }
 
   .navegacionAbierta .enlace {
@@ -243,13 +256,13 @@
 
   .accionesAbiertas {
     display: flex;
+    grid-column: 1 / -1;
+    grid-row: 3;
     flex-direction: column;
     align-self: auto;
     gap: var(--s-3);
     margin: 0;
     padding: 0 0 var(--s-4);
     border-inline-start: 0;
-    order: 4;
-    flex-basis: 100%;
   }
 }
