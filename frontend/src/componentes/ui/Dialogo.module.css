@@ -1,0 +1,62 @@
+.dialogo {
+  width: min(640px, calc(100vw - 2 * var(--s-5)));
+  max-height: calc(100vh - 2 * var(--s-5));
+  padding: 0;
+  overflow: auto;
+  border: 1px solid var(--c-borde-tarjeta);
+  border-radius: var(--r-lg);
+  background: var(--c-superficie);
+  box-shadow: var(--b-elevada);
+  color: var(--c-texto);
+}
+
+.dialogo::backdrop {
+  background: rgb(15 23 42 / 0.5);
+}
+
+.contenido {
+  padding: var(--s-6);
+}
+
+.cabecera {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s-4);
+  margin-bottom: var(--s-5);
+}
+
+.titulo {
+  font-size: var(--t-lg);
+  color: var(--c-marino-titulo);
+}
+
+.descripcion {
+  margin-top: var(--s-2);
+  font-size: var(--t-sm);
+  color: var(--c-texto-tenue);
+}
+
+.cerrar {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--c-borde);
+  border-radius: var(--r-full);
+  background: var(--c-superficie-tenue);
+  color: var(--c-texto-tenue);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.cerrar:hover {
+  color: var(--c-marino-titulo);
+  border-color: var(--c-turquesa);
+}
+
+@media (max-width: 480px) {
+  .contenido {
+    padding: var(--s-5);
+  }
+}

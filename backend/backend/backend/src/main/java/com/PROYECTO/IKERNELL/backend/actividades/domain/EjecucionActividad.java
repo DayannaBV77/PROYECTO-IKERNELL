@@ -61,6 +61,22 @@ public class EjecucionActividad {
 		this.finalizadaEn = LocalDateTime.now();
 	}
 
+	/**
+	 * Reabre una ejecucion finalizada sin borrar su historial.
+	 *
+	 * <p>Lo usa el checklist de «Mi Dia» cuando el trabajador desmarca una
+	 * actividad que habia dado por terminada. Se conserva la fila -con su hora de
+	 * inicio y sus observaciones- y solo se limpia el cierre, de modo que la
+	 * actividad vuelve a contar como pendiente (D-31) sin perder el registro.
+	 */
+	public void reabrir() {
+		this.finalizadaEn = null;
+	}
+
+	public boolean estaFinalizada() {
+		return finalizadaEn != null;
+	}
+
 	public Long getId() {
 		return id;
 	}

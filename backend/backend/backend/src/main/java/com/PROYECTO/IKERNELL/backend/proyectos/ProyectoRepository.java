@@ -20,4 +20,13 @@ public interface ProyectoRepository
 	 */
 	List<Proyecto> findByEstadoHabilitacionOrderByNombreAsc(EstadoHabilitacion estado);
 
+	/**
+	 * Proyectos autorizados para el reporte externo (RF-025, HU-19).
+	 *
+	 * <p>El filtro es la marca del proyecto, no el tipo del trabajador: que un
+	 * lider pueda generar el reporte no significa que todos los proyectos
+	 * puedan salir de la empresa.
+	 */
+	List<Proyecto> findByReporteExternoAutorizadoTrueOrderByNombreAsc();
+
 }

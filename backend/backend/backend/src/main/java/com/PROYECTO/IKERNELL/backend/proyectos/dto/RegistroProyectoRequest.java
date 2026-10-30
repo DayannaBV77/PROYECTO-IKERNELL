@@ -19,5 +19,11 @@ public record RegistroProyectoRequest(
 		String nombre,
 
 		@Size(max = 2000, message = "La descripcion admite hasta 2000 caracteres.")
-		String descripcion) {
+		String descripcion,
+
+		/**
+		 * RF-025: deja el proyecto listo para el reporte externo desde su
+		 * creacion. Omitirlo equivale a no autorizarlo, que es el valor seguro.
+		 */
+		boolean reporteExternoAutorizado) {
 }

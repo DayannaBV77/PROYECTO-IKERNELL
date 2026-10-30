@@ -20,5 +20,12 @@ public record ModificacionProyectoRequest(
 		String nombre,
 
 		@Size(max = 2000, message = "La descripcion admite hasta 2000 caracteres.")
-		String descripcion) {
+		String descripcion,
+
+		/**
+		 * RF-025: la autorizacion para el reporte externo tambien se modifica
+		 * aqui. Retirarla no borra ningun dato: solo impide que el proyecto se
+		 * vuelva a exportar.
+		 */
+		boolean reporteExternoAutorizado) {
 }

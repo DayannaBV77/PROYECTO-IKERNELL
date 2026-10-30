@@ -59,6 +59,21 @@ public class Proyecto {
 	private LocalDate fechaFinReal;
 
 	/**
+	 * Indica si la informacion de este proyecto puede incluirse en el reporte
+	 * externo para la empresa brasileña aliada (RF-025, HU-19).
+	 *
+	 * <p>La autorizacion es POR PROYECTO y no por lider: el acuerdo con la
+	 * empresa se cierra proyecto a proyecto. Un proyecto sin esta marca no se
+	 * exporta ni aunque el cliente lo pida por identificador; el servicio
+	 * responde 403 en ese caso.
+	 *
+	 * <p>Nace en {@code false} a proposito. Exportar datos hacia un tercero es
+	 * una accion que debe habilitarse de forma explicita, nunca por omision.
+	 */
+	@Column(name = "reporte_externo_autorizado", nullable = false)
+	private boolean reporteExternoAutorizado = false;
+
+	/**
 	 * Lider que registro el proyecto. Dato capturado pero todavia sin efecto en
 	 * la autorizacion, porque A-02 no esta resuelta.
 	 */
@@ -143,6 +158,21 @@ public class Proyecto {
 
 	public Trabajador getLiderResponsable() {
 		return liderResponsable;
+	}
+
+	/** RF-025: el proyecto puede salir en el reporte externo. */
+	public boolean estaAutorizadoParaReporteExterno() {
+		return reporteExternoAutorizado;
+	}
+
+	/**
+	 * Cambia la autorizacion para el reporte externo.
+	 *
+	 * <p>Se expresa como operacion y no como setter para que el nombre diga lo
+	 * que ocurre: habilitar o retirar el permiso de exportacion de un proyecto.
+	 */
+	public void autorizarReporteExterno(boolean autorizado) {
+		this.reporteExternoAutorizado = autorizado;
 	}
 
 }

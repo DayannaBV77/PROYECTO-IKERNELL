@@ -1,5 +1,6 @@
 package com.PROYECTO.IKERNELL.backend.actividades;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
@@ -38,5 +39,44 @@ public interface EjecucionActividadRepository extends JpaRepository<EjecucionAct
 			  and e.finalizadaEn is not null
 			""")
 	List<Long> idsConEjecucionFinalizada(@Param("actividadIds") Collection<Long> actividadIds);
+
+	/**
+	 * Resumen de ejecuciones de varios proyectos en una sola consulta (RF-025).
+	 *
+	 * <p>El reporte externo necesita, por proyecto, cuantas ejecuciones hay,
+	 * cuantas terminaron y cuando ocurrieron la primera y la ultima. Hacerlo
+	 * proyecto a proyecto seria una consulta por fila; agruparlo en una sola
+	 * respeta RNF-005 y evita que el tiempo de generacion crezca con el numero
+	 * de proyectos autorizados.
+	 *
+	 * <p>No devuelve quien ejecuto: el reporte externo excluye por diseno los
+	 * datos personales de los trabajadores.
+	 */
+	@Query("""
+			select e.actividad.etapa.proyecto.id as proyectoId,
+			       count(e) as total,
+			       coalesce(sum(case when e.finalizadaEn is not null then 1 else 0 end), 0) as finalizadas,
+			       min(e.iniciadaEn) as primera,
+			       max(e.iniciadaEn) as ultima
+			from EjecucionActividad e
+			where e.actividad.etapa.proyecto.id in :proyectoIds
+			group by e.actividad.etapa.proyecto.id
+			""")
+	List<ResumenEjecucionesProyecto> resumenPorProyecto(
+			@Param("proyectoIds") Collection<Long> proyectoIds);
+
+	/** Proyeccion de la consulta agrupada anterior. */
+	interface ResumenEjecucionesProyecto {
+
+		Long getProyectoId();
+
+		Long getTotal();
+
+		Long getFinalizadas();
+
+		LocalDateTime getPrimera();
+
+		LocalDateTime getUltima();
+	}
 
 }

@@ -18,7 +18,8 @@ public record ProyectoResponse(
 		LocalDate fechaInicioReal,
 		LocalDate fechaFinReal,
 		boolean excedeSeisAnios,
-		Long liderResponsableId) {
+		Long liderResponsableId,
+		boolean reporteExternoAutorizado) {
 
 	public static ProyectoResponse de(Proyecto proyecto) {
 		return new ProyectoResponse(
@@ -30,7 +31,8 @@ public record ProyectoResponse(
 				proyecto.getFechaInicioReal(),
 				proyecto.getFechaFinReal(),
 				proyecto.excedeSeisAnios(),
-				proyecto.getLiderResponsable() != null ? proyecto.getLiderResponsable().getId() : null);
+				proyecto.getLiderResponsable() != null ? proyecto.getLiderResponsable().getId() : null,
+				proyecto.estaAutorizadoParaReporteExterno());
 	}
 
 }

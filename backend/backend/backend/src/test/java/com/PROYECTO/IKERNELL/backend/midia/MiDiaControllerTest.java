@@ -1,8 +1,13 @@
 package com.PROYECTO.IKERNELL.backend.midia;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -24,12 +29,14 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
 
 import com.PROYECTO.IKERNELL.backend.actividades.ActividadRepository;
+import com.PROYECTO.IKERNELL.backend.actividades.EjecucionActividadRepository;
 import com.PROYECTO.IKERNELL.backend.actividades.domain.Actividad;
 import com.PROYECTO.IKERNELL.backend.actividades.domain.PrioridadActividad;
 import com.PROYECTO.IKERNELL.backend.asignaciones.ServicioAsignaciones;
 import com.PROYECTO.IKERNELL.backend.asignaciones.domain.RolEnProyecto;
 import com.PROYECTO.IKERNELL.backend.asignaciones.dto.AsignacionRequest;
 import com.PROYECTO.IKERNELL.backend.auth.CuentaAccesoRepository;
+import com.PROYECTO.IKERNELL.backend.midia.domain.TareaMiDia;
 import com.PROYECTO.IKERNELL.backend.proyectos.EtapaRepository;
 import com.PROYECTO.IKERNELL.backend.proyectos.ProyectoRepository;
 import com.PROYECTO.IKERNELL.backend.proyectos.domain.Etapa;
@@ -69,6 +76,12 @@ class MiDiaControllerTest {
 
 	@Autowired
 	private ActividadRepository actividades;
+
+	@Autowired
+	private EjecucionActividadRepository ejecuciones;
+
+	@Autowired
+	private TareaMiDiaRepository tareas;
 
 	@Autowired
 	private ServicioAsignaciones servicioAsignaciones;
@@ -115,6 +128,17 @@ class MiDiaControllerTest {
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"observaciones\":\"Terminada\",\"finalizada\":true}"))
 				.andExpect(status().isCreated());
+	}
+
+	/** Agrega una tarea personal y devuelve su id, para las pruebas del checklist. */
+	private Long crearTarea(String descripcion) throws Exception {
+		String respuesta = mockMvc.perform(post("/api/mi-dia/tareas")
+				.with(csrf()).with(authentication(desarrollador))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"descripcion\":\"" + descripcion + "\"}"))
+				.andExpect(status().isCreated())
+				.andReturn().getResponse().getContentAsString();
+		return Long.valueOf(respuesta.replaceAll(".*\"id\":(\\d+).*", "$1"));
 	}
 
 	// ------------------------------------------------- Actividades del dia
@@ -176,8 +200,8 @@ class MiDiaControllerTest {
 	}
 
 	@Test
-	@DisplayName("D-31: una actividad con ejecucion finalizada deja de estar pendiente")
-	void excluyeLasYaFinalizadas() throws Exception {
+	@DisplayName("D-31: una actividad finalizada sigue en el checklist, marcada como completada")
+	void incluyeLasFinalizadasComoCompletadas() throws Exception {
 		Actividad terminada = actividad(desarrolladorTrabajador, "Ya terminada",
 				PrioridadActividad.ALTA, HOY);
 		actividad(desarrolladorTrabajador, "Aun pendiente", PrioridadActividad.BAJA, HOY);
@@ -185,8 +209,13 @@ class MiDiaControllerTest {
 
 		mockMvc.perform(get("/api/mi-dia").with(authentication(desarrollador)))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.total").value(1))
-				.andExpect(jsonPath("$.actividades[0].actividad.descripcion").value("Aun pendiente"));
+				.andExpect(jsonPath("$.total").value(2))
+				.andExpect(jsonPath("$.pendientes").value(1))
+				.andExpect(jsonPath("$.completadas").value(1))
+				.andExpect(jsonPath("$.actividades[0].actividad.descripcion").value("Aun pendiente"))
+				.andExpect(jsonPath("$.actividades[0].completada").value(false))
+				.andExpect(jsonPath("$.actividades[1].actividad.descripcion").value("Ya terminada"))
+				.andExpect(jsonPath("$.actividades[1].completada").value(true));
 	}
 
 	@Test
@@ -233,13 +262,16 @@ class MiDiaControllerTest {
 	}
 
 	@Test
-	@DisplayName("RN-14: sin actividades devuelve el aviso y no una lista vacia a secas")
+	@DisplayName("RN-14: sin tareas devuelve el aviso y no una lista vacia a secas")
 	void avisaCuandoNoHayNadaParaHoy() throws Exception {
 		mockMvc.perform(get("/api/mi-dia").with(authentication(desarrollador)))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.total").value(0))
+				.andExpect(jsonPath("$.pendientes").value(0))
+				.andExpect(jsonPath("$.completadas").value(0))
+				.andExpect(jsonPath("$.tareasPersonales").isEmpty())
 				.andExpect(jsonPath("$.sinDiaPlanificado").value(0))
-				.andExpect(jsonPath("$.mensaje").value("No tiene actividades pendientes para hoy."));
+				.andExpect(jsonPath("$.mensaje").value("No tiene tareas pendientes para hoy."));
 	}
 
 	// ------------------------------------------------------- Notificaciones
@@ -271,15 +303,23 @@ class MiDiaControllerTest {
 
 		mockMvc.perform(get("/api/mi-dia").with(authentication(desarrollador)))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.notificaciones.chatNoLeidos").value(1));
+				.andExpect(jsonPath("$.notificaciones.chatNoLeidos").value(1))
+				.andExpect(jsonPath("$.notificaciones.conversacionesNoLeidas").isArray())
+				.andExpect(jsonPath("$.notificaciones.conversacionesNoLeidas[0].id").value(hiloId))
+				.andExpect(jsonPath("$.notificaciones.conversacionesNoLeidas[0].titulo")
+						.value("Consulta tecnica"))
+				.andExpect(jsonPath("$.notificaciones.conversacionesNoLeidas[0].proyectoNombre")
+						.value("Proyecto del dia"))
+				.andExpect(jsonPath("$.notificaciones.conversacionesNoLeidas[0].noLeidos").value(1));
 	}
 
 	@Test
-	@DisplayName("RF-038: sin conversaciones el indicador del chat es cero")
+	@DisplayName("RF-038: sin conversaciones el indicador es cero y la lista llega vacia")
 	void sinConversacionesElIndicadorEsCero() throws Exception {
 		mockMvc.perform(get("/api/mi-dia").with(authentication(desarrollador)))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.notificaciones.chatNoLeidos").value(0));
+				.andExpect(jsonPath("$.notificaciones.chatNoLeidos").value(0))
+				.andExpect(jsonPath("$.notificaciones.conversacionesNoLeidas").isEmpty());
 	}
 
 	@Test
@@ -295,6 +335,171 @@ class MiDiaControllerTest {
 				.andExpect(jsonPath("$.notificaciones.correo.mensaje").exists())
 				.andExpect(jsonPath("$.notificaciones.avisoCorreoNoLeidos").exists())
 				.andExpect(jsonPath("$.notificaciones.correoNoLeidos").doesNotExist());
+	}
+
+	// ------------------------------------------------------------- Checklist
+
+	@Test
+	@DisplayName("Checklist: agrega una tarea personal y aparece en el panel")
+	void agregaUnaTareaPersonalYLaMuestraEnElPanel() throws Exception {
+		Long tareaId = crearTarea("Revisar el pull request");
+
+		mockMvc.perform(get("/api/mi-dia").with(authentication(desarrollador)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.tareasPersonales[0].id").value(tareaId))
+				.andExpect(jsonPath("$.tareasPersonales[0].descripcion")
+						.value("Revisar el pull request"))
+				.andExpect(jsonPath("$.tareasPersonales[0].completada").value(false))
+				.andExpect(jsonPath("$.total").value(1))
+				.andExpect(jsonPath("$.pendientes").value(1))
+				.andExpect(jsonPath("$.completadas").value(0));
+	}
+
+	@Test
+	@DisplayName("Checklist: una tarea personal vacia se rechaza con el campo senalado")
+	void rechazaUnaTareaPersonalVacia() throws Exception {
+		mockMvc.perform(post("/api/mi-dia/tareas")
+				.with(csrf()).with(authentication(desarrollador))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"descripcion\":\"   \"}"))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.campos.descripcion").exists());
+	}
+
+	@Test
+	@DisplayName("Checklist: marca y desmarca una tarea personal")
+	void marcaYDesmarcaUnaTareaPersonal() throws Exception {
+		Long tareaId = crearTarea("Preparar la reunion");
+
+		mockMvc.perform(patch("/api/mi-dia/tareas/" + tareaId)
+				.with(csrf()).with(authentication(desarrollador))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"completada\":true}"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.completada").value(true));
+
+		mockMvc.perform(get("/api/mi-dia").with(authentication(desarrollador)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.tareasPersonales[0].completada").value(true))
+				.andExpect(jsonPath("$.pendientes").value(0))
+				.andExpect(jsonPath("$.completadas").value(1))
+				.andExpect(jsonPath("$.mensaje")
+						.value("¡Todo al día por hoy! No tiene tareas pendientes."));
+
+		mockMvc.perform(patch("/api/mi-dia/tareas/" + tareaId)
+				.with(csrf()).with(authentication(desarrollador))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"completada\":false}"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.completada").value(false));
+	}
+
+	@Test
+	@DisplayName("Checklist: elimina una tarea personal y deja de aparecer")
+	void eliminaUnaTareaPersonal() throws Exception {
+		Long tareaId = crearTarea("Llamar al cliente");
+
+		mockMvc.perform(delete("/api/mi-dia/tareas/" + tareaId)
+				.with(csrf()).with(authentication(desarrollador)))
+				.andExpect(status().isNoContent());
+
+		mockMvc.perform(get("/api/mi-dia").with(authentication(desarrollador)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.tareasPersonales").isEmpty())
+				.andExpect(jsonPath("$.total").value(0));
+	}
+
+	@Test
+	@DisplayName("Checklist: no se pueden tocar las tareas personales de otro")
+	void noPermiteTocarTareasDeOtros() throws Exception {
+		Trabajador otro = trabajadores.saveAndFlush(new Trabajador("9600000006", "Otro", "Dev",
+				LocalDate.of(1990, 1, 1), "Calle 9", "Ingenieria", "Backend",
+				TipoTrabajador.DESARROLLADOR));
+		TareaMiDia ajena = tareas.saveAndFlush(new TareaMiDia(otro, "Tarea ajena", HOY));
+
+		mockMvc.perform(patch("/api/mi-dia/tareas/" + ajena.getId())
+				.with(csrf()).with(authentication(desarrollador))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"completada\":true}"))
+				.andExpect(status().isNotFound());
+
+		mockMvc.perform(delete("/api/mi-dia/tareas/" + ajena.getId())
+				.with(csrf()).with(authentication(desarrollador)))
+				.andExpect(status().isNotFound());
+
+		mockMvc.perform(get("/api/mi-dia").with(authentication(desarrollador)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.tareasPersonales").isEmpty());
+	}
+
+	@Test
+	@DisplayName("Checklist: marcar una actividad finaliza su ejecucion y desmarcarla la reabre")
+	void marcaYDesmarcaUnaActividad() throws Exception {
+		Actividad tarea = actividad(desarrolladorTrabajador, "Tarea del checklist",
+				PrioridadActividad.ALTA, HOY);
+
+		mockMvc.perform(patch("/api/mi-dia/actividades/" + tarea.getId())
+				.with(csrf()).with(authentication(desarrollador))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"completada\":true}"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.completada").value(true));
+
+		assertEquals(1, ejecuciones.findByActividadIdOrderByIniciadaEnDesc(tarea.getId()).size());
+		assertNotNull(ejecuciones.findByActividadIdOrderByIniciadaEnDesc(tarea.getId())
+				.get(0).getFinalizadaEn());
+
+		mockMvc.perform(get("/api/mi-dia").with(authentication(desarrollador)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.actividades[0].completada").value(true))
+				.andExpect(jsonPath("$.pendientes").value(0))
+				.andExpect(jsonPath("$.completadas").value(1));
+
+		mockMvc.perform(patch("/api/mi-dia/actividades/" + tarea.getId())
+				.with(csrf()).with(authentication(desarrollador))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"completada\":false}"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.completada").value(false));
+
+		assertNull(ejecuciones.findByActividadIdOrderByIniciadaEnDesc(tarea.getId())
+				.get(0).getFinalizadaEn());
+
+		mockMvc.perform(get("/api/mi-dia").with(authentication(desarrollador)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.pendientes").value(1))
+				.andExpect(jsonPath("$.completadas").value(0));
+	}
+
+	@Test
+	@DisplayName("Checklist: no se puede marcar una actividad asignada a otro")
+	void noPermiteMarcarActividadesDeOtros() throws Exception {
+		Trabajador otro = trabajadores.saveAndFlush(new Trabajador("9600000007", "Otro", "Dev",
+				LocalDate.of(1990, 1, 1), "Calle 9", "Ingenieria", "Backend",
+				TipoTrabajador.DESARROLLADOR));
+		Actividad ajena = actividad(otro, "Tarea ajena", PrioridadActividad.ALTA, HOY);
+
+		mockMvc.perform(patch("/api/mi-dia/actividades/" + ajena.getId())
+				.with(csrf()).with(authentication(desarrollador))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"completada\":true}"))
+				.andExpect(status().isNotFound());
+	}
+
+	@Test
+	@DisplayName("Checklist: una tarea personal cuenta junto a las actividades en el avance")
+	void sumaTareasYActividadesEnElAvance() throws Exception {
+		actividad(desarrolladorTrabajador, "Actividad del proyecto",
+				PrioridadActividad.MEDIA, HOY);
+		crearTarea("Tarea personal");
+
+		mockMvc.perform(get("/api/mi-dia").with(authentication(desarrollador)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.total").value(2))
+				.andExpect(jsonPath("$.pendientes").value(2))
+				.andExpect(jsonPath("$.completadas").value(0))
+				.andExpect(jsonPath("$.actividades").isArray())
+				.andExpect(jsonPath("$.tareasPersonales").isArray());
 	}
 
 	// ----------------------------------------------------------- Autorizacion

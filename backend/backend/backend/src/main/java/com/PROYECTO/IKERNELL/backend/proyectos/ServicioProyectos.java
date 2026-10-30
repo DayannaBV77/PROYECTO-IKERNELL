@@ -68,7 +68,9 @@ public class ServicioProyectos {
 	 */
 	@Transactional
 	public Proyecto registrar(RegistroProyectoRequest peticion, Trabajador lider) {
-		return proyectos.save(new Proyecto(peticion.nombre(), peticion.descripcion(), lider));
+		Proyecto proyecto = new Proyecto(peticion.nombre(), peticion.descripcion(), lider);
+		proyecto.autorizarReporteExterno(peticion.reporteExternoAutorizado());
+		return proyectos.save(proyecto);
 	}
 
 	/** RF-013, HU-09 C01 y C02. */
@@ -94,6 +96,7 @@ public class ServicioProyectos {
 		Proyecto proyecto = obtener(id);
 		proyecto.setNombre(peticion.nombre());
 		proyecto.setDescripcion(peticion.descripcion());
+		proyecto.autorizarReporteExterno(peticion.reporteExternoAutorizado());
 		return proyectos.save(proyecto);
 	}
 

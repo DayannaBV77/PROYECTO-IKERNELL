@@ -8,14 +8,16 @@ public record ProyectoResumenResponse(
 		Long id,
 		String nombre,
 		EstadoHabilitacion estadoHabilitacion,
-		String estadoOperativo) {
+		String estadoOperativo,
+		boolean reporteExternoAutorizado) {
 
 	public static ProyectoResumenResponse de(Proyecto proyecto) {
 		return new ProyectoResumenResponse(
 				proyecto.getId(),
 				proyecto.getNombre(),
 				proyecto.getEstadoHabilitacion(),
-				proyecto.getEstadoOperativo());
+				proyecto.getEstadoOperativo(),
+				proyecto.estaAutorizadoParaReporteExterno());
 	}
 
 }

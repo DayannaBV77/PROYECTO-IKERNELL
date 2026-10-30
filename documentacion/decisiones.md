@@ -87,6 +87,7 @@ abandonaron; su enunciado no se puede reconstruir.
 | D-37 | Las incidencias registradas antes de D-36 conservan su fase antigua en `fase_historica` y quedan con `etapa_id` nulo. No se remapean: las etapas son distintas en cada proyecto y emparejar por nombre sería inventar una regla. | V9 |
 | D-38 | Se ofrece el catálogo de áreas y tecnologías solicitado para nuevas selecciones, con categorías independientes. Las selecciones se almacenan aparte y no se convierten ni sobrescriben los textos históricos de especialidad. | Decisión autorizada el 2026-10-27; V12 y gestión de trabajadores |
 | D-39 | El estado operativo registra `EN_EJECUCION` al iniciar y `FINALIZADO` al cerrar. Las fechas reales se fijan en esas acciones; los proyectos existentes quedan sin fechas. Se permite finalizar después de seis años y se informa el exceso. Los líderes pueden ejecutar ambas acciones según el rol actual del módulo. | Decisión autorizada el 2026-10-27; V13 y ciclo de vida de proyectos |
+| D-40 | Las tareas personales del checklist de «Mi Día» viven en `tarea_mi_dia`, separadas de `actividad`: no pertenecen a un proyecto ni a una etapa y sólo las administra su dueño. Marcar una actividad finaliza o reabre su ejecución real (D-31); una tarea personal usa su propia columna `completada`. | `ServicioTareasMiDia`, V16 |
 
 ### Pendientes de la empresa
 
@@ -156,8 +157,10 @@ cero**, que el usuario leería como «no tiene correos nuevos». Para cumplir es
 parte del requerimiento hace falta resolver D-13 con una integración que exponga
 el buzón.
 
-El contador del chat, en cambio, es un número real: se calcula sobre los hilos a
-los que el trabajador tiene acceso, con la tabla `lectura_hilo` de V10.
+El chat, en cambio, sí se entrega completo: el panel lista las conversaciones
+con mensajes ajenos posteriores a la última lectura y muestra el total como
+indicador. Se calcula sobre los hilos a los que el trabajador tiene acceso, con
+la tabla `lectura_hilo` de V10.
 
 ---
 

@@ -147,10 +147,11 @@ public class ServicioHilos {
 	}
 
 	/**
-	 * Total de mensajes sin leer del trabajador en todas sus conversaciones.
+	 * Conversaciones del trabajador que tienen mensajes sin leer.
 	 *
-	 * <p>Es el indicador de notificaciones no leidas del chat que RF-038 pide
-	 * mostrar en el panel «Mi Dia».
+	 * <p>Es la lista que RF-038 pide mostrar en el panel «Mi Dia». Se devuelven
+	 * solo los hilos con al menos un mensaje ajeno posterior a la ultima lectura
+	 * de quien consulta; el orden pone primero los que mas mensajes acumulan.
 	 *
 	 * <p>Se apoya en las piezas que ya existen -las asignaciones activas y el
 	 * resumen por hilo- en lugar de una consulta propia con subconsultas
@@ -161,12 +162,29 @@ public class ServicioHilos {
 	 * crece, este es el punto a cambiar.
 	 */
 	@Transactional(readOnly = true)
-	public long totalNoLeidos(Long trabajadorId) {
+	public List<HiloConResumen> hilosConNoLeidos(Long trabajadorId) {
 		return servicioAsignaciones.misAsignacionesActivas(trabajadorId).stream()
 				.map(asignacion -> asignacion.getProyecto().getId())
 				.distinct()
 				.flatMap(proyectoId -> hilos.findByProyectoIdOrderByCreadoEnDesc(proyectoId).stream())
-				.mapToLong(hilo -> resumir(hilo, trabajadorId).noLeidos())
+				.map(hilo -> resumir(hilo, trabajadorId))
+				.filter(resumen -> resumen.noLeidos() > 0)
+				.sorted(java.util.Comparator.comparingLong(HiloConResumen::noLeidos).reversed()
+						.thenComparing(resumen -> resumen.hilo().getId()))
+				.toList();
+	}
+
+	/**
+	 * Total de mensajes sin leer del trabajador en todas sus conversaciones.
+	 *
+	 * <p>Se conserva para quien solo necesite el indicador; el panel usa
+	 * {@link #hilosConNoLeidos(Long)} porque RF-038 pide listar las
+	 * notificaciones, no solo contarlas.
+	 */
+	@Transactional(readOnly = true)
+	public long totalNoLeidos(Long trabajadorId) {
+		return hilosConNoLeidos(trabajadorId).stream()
+				.mapToLong(HiloConResumen::noLeidos)
 				.sum();
 	}
 

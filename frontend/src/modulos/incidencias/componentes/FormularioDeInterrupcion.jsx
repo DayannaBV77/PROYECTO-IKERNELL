@@ -25,19 +25,41 @@ import { useEtapasDeProyecto } from '../../../hooks/useEtapasDeProyecto.js';
  *
  * @param {Array}  proyectos        opciones [{ valor, texto }] donde puede registrar
  * @param {string} [proyectoInicial] proyecto preseleccionado, si el contexto lo sabe
+ * @param {string} [etapaInicial]   etapa preseleccionada, si el contexto lo sabe
+ * @param {boolean} [proyectoFijo]  oculta el selector y asocia el proyecto del contexto
  * @param {Function} [alRegistrar]  aviso al componente padre tras guardar
+ * @param {Function} [alCancelar]   cierra el formulario o el modal que lo contiene
  */
-export default function FormularioDeInterrupcion({ proyectos, proyectoInicial = '', alRegistrar }) {
-  const [valores, setValores] = useState({ ...VACIO, proyectoId: proyectoInicial });
+export default function FormularioDeInterrupcion({
+  proyectos,
+  proyectoInicial = '',
+  etapaInicial = '',
+  proyectoFijo = false,
+  alRegistrar,
+  alCancelar,
+}) {
+  const [valores, setValores] = useState(() => ({
+    ...VACIO,
+    proyectoId: proyectoInicial,
+    etapaId: etapaInicial,
+    fecha: hoyLocal(),
+  }));
   const { opcionesDeEtapa } = useEtapasDeProyecto(valores.proyectoId);
   const [errores, setErrores] = useState({});
   const [fallo, setFallo] = useState(null);
   const [confirmado, setConfirmado] = useState(null);
   const [guardando, setGuardando] = useState(false);
 
+  const proyecto = proyectos.find(({ valor }) => valor === valores.proyectoId);
+
   function alCambiar(evento) {
     const { name, value } = evento.target;
-    setValores((previos) => ({ ...previos, [name]: value }));
+    setValores((previos) => ({
+      ...previos,
+      [name]: value,
+      // La etapa pertenece al proyecto: cambiarlo invalida la elegida.
+      ...(name === 'proyectoId' ? { etapaId: '' } : {}),
+    }));
     setErrores((previos) => (previos[name] ? { ...previos, [name]: undefined } : previos));
   }
 
@@ -46,29 +68,32 @@ export default function FormularioDeInterrupcion({ proyectos, proyectoInicial = 
     setConfirmado(null);
     setFallo(null);
 
-    // HU-18 C03: el proyecto va en la ruta, asi que sin el la peticion ni se
-    // puede formar. Es el unico caso que comprueba el cliente.
-    if (!valores.proyectoId) {
-      setErrores({ proyectoId: 'Debe elegir el proyecto al que pertenece la interrupcion.' });
+    const nuevosErrores = validar(valores);
+    if (Object.keys(nuevosErrores).length > 0) {
+      setErrores(nuevosErrores);
       return;
     }
 
     setGuardando(true);
     setErrores({});
     try {
-      await registrarInterrupcion(valores.proyectoId, {
-        tipoInterrupcion: valores.tipoInterrupcion,
-        fecha: valores.fecha || null,
-        // Un campo numerico vacio no se envia como cadena.
-        duracionValor: valores.duracionValor === '' ? null : Number(valores.duracionValor),
-        duracionUnidad: valores.duracionUnidad || null,
-        etapaId: valores.etapaId ? Number(valores.etapaId) : null,
+      const registrada = await registrarInterrupcion(valores.proyectoId, {
+        tipoInterrupcion: valores.tipoInterrupcion.trim(),
+        fecha: valores.fecha,
+        duracionValor: Number(valores.duracionValor),
+        duracionUnidad: valores.duracionUnidad,
+        etapaId: Number(valores.etapaId),
       });
       setConfirmado('La interrupcion quedo registrada y asociada al proyecto.');
       // C02: se conserva el proyecto para registrar otra sin volver a elegirlo.
-      setValores({ ...VACIO, proyectoId: valores.proyectoId });
+      setValores({
+        ...VACIO,
+        proyectoId: valores.proyectoId,
+        etapaId: proyectoFijo ? valores.etapaId : '',
+        fecha: hoyLocal(),
+      });
       if (alRegistrar) {
-        alRegistrar();
+        alRegistrar(registrada);
       }
     } catch (error) {
       if (error.campos) {
@@ -99,19 +124,31 @@ export default function FormularioDeInterrupcion({ proyectos, proyectoInicial = 
         </p>
       )}
 
-      <Campo
-        etiqueta="Proyecto"
-        nombre="proyectoId"
-        opciones={proyectos}
-        obligatorio
-        value={valores.proyectoId}
-        onChange={alCambiar}
-        error={errores.proyectoId}
-      />
+      {proyectoFijo ? (
+        <div>
+          <p className={estilos.rotulo}>Proyecto</p>
+          <p>{proyecto?.texto || 'Proyecto seleccionado'}</p>
+          <p className={estilos.notaDialogo}>
+            La interrupcion se asociara automaticamente a este proyecto.
+          </p>
+        </div>
+      ) : (
+        <Campo
+          etiqueta="Proyecto"
+          nombre="proyectoId"
+          opciones={proyectos}
+          obligatorio
+          value={valores.proyectoId}
+          onChange={alCambiar}
+          error={errores.proyectoId}
+        />
+      )}
+
       <Campo
         etiqueta="Tipo de interrupcion"
         nombre="tipoInterrupcion"
         obligatorio
+        maxLength={50}
         value={valores.tipoInterrupcion}
         onChange={alCambiar}
         error={errores.tipoInterrupcion}
@@ -165,6 +202,11 @@ export default function FormularioDeInterrupcion({ proyectos, proyectoInicial = 
         <Boton type="submit" icono={Save} disabled={guardando}>
           {guardando ? 'Guardando...' : 'Registrar interrupcion'}
         </Boton>
+        {alCancelar && (
+          <Boton type="button" variante="texto" onClick={alCancelar} disabled={guardando}>
+            Cancelar
+          </Boton>
+        )}
       </div>
     </form>
   );
@@ -178,3 +220,47 @@ const VACIO = {
   duracionUnidad: 'HORAS',
   etapaId: '',
 };
+
+/** Fecha local en formato ISO corto, sin el desfase de toISOString en UTC. */
+function hoyLocal() {
+  const ahora = new Date();
+  const mes = String(ahora.getMonth() + 1).padStart(2, '0');
+  const dia = String(ahora.getDate()).padStart(2, '0');
+  return `${ahora.getFullYear()}-${mes}-${dia}`;
+}
+
+/**
+ * Validacion previa a la peticion.
+ *
+ * Repite las reglas que el servidor ya aplica (RN-10, HU-18 C02) para dar
+ * respuesta inmediata, pero no las sustituye: el backend sigue siendo la
+ * autoridad y sus mensajes de campo se pintan igual en cada control.
+ */
+function validar(valores) {
+  const errores = {};
+
+  if (!valores.proyectoId) {
+    errores.proyectoId = 'Debe elegir el proyecto al que pertenece la interrupcion.';
+  }
+  if (!valores.tipoInterrupcion.trim()) {
+    errores.tipoInterrupcion = 'Debe indicar el tipo de interrupcion.';
+  } else if (valores.tipoInterrupcion.trim().length > 50) {
+    errores.tipoInterrupcion = 'El tipo admite hasta 50 caracteres.';
+  }
+  if (!valores.fecha) {
+    errores.fecha = 'Debe indicar la fecha de la interrupcion.';
+  }
+  if (valores.duracionValor === '') {
+    errores.duracionValor = 'Debe indicar la duracion de la interrupcion.';
+  } else if (!Number.isFinite(Number(valores.duracionValor)) || Number(valores.duracionValor) <= 0) {
+    errores.duracionValor = 'La duracion debe ser un numero mayor que cero.';
+  }
+  if (!valores.duracionUnidad) {
+    errores.duracionUnidad = 'Debe indicar la unidad de la duracion.';
+  }
+  if (!valores.etapaId) {
+    errores.etapaId = 'Debe indicar la etapa del proyecto en la que ocurrio.';
+  }
+
+  return errores;
+}
