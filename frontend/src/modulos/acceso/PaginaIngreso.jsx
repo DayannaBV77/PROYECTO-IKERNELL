@@ -99,7 +99,7 @@ export default function PaginaIngreso() {
 
           <div className={estilos.campoPassword}>
             <Campo
-              etiqueta="Contrasena"
+              etiqueta="Contraseña"
               nombre="password"
               tipo={mostrarPassword ? 'text' : 'password'}
               obligatorio
@@ -112,7 +112,7 @@ export default function PaginaIngreso() {
               type="button"
               className={estilos.botonPassword}
               onClick={() => setMostrarPassword((prev) => !prev)}
-              aria-label={mostrarPassword ? 'Ocultar contrasena' : 'Mostrar contrasena'}
+              aria-label={mostrarPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
               aria-pressed={mostrarPassword}
             >
               {mostrarPassword ? <EyeOff size={18} /> : <Eye size={18} />}
