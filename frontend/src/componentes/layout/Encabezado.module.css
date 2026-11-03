@@ -183,12 +183,40 @@
   border-inline-start: 1px solid var(--c-borde);
 }
 
+.botonTema {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+  margin-inline-start: auto;
+  padding: 0;
+  border: 1px solid var(--c-borde);
+  border-radius: var(--r-md);
+  background: var(--c-superficie);
+  color: var(--c-marino-titulo);
+  box-shadow: var(--b-sutil);
+  cursor: pointer;
+  transition: transform var(--tr-rapida), border-color var(--tr-rapida), background var(--tr-rapida);
+}
+
+.botonTema:hover {
+  transform: translateY(-1px);
+  border-color: var(--c-turquesa);
+}
+
+.botonTema:focus-visible,
+.interruptor:focus-visible {
+  outline: 2px solid var(--c-turquesa-fuerte);
+  outline-offset: 2px;
+}
+
 .interruptor {
   display: none;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  margin-inline-start: auto;
   padding: var(--s-2);
   border: 1px solid var(--c-borde);
   border-radius: var(--r-md);
@@ -207,9 +235,17 @@
     display: none;
   }
 
-  .interruptor {
+  .botonTema {
     display: inline-flex;
     grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
+    margin-inline-start: 0;
+  }
+
+  .interruptor {
+    display: inline-flex;
+    grid-column: 4;
     grid-row: 1;
     justify-self: end;
     margin-inline-start: 0;
@@ -224,7 +260,7 @@
      ancho debajo. No se usa flex-wrap: el menú principal nunca se parte. */
   .barra {
     display: grid;
-    grid-template-columns: auto 1fr auto;
+    grid-template-columns: auto 1fr auto auto;
     align-items: center;
     column-gap: var(--s-3);
     row-gap: var(--s-3);

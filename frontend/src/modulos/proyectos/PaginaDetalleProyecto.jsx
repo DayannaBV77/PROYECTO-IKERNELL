@@ -37,6 +37,7 @@ function editablesDe(proyecto) {
   return {
     nombre: proyecto.nombre || '',
     descripcion: proyecto.descripcion || '',
+    reporteExternoAutorizado: Boolean(proyecto.reporteExternoAutorizado),
   };
 }
 
@@ -123,8 +124,9 @@ function ProyectoCargado({ inicial }) {
   }
 
   function alCambiar(evento) {
-    const { name, value } = evento.target;
-    setEditables((previos) => ({ ...previos, [name]: value }));
+    const { name, type, checked, value } = evento.target;
+    const siguiente = type === 'checkbox' ? checked : value;
+    setEditables((previos) => ({ ...previos, [name]: siguiente }));
     setErrores((previos) => (previos[name] ? { ...previos, [name]: undefined } : previos));
     setConfirmado(null);
   }
@@ -290,6 +292,10 @@ function ProyectoCargado({ inicial }) {
                   : 'Sin registrar'}
               </dd>
             </div>
+            <div>
+              <dt>Reporte externo</dt>
+              <dd>{proyecto.reporteExternoAutorizado ? 'Autorizado' : 'No autorizado'}</dd>
+            </div>
           </dl>
         </div>
 
@@ -313,6 +319,17 @@ function ProyectoCargado({ inicial }) {
             onChange={alCambiar}
             error={errores.descripcion}
           />
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <input
+              id="reporteExternoAutorizado"
+              name="reporteExternoAutorizado"
+              type="checkbox"
+              checked={Boolean(editables.reporteExternoAutorizado)}
+              onChange={alCambiar}
+            />
+            <label htmlFor="reporteExternoAutorizado">Autorizado para reporte externo</label>
+          </div>
 
           <div className={estilos.accionesPerfil}>
             <Boton type="submit" icono={Save} disabled={guardando}>

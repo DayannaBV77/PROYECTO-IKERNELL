@@ -7,10 +7,14 @@
 }
 
 html {
+  min-height: 100vh;
   -webkit-text-size-adjust: 100%;
+  background: var(--c-fondo);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 body {
+  min-height: 100vh;
   margin: 0;
   background: var(--c-fondo);
   color: var(--c-texto);
@@ -18,6 +22,7 @@ body {
   font-size: var(--t-base);
   line-height: var(--i-normal);
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.3s ease, color 0.3s ease;
   /* Ningun ancho de pantalla debe producir desplazamiento horizontal. */
   overflow-x: hidden;
 }

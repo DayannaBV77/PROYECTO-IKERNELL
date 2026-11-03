@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
+import { Menu, MoonStar, SunMedium, X } from 'lucide-react';
 
 import { obtenerAccesoCorreo } from '../../api/corporativo.js';
 import { ETIQUETA_TIPO } from '../../api/autenticacion.js';
@@ -22,7 +22,30 @@ import estilos from './Encabezado.module.css';
  */
 export default function Encabezado({ enlaces, acciones }) {
   const [abierto, setAbierto] = useState(false);
+  const [temaOscuro, setTemaOscuro] = useState(() => {
+    try {
+      const guardado = localStorage.getItem('ikernell-theme');
+      if (guardado === 'dark' || guardado === 'light') {
+        return guardado === 'dark';
+      }
+    } catch {
+      // localStorage puede estar deshabilitado.
+    }
+
+    return window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
+  });
   const { sesion } = useSesion();
+
+  useEffect(() => {
+    const tema = temaOscuro ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', tema);
+
+    try {
+      localStorage.setItem('ikernell-theme', tema);
+    } catch {
+      // localStorage puede estar deshabilitado.
+    }
+  }, [temaOscuro]);
 
   const cerrar = () => setAbierto(false);
 
@@ -121,6 +144,16 @@ export default function Encabezado({ enlaces, acciones }) {
             {acciones}
           </div>
         )}
+
+        <button
+          type="button"
+          className={estilos.botonTema}
+          onClick={() => setTemaOscuro((valor) => !valor)}
+          aria-label={temaOscuro ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+          title={temaOscuro ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+        >
+          {temaOscuro ? <SunMedium size={18} aria-hidden="true" /> : <MoonStar size={18} aria-hidden="true" />}
+        </button>
 
         <button
           type="button"

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { LogIn, TriangleAlert } from 'lucide-react';
+import { Eye, EyeOff, LogIn, TriangleAlert } from 'lucide-react';
 
 import EstadoCarga from '../../componentes/estados/EstadoCarga.jsx';
 import Boton from '../../componentes/ui/Boton.jsx';
@@ -31,6 +31,7 @@ export default function PaginaIngreso() {
   const [errores, setErrores] = useState({});
   const [fallo, setFallo] = useState(null);
   const [enviando, setEnviando] = useState(false);
+  const [mostrarPassword, setMostrarPassword] = useState(false);
 
   const destino = ubicacion.state?.destino || '/app';
 
@@ -95,16 +96,29 @@ export default function PaginaIngreso() {
             error={errores.correoCorporativo}
             autoComplete="username"
           />
-          <Campo
-            etiqueta="Contrasena"
-            nombre="password"
-            tipo="password"
-            obligatorio
-            value={valores.password}
-            onChange={alCambiar}
-            error={errores.password}
-            autoComplete="current-password"
-          />
+
+          <div className={estilos.campoPassword}>
+            <Campo
+              etiqueta="Contrasena"
+              nombre="password"
+              tipo={mostrarPassword ? 'text' : 'password'}
+              obligatorio
+              value={valores.password}
+              onChange={alCambiar}
+              error={errores.password}
+              autoComplete="current-password"
+            />
+            <button
+              type="button"
+              className={estilos.botonPassword}
+              onClick={() => setMostrarPassword((prev) => !prev)}
+              aria-label={mostrarPassword ? 'Ocultar contrasena' : 'Mostrar contrasena'}
+              aria-pressed={mostrarPassword}
+            >
+              {mostrarPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+
           <Boton type="submit" icono={LogIn} disabled={enviando} completo>
             {enviando ? 'Validando...' : 'Entrar'}
           </Boton>

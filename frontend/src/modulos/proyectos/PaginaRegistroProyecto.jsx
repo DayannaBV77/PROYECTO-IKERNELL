@@ -8,7 +8,7 @@ import Campo from '../../componentes/ui/Campo.jsx';
 import Seccion from '../../componentes/ui/Seccion.jsx';
 import estilos from '../../estilos/gestion.module.css';
 
-const VACIO = { nombre: '', descripcion: '' };
+const VACIO = { nombre: '', descripcion: '', reporteExternoAutorizado: false };
 
 /**
  * Registro de un proyecto (RF-008, HU-08).
@@ -34,8 +34,9 @@ export default function PaginaRegistroProyecto() {
   const [guardando, setGuardando] = useState(false);
 
   function alCambiar(evento) {
-    const { name, value } = evento.target;
-    setValores((previos) => ({ ...previos, [name]: value }));
+    const { name, type, checked, value } = evento.target;
+    const siguiente = type === 'checkbox' ? checked : value;
+    setValores((previos) => ({ ...previos, [name]: siguiente }));
     setErrores((previos) => (previos[name] ? { ...previos, [name]: undefined } : previos));
   }
 
@@ -96,6 +97,20 @@ export default function PaginaRegistroProyecto() {
           error={errores.descripcion}
           pista="Opcional. Hasta 2000 caracteres."
         />
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.5rem' }}>
+          <input
+            id="reporteExternoAutorizado"
+            name="reporteExternoAutorizado"
+            type="checkbox"
+            checked={Boolean(valores.reporteExternoAutorizado)}
+            onChange={alCambiar}
+          />
+          <label htmlFor="reporteExternoAutorizado">Autorizado para reporte externo</label>
+        </div>
+        <p className={estilos.notaDialogo}>
+          Solo los proyectos con esta marca pueden entregarse a la empresa brasileña aliada.
+        </p>
 
         <div className={estilos.accionesBuscador}>
           <Boton type="submit" icono={Save} disabled={guardando}>

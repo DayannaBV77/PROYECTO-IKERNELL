@@ -2,6 +2,12 @@
   margin-top: auto;
   background: var(--c-marino);
   color: #cbd5e1;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+:global(html[data-theme='dark']) .pie {
+  background: #0b0f19;
+  color: #e2e8f0;
 }
 
 .contenido {
@@ -36,6 +42,7 @@
 
 .lista a {
   color: #cbd5e1;
+  transition: color 0.2s ease;
 }
 
 .lista a:hover {
@@ -62,3 +69,22 @@
   font-size: var(--t-xs);
   color: #94a3b8;
 }
+
+:global(html[data-theme='dark']) .titulo {
+  color: #7dd3dc;
+}
+
+:global(html[data-theme='dark']) .lista a,
+:global(html[data-theme='dark']) .descripcion,
+:global(html[data-theme='dark']) .legal {
+  color: #dfe7f3;
+}
+
+:global(html[data-theme='dark']) .lista a:hover {
+  color: #9bd9ff;
+}
+
+:global(html[data-theme='dark']) .legal {
+  border-top-color: rgb(148 163 184 / 0.2);
+}
+

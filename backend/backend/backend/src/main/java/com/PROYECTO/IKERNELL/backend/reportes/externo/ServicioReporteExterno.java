@@ -112,6 +112,16 @@ public class ServicioReporteExterno {
 	 */
 	@Transactional(readOnly = true)
 	public ArchivoReporteExterno generar(List<Long> proyectoIds, TrabajadorAutenticado responsable) {
+		return generar(proyectoIds, responsable, null);
+	}
+
+	@Transactional(readOnly = true)
+	public ArchivoReporteExterno generar(List<Long> proyectoIds, TrabajadorAutenticado responsable,
+			FormatoReporteExterno formatoPedido) {
+		FormatoReporteExterno formatoOriginal = config.getFormato();
+		if (formatoPedido != null) {
+			config.setFormato(formatoPedido);
+		}
 		long inicio = System.nanoTime();
 		String solicitados = describir(proyectoIds);
 		String incluidos = null;
@@ -163,6 +173,11 @@ public class ServicioReporteExterno {
 			anotar(responsable, solicitados, incluidos, ResultadoAuditoriaReporteExterno.FALLIDO,
 					null, total, inicio, fallo.getMessage());
 			throw fallo;
+		}
+		finally {
+			if (formatoPedido != null) {
+				config.setFormato(formatoOriginal);
+			}
 		}
 	}
 

@@ -16,6 +16,31 @@
   box-shadow: var(--b-media);
 }
 
+.encabezado {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--s-3);
+}
+
+.selectorTema {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid var(--c-borde);
+  border-radius: var(--r-md);
+  background: var(--c-superficie-tenue);
+  color: var(--c-marino-titulo);
+  cursor: pointer;
+  transition: transform var(--tr-rapida), border-color var(--tr-rapida), background var(--tr-rapida);
+}
+
+.selectorTema:hover {
+  transform: translateY(-1px);
+  border-color: var(--c-turquesa);
+}
+
 .titulo {
   font-size: var(--t-lg);
   letter-spacing: var(--e-titulo);
@@ -36,6 +61,37 @@
   gap: var(--s-4);
 }
 
+.campoPassword {
+  position: relative;
+}
+
+.botonPassword {
+  position: absolute;
+  top: 2.15rem;
+  right: var(--s-3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--c-texto-tenue);
+  cursor: pointer;
+  transition: background var(--tr-rapida), color var(--tr-rapida);
+}
+
+.botonPassword:hover {
+  background: var(--c-superficie-tenue);
+  color: var(--c-marino-titulo);
+}
+
+.botonPassword:focus-visible {
+  outline: 2px solid var(--c-turquesa-fuerte);
+  outline-offset: 2px;
+}
+
 .aviso {
   display: flex;
   align-items: flex-start;
@@ -52,4 +108,11 @@
 .iconoAviso {
   flex-shrink: 0;
   margin-top: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .selectorTema,
+  .botonPassword {
+    transition: none;
+  }
 }

@@ -2,16 +2,27 @@ package com.PROYECTO.IKERNELL.backend.reportes;
 
 import java.time.LocalDate;
 
+import java.util.List;
+
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.PROYECTO.IKERNELL.backend.auth.TrabajadorAutenticado;
+import com.PROYECTO.IKERNELL.backend.reportes.externo.FormatoReporteExterno;
+import com.PROYECTO.IKERNELL.backend.reportes.externo.ServicioReporteExterno;
+import com.PROYECTO.IKERNELL.backend.reportes.externo.ServicioReporteExterno.ArchivoReporteExterno;
 import com.PROYECTO.IKERNELL.backend.reportes.dto.PeriodoConsulta;
 import com.PROYECTO.IKERNELL.backend.reportes.dto.ReporteActividadesProyectoResponse;
 import com.PROYECTO.IKERNELL.backend.reportes.dto.ReporteDesempenoResponse;
@@ -31,9 +42,11 @@ public class ReporteController {
 	private static final int TAMANO_MAXIMO_PAGINA = 200;
 
 	private final ServicioReportes servicio;
+	private final ServicioReporteExterno servicioReporteExterno;
 
-	public ReporteController(ServicioReportes servicio) {
+	public ReporteController(ServicioReportes servicio, ServicioReporteExterno servicioReporteExterno) {
 		this.servicio = servicio;
+		this.servicioReporteExterno = servicioReporteExterno;
 	}
 
 	/**
@@ -84,6 +97,36 @@ public class ReporteController {
 			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
 			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta) {
 		return servicio.interrupcionesDeProyecto(proyectoId, PeriodoConsulta.de(desde, hasta));
+	}
+
+	/**
+	 * Alias del puerto de exportacion del reporte externo para la pantalla
+	 * existente de "Archivo plano". El frontend ya lo llama por esta ruta, y la
+	 * compatibilidad evita un 404 por el nombre antiguo previo a la separacion de
+	 * reportes internos y externos.
+	 */
+	@GetMapping("/archivo-plano")
+	@PreAuthorize("hasRole('LIDER')")
+	public ResponseEntity<byte[]> archivoPlano(
+			@RequestParam(required = false) List<Long> proyectoIds,
+			@RequestParam(required = false) String formato,
+			@AuthenticationPrincipal TrabajadorAutenticado autenticado) {
+		FormatoReporteExterno formatoExportacion = null;
+		if (formato != null && !formato.isBlank()) {
+			formatoExportacion = FormatoReporteExterno.valueOf(formato.trim().toUpperCase());
+		}
+
+		ArchivoReporteExterno archivo = servicioReporteExterno.generar(proyectoIds, autenticado,
+				formatoExportacion);
+		MediaType tipo = FormatoReporteExterno.CSV.name().equals(archivo.formato())
+				? MediaType.parseMediaType("text/csv")
+				: MediaType.TEXT_PLAIN;
+		return ResponseEntity.ok()
+				.contentType(new MediaType(tipo, archivo.codificacion()))
+				.header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()
+						.filename(archivo.nombre()).build().toString())
+				.header("X-Content-Type-Options", "nosniff")
+				.body(archivo.contenido());
 	}
 
 }

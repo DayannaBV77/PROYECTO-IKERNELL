@@ -257,8 +257,7 @@ export default function PaginaConsultas() {
   return (
     <Seccion
       titulo="Gestión de Consultas Web"
-      descripcion="Administración, atención e historial de preguntas enviadas por los visitantes desde el portal web (RF-035, HU-02)."
-      id="consultas-admin"
+      
     >
       <div className={estilos.filtrosContenedor}>
         {/* Contadores rápidos / métricas de estado */}

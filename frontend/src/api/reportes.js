@@ -51,10 +51,16 @@ export function reporteDeInterrupciones(proyectoId, criterios, opciones) {
  *
  * @returns {Promise<{nombre: string, blob: Blob}>}
  */
-export async function descargarArchivoPlano(proyectoIds = []) {
+export function listarProyectosAutorizados(opciones) {
+  return api.obtener('/api/reportes/externos/proyectos', opciones);
+}
+
+export async function descargarArchivoPlano(proyectoIds = [], formato = 'CSV') {
+  const formatoValido = formato === 'TXT' ? 'TXT' : 'CSV';
   const ruta = `/api/reportes/archivo-plano${construirConsulta({
     // La lista viaja repetida, que es como Spring espera un List<Long>.
     proyectoIds: proyectoIds.length > 0 ? proyectoIds.join(',') : '',
+    formato: formatoValido,
   })}`;
 
   let respuesta;
