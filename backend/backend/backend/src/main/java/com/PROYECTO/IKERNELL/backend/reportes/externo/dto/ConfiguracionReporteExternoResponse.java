@@ -17,5 +17,7 @@ public record ConfiguracionReporteExternoResponse(
 		boolean incluirCabecera,
 		String nombreBase,
 		List<String> campos,
+		boolean correoHabilitado,
+		String correoDestinatario,
 		List<String> parametrosPendientes) {
 }

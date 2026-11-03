@@ -54,14 +54,11 @@ export default function Encabezado({ enlaces, acciones }) {
     try {
       const respuesta = await obtenerAccesoCorreo();
       const destino = respuesta?.disponible ? respuesta.url : url;
-      if (!respuesta?.disponible) {
-        window.alert(respuesta?.mensaje || 'El correo corporativo no está disponible en este momento.');
-        return;
-      }
       window.open(destino, '_blank', 'noopener,noreferrer');
       cerrar();
     } catch {
-      window.alert('Debe iniciar sesion para abrir el correo corporativo.');
+      window.open(url, '_blank', 'noopener,noreferrer');
+      cerrar();
     }
   }
 

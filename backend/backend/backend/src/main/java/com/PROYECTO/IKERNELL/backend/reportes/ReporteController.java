@@ -15,11 +15,14 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.PROYECTO.IKERNELL.backend.auth.TrabajadorAutenticado;
+import com.PROYECTO.IKERNELL.backend.publico.ServicioNotificacionCorreo;
+import com.PROYECTO.IKERNELL.backend.publico.ServicioNotificacionCorreo.ResultadoEnvioCorreo;
 import com.PROYECTO.IKERNELL.backend.reportes.externo.FormatoReporteExterno;
 import com.PROYECTO.IKERNELL.backend.reportes.externo.ServicioReporteExterno;
 import com.PROYECTO.IKERNELL.backend.reportes.externo.ServicioReporteExterno.ArchivoReporteExterno;
@@ -43,10 +46,13 @@ public class ReporteController {
 
 	private final ServicioReportes servicio;
 	private final ServicioReporteExterno servicioReporteExterno;
+	private final ServicioNotificacionCorreo servicioNotificacionCorreo;
 
-	public ReporteController(ServicioReportes servicio, ServicioReporteExterno servicioReporteExterno) {
+	public ReporteController(ServicioReportes servicio, ServicioReporteExterno servicioReporteExterno,
+			ServicioNotificacionCorreo servicioNotificacionCorreo) {
 		this.servicio = servicio;
 		this.servicioReporteExterno = servicioReporteExterno;
+		this.servicioNotificacionCorreo = servicioNotificacionCorreo;
 	}
 
 	/**
@@ -120,13 +126,42 @@ public class ReporteController {
 				formatoExportacion);
 		MediaType tipo = FormatoReporteExterno.CSV.name().equals(archivo.formato())
 				? MediaType.parseMediaType("text/csv")
-				: MediaType.TEXT_PLAIN;
+				: FormatoReporteExterno.PDF.name().equals(archivo.formato())
+						? MediaType.APPLICATION_PDF
+						: MediaType.TEXT_PLAIN;
 		return ResponseEntity.ok()
 				.contentType(new MediaType(tipo, archivo.codificacion()))
 				.header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()
 						.filename(archivo.nombre()).build().toString())
 				.header("X-Content-Type-Options", "nosniff")
 				.body(archivo.contenido());
+	}
+
+	@PostMapping("/archivo-plano/enviar-correo")
+	@PreAuthorize("hasRole('LIDER')")
+	public ResponseEntity<?> enviarArchivoPlanoPorCorreo(
+			@RequestParam(required = false) List<Long> proyectoIds,
+			@RequestParam(required = false) String formato,
+			@AuthenticationPrincipal TrabajadorAutenticado autenticado) {
+		FormatoReporteExterno formatoExportacion = null;
+		if (formato != null && !formato.isBlank()) {
+			formatoExportacion = FormatoReporteExterno.valueOf(formato.trim().toUpperCase());
+		}
+		ArchivoReporteExterno archivo = servicioReporteExterno.generar(proyectoIds, autenticado,
+				formatoExportacion);
+		ResultadoEnvioCorreo envio = servicioNotificacionCorreo.enviarArchivoAdjunto(
+				null,
+				"Empresa brasileña aliada",
+				"IKernell - Reporte externo adjunto",
+				"Se adjunta el archivo solicitado por la empresa brasileña aliada.",
+				archivo.contenido(),
+				archivo.nombre());
+		if (!envio.exitoso()) {
+			return ResponseEntity.status(502).body(java.util.Map.of(
+					"mensaje", envio.mensaje(),
+					"detalle", envio.detalleError()));
+		}
+		return ResponseEntity.ok(java.util.Map.of("mensaje", envio.mensaje()));
 	}
 
 }

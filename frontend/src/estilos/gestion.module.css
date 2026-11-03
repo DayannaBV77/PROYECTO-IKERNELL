@@ -87,24 +87,32 @@
 /* El envoltorio permite desplazar la tabla en movil sin romper la pagina. */
 .tablaEnvoltorio {
   overflow-x: auto;
+  overflow-y: hidden;
   background: var(--c-superficie);
   border: 1px solid var(--c-borde);
   border-radius: var(--r-lg);
   box-shadow: var(--b-sutil);
+  -webkit-overflow-scrolling: touch;
 }
 
 .tabla {
   width: 100%;
+  min-width: 760px;
   border-collapse: collapse;
+  table-layout: fixed;
   font-size: var(--t-sm);
+  line-height: 1.45;
   text-align: left;
 }
 
 .tabla th,
 .tabla td {
-  padding: var(--s-3) var(--s-4);
+  padding: 0.7rem 0.8rem;
   border-bottom: 1px solid var(--c-borde);
-  white-space: nowrap;
+  vertical-align: top;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .tabla thead th {
@@ -113,6 +121,8 @@
   letter-spacing: var(--e-nav);
   text-transform: uppercase;
   color: var(--c-marino-titulo);
+  font-weight: var(--p-semi);
+  line-height: 1.2;
 }
 
 .tabla tbody tr:last-child th,
@@ -124,7 +134,8 @@
   background: var(--c-superficie-tenue);
 }
 
-.celdaNombre {
+.celdaNombre,
+.celdaDescripcion {
   font-weight: var(--p-semi);
   color: var(--c-marino-titulo);
 }
@@ -407,6 +418,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--s-4);
+  width: 100%;
 }
 
 .actividad {
@@ -414,19 +426,35 @@
   flex-direction: column;
   align-items: flex-start;
   gap: var(--s-4);
+  width: 100%;
   padding: var(--s-5);
   background: var(--c-superficie);
   border: 1px solid var(--c-borde-tarjeta);
   border-radius: var(--r-lg);
   box-shadow: var(--b-sutil);
+  position: relative;
+  box-sizing: border-box;
+}
+
+.actividad > * {
+  pointer-events: auto;
+  position: relative;
+  z-index: 1;
 }
 
 .actividadCabecera {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: var(--s-4);
+  flex-wrap: wrap;
+  gap: var(--s-3) var(--s-4);
   width: 100%;
+  min-width: 0;
+}
+
+.actividadCabecera > div:first-child {
+  flex: 1 1 320px;
+  min-width: 0;
 }
 
 .actividadProyecto {
@@ -435,16 +463,20 @@
   text-transform: uppercase;
   font-weight: var(--p-semi);
   color: var(--c-texto-tenue);
+  word-break: break-word;
 }
 
 .actividadDescripcion {
   margin-top: var(--s-2);
   color: var(--c-texto);
   line-height: var(--i-normal);
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .actividadEstado {
   flex-shrink: 0;
+  align-self: flex-start;
   padding: 2px var(--s-3);
   border-radius: var(--r-full);
   background: var(--c-superficie-tenue);

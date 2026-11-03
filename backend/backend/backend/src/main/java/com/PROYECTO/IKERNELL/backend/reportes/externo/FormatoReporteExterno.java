@@ -22,6 +22,9 @@ public enum FormatoReporteExterno {
 	ANCHO_FIJO,
 
 	/** Bloques legibles de {@code campo: valor}, uno por proyecto. */
-	TXT;
+	TXT,
+
+	/** PDF propuesto como alternativa adicional, sujeto a acuerdo con la empresa. */
+	PDF;
 
 }

@@ -9,7 +9,7 @@
  * Vive en su propio modulo para que el archivo del layout exporte unicamente
  * componentes.
  */
-const CORREO_CORPORATIVO_URL = 'https://correo.ikernell.com';
+const CORREO_CORPORATIVO_URL = 'https://mail.google.com/';
 
 export const ENLACES_PUBLICOS = [
   { a: '/', texto: 'Inicio', exacto: true },

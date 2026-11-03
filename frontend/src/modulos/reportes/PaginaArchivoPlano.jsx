@@ -1,7 +1,12 @@
 import { useCallback, useState } from 'react';
 import { CircleCheck, Download, FileDown, TriangleAlert } from 'lucide-react';
 
-import { listarProyectosAutorizados, descargarArchivoPlano } from '../../api/reportes.js';
+import {
+  listarProyectosAutorizados,
+  listarConfiguracionReporte,
+  descargarArchivoPlano,
+  enviarArchivoPlanoPorCorreo,
+} from '../../api/reportes.js';
 import EstadoCarga from '../../componentes/estados/EstadoCarga.jsx';
 import EstadoError from '../../componentes/estados/EstadoError.jsx';
 import EstadoVacio from '../../componentes/estados/EstadoVacio.jsx';
@@ -31,13 +36,17 @@ export default function PaginaArchivoPlano() {
   const [seleccion, setSeleccion] = useState([]);
   const [formato, setFormato] = useState('CSV');
   const [generando, setGenerando] = useState(false);
+  const [enviando, setEnviando] = useState(false);
   const [fallo, setFallo] = useState(null);
   const [confirmado, setConfirmado] = useState(null);
 
   const cargar = useCallback(({ senal }) => listarProyectosAutorizados({ senal }), []);
+  const cargarConfiguracion = useCallback(({ senal }) => listarConfiguracionReporte({ senal }), []);
   const { datos, error, cargando, reintentar } = usePeticion(cargar, []);
+  const { datos: configuracion } = usePeticion(cargarConfiguracion, []);
 
   const proyectos = datos || [];
+  const envioCorreoHabilitado = Boolean(configuracion?.correoHabilitado && configuracion?.correoDestinatario);
   const seleccionados = proyectos.filter((proyecto) => seleccion.includes(proyecto.id));
   const todosSeleccionados = proyectos.length > 0 && seleccion.length === proyectos.length;
   const estadoReporte = (proyecto) =>
@@ -100,6 +109,21 @@ export default function PaginaArchivoPlano() {
     }
   }
 
+  async function alEnviarPorCorreo() {
+    setEnviando(true);
+    setFallo(null);
+    setConfirmado(null);
+
+    try {
+      const respuesta = await enviarArchivoPlanoPorCorreo(seleccion, formato);
+      setConfirmado(respuesta?.mensaje || 'El archivo fue enviado por correo correctamente.');
+    } catch (fallaApi) {
+      setFallo(fallaApi.message || 'No se pudo enviar el archivo por correo.');
+    } finally {
+      setEnviando(false);
+    }
+  }
+
   return (
     <Seccion
       titulo="Archivo plano para la empresa aliada"
@@ -147,22 +171,22 @@ export default function PaginaArchivoPlano() {
           <div>
             <p className={estilos.rotulo}>Formato de exportacion</p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginTop: '0.75rem' }}>
-              {['CSV', 'TXT', 'PDF'].map((opcion) => (
+              {['CSV', 'TXT'].map((opcion) => (
                 <label key={opcion} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <input
                     type="radio"
                     name="formato-reporte"
                     checked={formato === opcion}
                     onChange={() => setFormato(opcion)}
-                    disabled={generando || opcion === 'PDF'}
+                    disabled={generando}
                   />
-                  <span>{opcion === 'PDF' ? 'PDF (pendiente)' : opcion}</span>
+                  <span>{opcion}</span>
                 </label>
               ))}
             </div>
             <p className={estilos.notaDialogo}>
-              El PDF queda abierto como propuesta y debe confirmarse con la empresa brasileña.
-              El archivo plano exige CSV o TXT mientras no haya acuerdo definitivo.
+              El PDF queda fuera del flujo activo porque todavía requiere acuerdo con la empresa brasileña.
+              Mientras no exista aprobación, el formato disponible es CSV o TXT.
             </p>
           </div>
 
@@ -230,9 +254,14 @@ export default function PaginaArchivoPlano() {
           </div>
 
           <div className={estilos.accionesBuscador}>
-            <Boton icono={Download} onClick={alGenerar} disabled={generando}>
+            <Boton icono={Download} onClick={alGenerar} disabled={generando || enviando}>
               {generando ? 'Generando...' : 'Generar y descargar'}
             </Boton>
+            {envioCorreoHabilitado && (
+              <Boton onClick={alEnviarPorCorreo} disabled={generando || enviando}>
+                {enviando ? 'Enviando...' : 'Enviar por correo'}
+              </Boton>
+            )}
           </div>
         </>
       )}

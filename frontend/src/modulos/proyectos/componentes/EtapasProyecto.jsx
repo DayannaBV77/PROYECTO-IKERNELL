@@ -165,6 +165,12 @@ export default function EtapasProyecto({ proyecto }) {
         <div className={estilos.tablaEnvoltorio}>
           <table className={estilos.tabla}>
             <caption className="solo-lectores">Etapas registradas del proyecto</caption>
+            <colgroup>
+              <col style={{ width: '10%' }} />
+              <col style={{ width: '24%' }} />
+              <col style={{ width: '54%' }} />
+              <col style={{ width: '12%' }} />
+            </colgroup>
             <thead>
               <tr>
                 <th scope="col">Orden</th>

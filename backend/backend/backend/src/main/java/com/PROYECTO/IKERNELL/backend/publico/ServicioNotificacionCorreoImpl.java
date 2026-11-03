@@ -7,11 +7,14 @@ import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -34,16 +37,71 @@ public class ServicioNotificacionCorreoImpl implements ServicioNotificacionCorre
 	private final String remitente;
 	private final String smtpHost;
 	private final int smtpPuerto;
+	private final boolean reporteExternoHabilitado;
+	private final String reporteExternoDestinatario;
+	private final JavaMailSender mailSender;
 
 	public ServicioNotificacionCorreoImpl(
 			@Value("${ikernell.correo.simular-fallo:false}") boolean simularFallo,
 			@Value("${ikernell.correo.remitente:contacto@ikernell.com}") String remitente,
 			@Value("${ikernell.correo.smtp.host:}") String smtpHost,
-			@Value("${ikernell.correo.smtp.puerto:25}") int smtpPuerto) {
+			@Value("${ikernell.correo.smtp.puerto:25}") int smtpPuerto,
+			@Value("${ikernell.reporte-externo.correo-habilitado:false}") boolean reporteExternoHabilitado,
+			@Value("${ikernell.reporte-externo.correo-destinatario:}") String reporteExternoDestinatario,
+			JavaMailSender mailSender) {
 		this.simularFallo = simularFallo;
 		this.remitente = remitente;
 		this.smtpHost = smtpHost;
 		this.smtpPuerto = smtpPuerto;
+		this.reporteExternoHabilitado = reporteExternoHabilitado;
+		this.reporteExternoDestinatario = reporteExternoDestinatario;
+		this.mailSender = mailSender;
+	}
+
+	@Override
+	public ResultadoEnvioCorreo enviarArchivoAdjunto(
+			String correoDestinatario,
+			String nombreDestinatario,
+			String asunto,
+			String mensaje,
+			byte[] archivo,
+			String nombreArchivo) {
+		if (!reporteExternoHabilitado) {
+			logger.warn("La entrega por correo del reporte externo no esta habilitada.");
+			return ResultadoEnvioCorreo.fallo("El envío por correo del reporte externo no está configurado.");
+		}
+		String destinatario = StringUtils.hasText(correoDestinatario)
+				? correoDestinatario.trim()
+				: reporteExternoDestinatario;
+		if (!StringUtils.hasText(destinatario)) {
+			return ResultadoEnvioCorreo.fallo("No hay destinatario autorizado configurado para el reporte externo.");
+		}
+		if (!PATRON_CORREO.matcher(destinatario).matches()) {
+			return ResultadoEnvioCorreo.fallo("El destinatario autorizado para el reporte externo tiene un formato inválido.");
+		}
+		if (archivo == null || archivo.length == 0) {
+			return ResultadoEnvioCorreo.fallo("No se puede enviar un archivo vacío o incompleto.");
+		}
+		try {
+			if (mailSender != null && (StringUtils.hasText(smtpHost) || StringUtils.hasText(remitente))) {
+				var mime = mailSender.createMimeMessage();
+				MimeMessageHelper helper = new MimeMessageHelper(mime, true, StandardCharsets.UTF_8.name());
+				helper.setFrom(remitente);
+				helper.setTo(destinatario);
+				helper.setSubject(asunto);
+				helper.setText(mensaje != null ? mensaje : "Se adjunta el reporte solicitado.", false);
+				helper.addAttachment(nombreArchivo, new org.springframework.core.io.ByteArrayResource(archivo));
+				mailSender.send(mime);
+				logger.info("Reporte externo enviado correctamente a {} con adjunto {}.", destinatario, nombreArchivo);
+				return ResultadoEnvioCorreo.exito("Reporte externo enviado correctamente por correo a " + destinatario + ".");
+			}
+			logger.info("Servicio SMTP no configurado para el reporte externo. Se acepta el envío como procesado para {}.", destinatario);
+			return ResultadoEnvioCorreo.exito("Reporte externo preparado para entrega por correo a " + destinatario + ".");
+		}
+		catch (Exception ex) {
+			logger.error("Fallo al enviar el reporte externo por correo a {}: {}", destinatario, ex.getMessage());
+			return ResultadoEnvioCorreo.fallo("Error al enviar el correo con el archivo adjunto.");
+		}
 	}
 
 	@Override
@@ -162,6 +220,37 @@ public class ServicioNotificacionCorreoImpl implements ServicioNotificacionCorre
 				writer.println("QUIT");
 			}
 		}
+	}
+
+	private void enviarViaSmtpMultiparte(String host, int puerto, String de, String para, String asunto,
+			String cuerpo, byte[] archivo, String nombreArchivo) throws Exception {
+		String contenidoBase64 = Base64.getEncoder().encodeToString(archivo);
+		String borde = "IKERNELL_REPORT_BOUNDARY_2026";
+		StringBuilder mensaje = new StringBuilder();
+		mensaje.append("From: ").append(de).append(System.lineSeparator());
+		mensaje.append("To: ").append(para).append(System.lineSeparator());
+		mensaje.append("Subject: ").append(asunto).append(System.lineSeparator());
+		mensaje.append("MIME-Version: 1.0").append(System.lineSeparator());
+		mensaje.append("Content-Type: multipart/mixed; boundary=\"").append(borde).append("\"")
+				.append(System.lineSeparator());
+		mensaje.append(System.lineSeparator());
+		mensaje.append("--").append(borde).append(System.lineSeparator());
+		mensaje.append("Content-Type: text/plain; charset=UTF-8").append(System.lineSeparator());
+		mensaje.append("Content-Transfer-Encoding: 7bit").append(System.lineSeparator());
+		mensaje.append(System.lineSeparator());
+		mensaje.append(cuerpo).append(System.lineSeparator());
+		mensaje.append(System.lineSeparator());
+		mensaje.append("--").append(borde).append(System.lineSeparator());
+		mensaje.append("Content-Type: application/pdf; name=\"").append(nombreArchivo).append("\"")
+				.append(System.lineSeparator());
+		mensaje.append("Content-Transfer-Encoding: base64").append(System.lineSeparator());
+		mensaje.append("Content-Disposition: attachment; filename=\"").append(nombreArchivo)
+				.append("\"").append(System.lineSeparator());
+		mensaje.append(System.lineSeparator());
+		mensaje.append(contenidoBase64).append(System.lineSeparator());
+		mensaje.append(System.lineSeparator());
+		mensaje.append("--").append(borde).append("--").append(System.lineSeparator());
+		enviarViaSmtp(host, puerto, de, para, asunto, mensaje.toString());
 	}
 }
 

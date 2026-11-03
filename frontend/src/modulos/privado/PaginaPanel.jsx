@@ -1,11 +1,10 @@
 import { useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import {
   BarChart3,
   FileDown,
   FileText,
   Bug,
-  House,
   Link2,
   ClipboardCheck,
   ClipboardList,
@@ -13,7 +12,6 @@ import {
   FolderKanban,
   GraduationCap,
   Library,
-  LogOut,
   Mail,
   MessagesSquare,
   Users,
@@ -156,13 +154,7 @@ const SERVICIOS = {
 };
 
 export default function PaginaPanel() {
-  const { sesion, salir } = useSesion();
-  const navegar = useNavigate();
-
-  async function alSalir() {
-    await salir();
-    navegar('/', { replace: true });
-  }
+  const { sesion } = useSesion();
 
   const cargarCorreo = useCallback(({ senal }) => obtenerAccesoCorreo({ senal }), []);
   const correo = usePeticion(cargarCorreo, []);
@@ -188,14 +180,6 @@ export default function PaginaPanel() {
           </div>
         </div>
 
-        <div className={estilos.accionesSesion}>
-          <Boton a="/" variante="secundario" icono={House}>
-            Volver a la pagina principal
-          </Boton>
-          <Boton variante="texto" icono={LogOut} onClick={alSalir}>
-            Cerrar sesion
-          </Boton>
-        </div>
       </Seccion>
 
       {gestion.length > 0 && (

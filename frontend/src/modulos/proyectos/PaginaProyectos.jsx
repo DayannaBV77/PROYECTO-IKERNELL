@@ -117,6 +117,13 @@ export default function PaginaProyectos() {
           <div className={estilos.tablaEnvoltorio}>
             <table className={estilos.tabla}>
               <caption className="solo-lectores">Resultados de la busqueda de proyectos</caption>
+              <colgroup>
+                <col style={{ width: '8%' }} />
+                <col style={{ width: '32%' }} />
+                <col style={{ width: '18%' }} />
+                <col style={{ width: '22%' }} />
+                <col style={{ width: '20%' }} />
+              </colgroup>
               <thead>
                 <tr>
                   <th scope="col">Identificador</th>

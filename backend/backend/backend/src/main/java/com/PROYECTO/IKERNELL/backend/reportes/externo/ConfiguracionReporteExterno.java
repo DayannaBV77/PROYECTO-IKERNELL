@@ -70,6 +70,18 @@ public class ConfiguracionReporteExterno {
 	/** Ancho de cada campo cuando el formato es ANCHO_FIJO. */
 	private Map<String, Integer> anchos = new LinkedHashMap<>();
 
+	/** Propuesta adicional: si la empresa aprueba PDF, se puede proteger con una contraseña. */
+	private boolean pdfProtegido = false;
+
+	/** Contraseña para abrir el PDF si la proteccion esta habilitada. */
+	private String pdfContrasena = "";
+
+	/** Si el correo autorizado para el reporte externo está habilitado. */
+	private boolean correoHabilitado = false;
+
+	/** Destinatario autorizado para la entrega del reporte externo. */
+	private String correoDestinatario = "";
+
 	@PostConstruct
 	void validar() {
 		if (separador == null || separador.isEmpty()) {
@@ -158,6 +170,38 @@ public class ConfiguracionReporteExterno {
 
 	public void setAnchos(Map<String, Integer> anchos) {
 		this.anchos = anchos;
+	}
+
+	public boolean isPdfProtegido() {
+		return pdfProtegido;
+	}
+
+	public void setPdfProtegido(boolean pdfProtegido) {
+		this.pdfProtegido = pdfProtegido;
+	}
+
+	public String getPdfContrasena() {
+		return pdfContrasena;
+	}
+
+	public void setPdfContrasena(String pdfContrasena) {
+		this.pdfContrasena = pdfContrasena;
+	}
+
+	public boolean isCorreoHabilitado() {
+		return correoHabilitado;
+	}
+
+	public void setCorreoHabilitado(boolean correoHabilitado) {
+		this.correoHabilitado = correoHabilitado;
+	}
+
+	public String getCorreoDestinatario() {
+		return correoDestinatario;
+	}
+
+	public void setCorreoDestinatario(String correoDestinatario) {
+		this.correoDestinatario = correoDestinatario;
 	}
 
 }

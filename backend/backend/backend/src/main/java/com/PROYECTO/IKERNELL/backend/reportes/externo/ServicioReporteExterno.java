@@ -82,17 +82,19 @@ public class ServicioReporteExterno {
 	private final EjecucionActividadRepository ejecuciones;
 	private final MapeadorReporteExterno mapeador;
 	private final Map<FormatoReporteExterno, FormateadorReporteExterno> formateadores;
+	private final FormateadorPdf formateadorPdf;
 	private final ConfiguracionReporteExterno config;
 	private final ServicioAuditoriaReporteExterno auditoria;
 
 	public ServicioReporteExterno(ProyectoRepository proyectos, ServicioProyectos servicioProyectos,
 			EjecucionActividadRepository ejecuciones, MapeadorReporteExterno mapeador,
-			List<FormateadorReporteExterno> formateadores, ConfiguracionReporteExterno config,
-			ServicioAuditoriaReporteExterno auditoria) {
+			List<FormateadorReporteExterno> formateadores, FormateadorPdf formateadorPdf,
+			ConfiguracionReporteExterno config, ServicioAuditoriaReporteExterno auditoria) {
 		this.proyectos = proyectos;
 		this.servicioProyectos = servicioProyectos;
 		this.ejecuciones = ejecuciones;
 		this.mapeador = mapeador;
+		this.formateadorPdf = formateadorPdf;
 		this.config = config;
 		this.auditoria = auditoria;
 		this.formateadores = formateadores.stream()
@@ -154,19 +156,27 @@ public class ServicioReporteExterno {
 					.map(proyecto -> filaDe(proyecto, datos.get(proyecto.getId())))
 					.toList();
 
-			FormateadorReporteExterno formateador = formateador();
-			String contenido = formateador.formatear(mapeador.cabecera(), filas, config);
-			String nombre = config.getNombreBase() + "-" + LocalDate.now() + formateador.extension();
-
 			incluidos = idsDe(conDatos);
 			total = filas.size();
 
-			ArchivoReporteExterno archivo = new ArchivoReporteExterno(nombre,
-					contenido.getBytes(config.charset()), config.charset(),
-					config.getFormato().name());
+			ArchivoReporteExterno archivo;
+			if (config.getFormato() == FormatoReporteExterno.PDF || formatoPedido == FormatoReporteExterno.PDF) {
+				byte[] pdf = formateadorPdf.generarPdf(mapeador.cabecera(), filas, config);
+				String nombre = config.getNombreBase() + "-" + LocalDate.now() + ".pdf";
+				archivo = new ArchivoReporteExterno(nombre, pdf, config.charset(), FormatoReporteExterno.PDF.name());
+			}
+			else {
+				FormateadorReporteExterno formateador = formateador();
+				String contenido = formateador.formatear(mapeador.cabecera(), filas, config);
+				String nombre = config.getNombreBase() + "-" + LocalDate.now() + formateador.extension();
+				archivo = new ArchivoReporteExterno(nombre,
+						contenido.getBytes(config.charset()), config.charset(),
+						config.getFormato().name());
+			}
 
+			String nombreArchivo = archivo.nombre();
 			anotar(responsable, solicitados, incluidos, ResultadoAuditoriaReporteExterno.EXITOSO,
-					nombre, total, inicio, null);
+					nombreArchivo, total, inicio, null);
 			return archivo;
 		}
 		catch (RuntimeException fallo) {
@@ -202,6 +212,8 @@ public class ServicioReporteExterno {
 				config.isIncluirCabecera(),
 				config.getNombreBase(),
 				mapeador.cabecera(),
+				config.isCorreoHabilitado(),
+				config.getCorreoDestinatario(),
 				PARAMETROS_PENDIENTES);
 	}
 

@@ -13,6 +13,14 @@ public interface ServicioNotificacionCorreo {
 			String preguntaOriginal,
 			String contenidoRespuesta);
 
+	ResultadoEnvioCorreo enviarArchivoAdjunto(
+			String correoDestinatario,
+			String nombreDestinatario,
+			String asunto,
+			String mensaje,
+			byte[] archivo,
+			String nombreArchivo);
+
 	record ResultadoEnvioCorreo(
 			boolean exitoso,
 			String mensaje,

@@ -55,8 +55,12 @@ export function listarProyectosAutorizados(opciones) {
   return api.obtener('/api/reportes/externos/proyectos', opciones);
 }
 
+export function listarConfiguracionReporte(opciones) {
+  return api.obtener('/api/reportes/externos/configuracion', opciones);
+}
+
 export async function descargarArchivoPlano(proyectoIds = [], formato = 'CSV') {
-  const formatoValido = formato === 'TXT' ? 'TXT' : 'CSV';
+  const formatoValido = formato === 'TXT' ? 'TXT' : formato === 'PDF' ? 'PDF' : 'CSV';
   const ruta = `/api/reportes/archivo-plano${construirConsulta({
     // La lista viaja repetida, que es como Spring espera un List<Long>.
     proyectoIds: proyectoIds.length > 0 ? proyectoIds.join(',') : '',
@@ -84,6 +88,15 @@ export async function descargarArchivoPlano(proyectoIds = [], formato = 'CSV') {
     nombre: nombreDeLaDescarga(respuesta) || 'ikernell-proyectos.txt',
     blob: await respuesta.blob(),
   };
+}
+
+export function enviarArchivoPlanoPorCorreo(proyectoIds = [], formato = 'CSV') {
+  const formatoValido = formato === 'TXT' ? 'TXT' : formato === 'PDF' ? 'PDF' : 'CSV';
+  const consulta = new URLSearchParams({
+    proyectoIds: proyectoIds.length > 0 ? proyectoIds.join(',') : '',
+    formato: formatoValido,
+  }).toString();
+  return api.crear(`/api/reportes/archivo-plano/enviar-correo?${consulta}`, null);
 }
 
 /** Lee el nombre que el servidor propone en Content-Disposition. */
