@@ -130,20 +130,6 @@ export default function PaginaArchivoPlano() {
       descripcion="Informacion de los proyectos y de su ejecucion, para reportarla a la empresa brasileña."
       id="archivo-plano"
     >
-      <div className={estilos.avisoPendiente} role="note">
-        <TriangleAlert size={18} aria-hidden="true" />
-        <div>
-          <p>
-            <strong>La estructura del archivo esta pendiente de acordar.</strong>
-          </p>
-          <p className={estilos.notaDialogo}>
-            Los campos, el separador y la codificacion deben definirse con la empresa brasileña.
-            Lo que se descarga es una propuesta armada con la informacion que el sistema tiene de
-            cada proyecto; reviselo antes de enviarlo.
-          </p>
-        </div>
-      </div>
-
       {confirmado && (
         <p className={estilos.avisoExito} role="status">
           <CircleCheck size={18} aria-hidden="true" />
