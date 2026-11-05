@@ -38,6 +38,11 @@
   letter-spacing: -0.02em;
 }
 
+:global(html[data-theme='dark']) .sigla {
+  background: #1e293b;
+  border: 1px solid #334155;
+}
+
 .sigla span {
   color: var(--c-turquesa-fuerte);
 }
@@ -50,11 +55,10 @@
 }
 
 /*
- * En la zona privada el menu completo (hasta once entradas) manda sobre el
- * espacio: por debajo de 1600px se conserva la sigla y se libera el resto para
- * la navegacion y el bloque de sesion.
+ * En la zona privada el menu completo (hasta once entradas) necesita espacio:
+ * se conserva la marca de manera legible y compacta.
  */
-@media (max-width: 1599px) {
+@media (max-width: 1400px) {
   .compacta {
     gap: 0;
   }

@@ -36,6 +36,15 @@ export default function SeccionContenido({
 
   const { datos, error, cargando, reintentar } = usePeticion(cargar, [tipo, busqueda]);
 
+  // Deduplicar contenido si vienen registros duplicados en la base de datos por título y cuerpo
+  const contenidoUnico = (datos?.contenido || []).filter((item, index, self) =>
+    index === self.findIndex((otro) => (
+      otro.id === item.id ||
+      (otro.titulo?.trim().toLowerCase() === item.titulo?.trim().toLowerCase() &&
+       otro.cuerpo?.trim() === item.cuerpo?.trim())
+    ))
+  );
+
   return (
     <Seccion titulo={titulo} descripcion={descripcion} fondo={fondo} id={id}>
       {antesDelContenido}
@@ -44,9 +53,9 @@ export default function SeccionContenido({
 
       {!cargando && error && <EstadoError error={error} alReintentar={reintentar} />}
 
-      {!cargando && !error && datos?.contenido?.length > 0 && children(datos.contenido)}
+      {!cargando && !error && contenidoUnico.length > 0 && children(contenidoUnico)}
 
-      {!cargando && !error && !datos?.contenido?.length && (
+      {!cargando && !error && !contenidoUnico.length && (
         <EstadoVacio
           mensaje={datos?.mensaje || 'Esta seccion aun no tiene contenido publicado.'}
           icono={iconoVacio}

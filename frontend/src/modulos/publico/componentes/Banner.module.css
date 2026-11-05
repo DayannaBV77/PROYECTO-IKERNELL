@@ -5,6 +5,11 @@
   /* Claro a la izquierda y marino a la derecha, como el mockup. El degradado
      sustituye a la fotografia mientras no se entrega la imagen definitiva. */
   background: linear-gradient(104deg, #f2f7fb 0%, #e2edf4 42%, #1b3b5c 78%, #0f2439 100%);
+  transition: background 0.3s ease;
+}
+
+:global(html[data-theme='dark']) .banner {
+  background: linear-gradient(104deg, #090e1a 0%, #0d1527 42%, #162a45 78%, #0a192f 100%);
 }
 
 /* Malla tecnologica: cian sobre la mitad marina, marino sobre la clara. */
@@ -34,6 +39,16 @@
     rgb(248 250 252 / 0.97) 0%,
     rgb(248 250 252 / 0.9) 45%,
     rgb(248 250 252 / 0) 100%
+  );
+  transition: background 0.3s ease;
+}
+
+:global(html[data-theme='dark']) .velo {
+  background: radial-gradient(
+    ellipse 70% 86% at 48% 50%,
+    rgb(10 15 29 / 0.96) 0%,
+    rgb(10 15 29 / 0.85) 45%,
+    rgb(10 15 29 / 0) 100%
   );
 }
 

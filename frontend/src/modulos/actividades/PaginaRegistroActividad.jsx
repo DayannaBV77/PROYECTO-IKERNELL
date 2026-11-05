@@ -44,9 +44,28 @@ export default function PaginaRegistroActividad() {
   const [fallo, setFallo] = useState(null);
   const [guardando, setGuardando] = useState(false);
   const [advertencias, setAdvertencias] = useState(null);
+  const [mostrarConfirmacionVolver, setMostrarConfirmacionVolver] = useState(false);
 
   const { opcionesDeProyecto } = useProyectosComoOpciones({ soloHabilitados: true });
   const { opcionesDeEtapa, opcionesDeDesarrollador } = useContextoDeProyecto(valores.proyectoId);
+
+  const hayCambios = Boolean(
+    valores.proyectoId ||
+    valores.etapaId ||
+    valores.desarrolladorId ||
+    valores.descripcion.trim() ||
+    valores.prioridad ||
+    valores.fechaPlanificada
+  );
+
+  function alIntentarVolver(e) {
+    if (e) e.preventDefault();
+    if (hayCambios) {
+      setMostrarConfirmacionVolver(true);
+    } else {
+      navegar('/app/actividades');
+    }
+  }
 
   function alCambiar(evento) {
     const { name, value } = evento.target;
@@ -59,17 +78,38 @@ export default function PaginaRegistroActividad() {
   }
 
   async function guardar(confirmado) {
-    setGuardando(true);
     setFallo(null);
     setErrores({});
 
+    const nuevosErrores = {};
+    if (!valores.proyectoId) {
+      nuevosErrores.proyectoId = 'Debe seleccionar un proyecto.';
+    }
+    if (!valores.etapaId) {
+      nuevosErrores.etapaId = 'Debe seleccionar una etapa del proyecto.';
+    }
+    if (!valores.desarrolladorId) {
+      nuevosErrores.desarrolladorId = 'Debe asignar un desarrollador del equipo.';
+    }
+    if (!valores.descripcion.trim()) {
+      nuevosErrores.descripcion = 'La descripción de la actividad es obligatoria.';
+    } else if (valores.descripcion.trim().length > 1000) {
+      nuevosErrores.descripcion = 'La descripción no puede superar 1000 caracteres.';
+    }
+
+    if (Object.keys(nuevosErrores).length > 0) {
+      setErrores(nuevosErrores);
+      return;
+    }
+
+    setGuardando(true);
     try {
       const creada = await registrarActividad(
         valores.proyectoId,
         {
           etapaId: valores.etapaId ? Number(valores.etapaId) : null,
           desarrolladorId: valores.desarrolladorId ? Number(valores.desarrolladorId) : null,
-          descripcion: valores.descripcion,
+          descripcion: valores.descripcion.trim(),
           // Opcionales: las pide RF-038 para el panel del desarrollador, no
           // RF-019 para el registro. Vacias viajan como null.
           prioridad: valores.prioridad || null,
@@ -101,10 +141,26 @@ export default function PaginaRegistroActividad() {
       id="registro-actividad"
     >
       <div className={estilos.barraSuperior}>
-        <Boton a="/app/actividades" variante="texto" icono={ArrowLeft}>
+        <Boton type="button" onClick={alIntentarVolver} variante="texto" icono={ArrowLeft}>
           Volver a la busqueda
         </Boton>
       </div>
+
+      <Confirmacion
+        abierto={mostrarConfirmacionVolver}
+        titulo="¿Desea salir sin guardar?"
+        textoConfirmar="Salir y descartar"
+        alConfirmar={() => {
+          setMostrarConfirmacionVolver(false);
+          navegar('/app/actividades');
+        }}
+        alCancelar={() => setMostrarConfirmacionVolver(false)}
+      >
+        <p>
+          Hay datos ingresados en el formulario de registro de la actividad. Si vuelve a la búsqueda ahora, se
+          perderán todos los cambios de esta operación.
+        </p>
+      </Confirmacion>
 
       {fallo && (
         <p className={estilos.avisoError} role="alert">

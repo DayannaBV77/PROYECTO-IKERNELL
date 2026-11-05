@@ -98,6 +98,20 @@
   box-shadow: 0 1px 3px rgb(15 23 42 / 0.05);
 }
 
+:global(html[data-theme='dark']) .panel {
+  --acento: #2dd4bf;
+  --acento-brillante: #14b8a6;
+  --acento-suave: #134e4a;
+  --texto: #f1f5f9;
+  --texto-medio: #cbd5e1;
+  --texto-tenue: #94a3b8;
+  --borde: #1e293b;
+  --borde-fuerte: #334155;
+  --superficie: #111827;
+  --superficie-suave: #0f172a;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.4);
+}
+
 .hero {
   display: flex;
   flex-wrap: wrap;
@@ -154,64 +168,139 @@
 
 .anilloFondo {
   fill: none;
-  stroke: var(--borde);
+  stroke: var(--c-borde, var(--borde));
   stroke-width: 6;
 }
 
 .anilloValor {
   fill: none;
-  stroke: var(--acento-brillante);
+  stroke: var(--c-enlace, #0284c7);
   stroke-width: 6;
   stroke-linecap: round;
-  transition: stroke-dashoffset 450ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: stroke-dashoffset 450ms cubic-bezier(0.22, 1, 0.36, 1), stroke 300ms ease;
+}
+
+/* Colores dinámicos según estado de avance */
+.progresoInicial .anilloValor {
+  stroke: #94a3b8;
+}
+
+.progresoEnMarcha .anilloValor {
+  stroke: #3b82f6;
+}
+
+.progresoAvanzado .anilloValor {
+  stroke: #0d9488;
+}
+
+.progresoCompleto .anilloValor {
+  stroke: #10b981;
 }
 
 .anilloTexto {
   position: absolute;
   font-size: var(--t-md);
-  font-weight: var(--p-bold);
-  color: var(--texto);
+  font-weight: 800;
+  color: var(--c-texto-principal, var(--texto));
 }
 
 .resumen {
   display: flex;
   flex-direction: column;
-  gap: var(--s-3);
+  gap: 0.75rem;
   margin-top: var(--s-5);
 }
 
 .barra {
-  height: 0.5rem;
+  height: 0.65rem;
   overflow: hidden;
-  background: var(--borde);
+  background: var(--c-borde, var(--borde));
   border-radius: var(--r-full);
 }
 
 .barraValor {
   display: block;
   height: 100%;
-  background: linear-gradient(90deg, #2dd4bf, var(--acento-brillante));
+  background: #3b82f6;
   border-radius: inherit;
-  transition: width 450ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: width 450ms cubic-bezier(0.22, 1, 0.36, 1), background 300ms ease;
+}
+
+.progresoInicial .barraValor {
+  background: #94a3b8;
+}
+
+.progresoEnMarcha .barraValor {
+  background: linear-gradient(90deg, #60a5fa, #2563eb);
+}
+
+.progresoAvanzado .barraValor {
+  background: linear-gradient(90deg, #2dd4bf, #0d9488);
+}
+
+.progresoCompleto .barraValor {
+  background: linear-gradient(90deg, #34d399, #10b981);
 }
 
 .cifras {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--s-2) var(--s-4);
+  gap: 0.5rem 0.75rem;
   font-size: var(--t-sm);
-  color: var(--texto-tenue);
+  color: var(--c-texto-secundario, var(--texto-tenue));
 }
 
-.cifra strong {
-  color: var(--texto);
+.cifraBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  background: var(--c-fondo-franja, var(--superficie));
+  border: 1px solid var(--c-borde, var(--borde));
+  color: var(--c-texto-secundario, var(--texto-tenue));
+}
+
+.cifraBadge strong {
+  font-weight: 700;
+  color: var(--c-texto-principal, var(--texto));
+}
+
+.cifraPendiente {
+  border-color: rgba(2, 132, 199, 0.3);
+  background: rgba(2, 132, 199, 0.08);
+  color: #0284c7;
+}
+
+.cifraPendiente strong {
+  color: #0284c7;
+}
+
+.cifraListo {
+  border-color: rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.08);
+  color: #10b981;
+}
+
+.cifraCompletada {
+  border-color: rgba(16, 185, 129, 0.25);
+  background: rgba(16, 185, 129, 0.05);
+  color: #059669;
+}
+
+.cifraCompletada strong {
+  color: #059669;
 }
 
 .cifraAlerta {
-  display: inline-flex;
-  gap: var(--s-1);
-  align-items: center;
-  color: #b45309;
+  border-color: rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.08);
+  color: #d97706;
+}
+
+.cifraAlerta strong {
+  color: #d97706;
 }
 
 /* ------------------------------------------------------------ alta rapida */
@@ -297,7 +386,7 @@
 .error {
   margin-top: var(--s-2);
   font-size: var(--t-sm);
-  color: #b91c1c;
+  color: var(--c-error-texto, #b91c1c);
 }
 
 .avisoError {
@@ -307,9 +396,9 @@
   padding: var(--s-3);
   margin-top: var(--s-4);
   font-size: var(--t-sm);
-  color: #b91c1c;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  color: var(--c-error-texto, #b91c1c);
+  background: var(--c-error-fondo, #fef2f2);
+  border: 1px solid var(--c-error, #fecaca);
   border-radius: var(--r-md);
 }
 
@@ -321,9 +410,9 @@
   margin-top: var(--s-4);
   font-size: var(--t-sm);
   font-weight: var(--p-semi);
-  color: #166534;
-  background: #ecfdf5;
-  border: 1px solid #bbf7d0;
+  color: var(--c-exito-texto, #166534);
+  background: var(--c-exito-fondo, #ecfdf5);
+  border: 1px solid var(--c-exito, #bbf7d0);
   border-radius: var(--r-md);
 }
 
@@ -529,15 +618,15 @@
 }
 
 .prioridadALTA {
-  color: #b45309;
-  background: #fffbeb;
-  border-color: #fde68a;
+  color: var(--c-alerta-texto, #b45309);
+  background: var(--c-alerta-fondo, #fffbeb);
+  border-color: var(--c-alerta, #fde68a);
 }
 
 .prioridadMEDIA {
-  color: #0369a1;
-  background: #f0f9ff;
-  border-color: #bae6fd;
+  color: var(--c-info-texto, #0369a1);
+  background: var(--c-info-fondo, #f0f9ff);
+  border-color: var(--c-info, #bae6fd);
 }
 
 .prioridadBAJA {
@@ -553,9 +642,9 @@
   padding: 0.05rem var(--s-2);
   font-size: 0.7rem;
   font-weight: var(--p-semi);
-  color: #b45309;
-  background: #fffbeb;
-  border: 1px solid #fde68a;
+  color: var(--c-alerta-texto, #b45309);
+  background: var(--c-alerta-fondo, #fffbeb);
+  border: 1px solid var(--c-alerta, #fde68a);
   border-radius: var(--r-full);
 }
 

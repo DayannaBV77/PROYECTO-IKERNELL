@@ -15,6 +15,7 @@ import Campo from '../../componentes/ui/Campo.jsx';
 import Confirmacion from '../../componentes/ui/Confirmacion.jsx';
 import EtiquetaEstado from '../../componentes/ui/EtiquetaEstado.jsx';
 import Seccion from '../../componentes/ui/Seccion.jsx';
+import { useNotificador } from '../../componentes/ui/Notificador.jsx';
 import estilos from '../../estilos/gestion.module.css';
 import { usePeticion } from '../../hooks/usePeticion.js';
 import { formatearFecha } from '../../utilidades/formato.js';
@@ -100,6 +101,7 @@ function VolverALaBusqueda() {
  */
 function PerfilCargado({ inicial }) {
   const ubicacion = useLocation();
+  const notificador = useNotificador();
 
   const [trabajador, setTrabajador] = useState(inicial);
   const [editables, setEditables] = useState(() => editablesDe(inicial));
@@ -120,6 +122,7 @@ function PerfilCargado({ inicial }) {
     setTrabajador(actualizado);
     setEditables(editablesDe(actualizado));
     setConfirmado(mensaje);
+    notificador.exito(mensaje, 'Perfil actualizado');
     setFallo(null);
     setErrores({});
   }
@@ -167,10 +170,11 @@ function PerfilCargado({ inicial }) {
     try {
       aplicar(
         await inhabilitarTrabajador(trabajador.id),
-        'El trabajador quedo inhabilitado. Su historial se conserva.',
+        'El trabajador quedó inhabilitado exitosamente. Su historial se conserva en el sistema.',
       );
     } catch (error) {
       setFallo(error.message);
+      notificador.error(error.message || 'No se pudo inhabilitar al trabajador.', 'Error');
     } finally {
       setInhabilitando(false);
       setConfirmando(false);

@@ -39,6 +39,17 @@
   border-color: var(--c-marino-medio);
 }
 
+:global(html[data-theme='dark']) .primario {
+  background: var(--c-turquesa-fuerte);
+  border-color: var(--c-turquesa-fuerte);
+  color: #ffffff;
+}
+
+:global(html[data-theme='dark']) .primario:hover:not(:disabled) {
+  background: #0ea5e9;
+  border-color: #0ea5e9;
+}
+
 /* Contorno turquesa: acciones de apoyo. */
 .secundario {
   background: var(--c-superficie);

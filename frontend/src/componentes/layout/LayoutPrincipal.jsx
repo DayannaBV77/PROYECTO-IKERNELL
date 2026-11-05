@@ -1,4 +1,4 @@
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 
 import { useSesion } from '../../sesion/contexto.js';
 import AccionesSesion from './AccionesSesion.jsx';
@@ -10,17 +10,16 @@ import estilos from './LayoutPrincipal.module.css';
 /**
  * Estructura de la aplicacion: banda lateral, encabezado, contenido y pie.
  *
- * Es un solo layout para el sitio publico y para la zona privada, y no dos, por
- * el mismo motivo que el encabezado es uno: HU-03 C02 dice que el trabajador
- * autenticado "sigue viendo la informacion empresarial publica y, ademas, ve los
- * servicios internos". Con dos layouts, entrar en el panel significaria salir
- * del sitio publico, que es justo lo que el criterio descarta.
- *
- * Lo que cambia con la sesion son las entradas del menu y la zona de acciones,
- * no el marco.
+ * El pie corporativo completo se presenta en las páginas del portal público,
+ * y en la zona privada se presenta en una versión simplificada/técnica de soporte
+ * para mantener la vista del panel despejada y enfocada.
  */
 export default function LayoutPrincipal() {
   const { sesion } = useSesion();
+  const ubicacion = useLocation();
+
+  // En la vista de chat interna no mostramos pie para permitir el scroll natural del historial
+  const esPantallaChat = ubicacion.pathname.startsWith('/app/chat');
 
   return (
     <div className={estilos.pagina}>
@@ -36,14 +35,15 @@ export default function LayoutPrincipal() {
         <Outlet />
       </main>
 
-      {/* El pie conserva solo las secciones publicas: es la navegacion del
-          sitio, no un duplicado del menu de la sesion. */}
-      <PieDePagina
-        enlaces={ENLACES_PUBLICOS.filter((enlace) => enlace.a !== '/')}
-        trabajadores={
-          sesion ? { a: '/app', texto: 'Ir al panel' } : { a: '/ingresar', texto: 'Iniciar sesion' }
-        }
-      />
+      {!esPantallaChat && (
+        <PieDePagina
+          enZonaPrivada={ubicacion.pathname.startsWith('/app')}
+          enlaces={ENLACES_PUBLICOS.filter((enlace) => enlace.a !== '/')}
+          trabajadores={
+            sesion ? { a: '/app', texto: 'Ir al panel de gestión' } : { a: '/ingresar', texto: 'Iniciar sesión' }
+          }
+        />
+      )}
     </div>
   );
 }

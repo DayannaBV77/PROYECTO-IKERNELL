@@ -51,13 +51,13 @@
 .confirmacion {
   background: var(--c-exito-fondo);
   border: 1px solid var(--c-exito);
-  color: #14532d;
+  color: var(--c-exito-texto, #14532d);
 }
 
 .fallo {
   background: var(--c-error-fondo);
   border: 1px solid var(--c-error);
-  color: #7f1d1d;
+  color: var(--c-error-texto, #7f1d1d);
 }
 
 .iconoAviso {

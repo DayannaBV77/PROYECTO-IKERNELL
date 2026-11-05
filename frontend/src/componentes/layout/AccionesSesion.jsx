@@ -1,23 +1,25 @@
+import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, LogOut } from 'lucide-react';
 
 import { ETIQUETA_TIPO } from '../../api/autenticacion.js';
 import Boton from '../ui/Boton.jsx';
+import Confirmacion from '../ui/Confirmacion.jsx';
+import { useNotificador } from '../ui/Notificador.jsx';
 import { useSesion } from '../../sesion/contexto.js';
 import estilos from './AccionesSesion.module.css';
 
 /**
  * Zona derecha del encabezado.
  *
- * Sin sesion ofrece el acceso; con sesion identifica a quien esta dentro, con
- * su tipo de trabajador, y permite salir.
- *
- * Mientras la sesion se comprueba no muestra ninguna de las dos cosas: ofrecer
- * "Iniciar sesion" a quien ya la tiene abierta y cambiarlo un instante despues
- * es peor que reservar el hueco y esperar.
+ * Con sesión ofrece identidad, enlace al panel y botón interactivo para cerrar
+ * sesión con diálogo modal de confirmación y feedback animado.
  */
 export default function AccionesSesion() {
   const { sesion, comprobando, salir } = useSesion();
+  const [modalSalir, setModalSalir] = useState(false);
+  const [saliendo, setSaliendo] = useState(false);
+  const notificador = useNotificador();
   const navegar = useNavigate();
   const ubicacion = useLocation();
 
@@ -33,33 +35,63 @@ export default function AccionesSesion() {
     );
   }
 
-  async function alSalir() {
-    await salir();
-    // Las rutas privadas quedan inaccesibles al perder la sesion; se vuelve al
-    // sitio publico en lugar de dejar la guarda redirigiendo.
-    navegar('/');
+  async function alConfirmarSalida() {
+    setSaliendo(true);
+    try {
+      await salir();
+      notificador.info('Ha cerrado su sesión de forma segura.', 'Sesión finalizada');
+      setModalSalir(false);
+      navegar('/');
+    } catch {
+      notificador.error('Ocurrió un inconveniente al cerrar la sesión.', 'Error');
+    } finally {
+      setSaliendo(false);
+    }
   }
 
   const enZonaPrivada = ubicacion.pathname.startsWith('/app');
 
   return (
-    <div className={estilos.sesion}>
-      <span className={estilos.identidad}>
-        <span className={estilos.nombre}>{sesion.nombreCompleto}</span>
-        <span className={estilos.tipo}>
-          {ETIQUETA_TIPO[sesion.tipoTrabajador] || sesion.tipoTrabajador}
+    <>
+      <div className={estilos.sesion}>
+        <span className={estilos.identidad}>
+          <span className={estilos.nombre}>{sesion.nombreCompleto}</span>
+          <span className={estilos.tipo}>
+            {ETIQUETA_TIPO[sesion.tipoTrabajador] || sesion.tipoTrabajador}
+          </span>
         </span>
-      </span>
 
-      {!enZonaPrivada && (
-        <Boton a="/app" variante="secundario" icono={LayoutDashboard}>
-          Panel
-        </Boton>
-      )}
+        {!enZonaPrivada && (
+          <Boton a="/app" variante="secundario" icono={LayoutDashboard}>
+            Panel
+          </Boton>
+        )}
 
-      <Boton variante="texto" icono={LogOut} onClick={alSalir}>
-        Salir
-      </Boton>
-    </div>
+        <button
+          type="button"
+          className={estilos.botonSalir}
+          onClick={() => setModalSalir(true)}
+          title="Cerrar sesión"
+        >
+          <LogOut size={15} aria-hidden="true" />
+          <span>Salir</span>
+        </button>
+      </div>
+
+      <Confirmacion
+        abierto={modalSalir}
+        titulo="¿Desea cerrar la sesión?"
+        textoConfirmar="Cerrar sesión"
+        varianteConfirmar="peligro"
+        ocupado={saliendo}
+        alConfirmar={alConfirmarSalida}
+        alCancelar={() => setModalSalir(false)}
+      >
+        <p style={{ margin: 0 }}>
+          Está a punto de salir del espacio seguro de trabajo de <strong>{sesion.nombreCompleto}</strong>.
+          Cualquier cambio sin guardar en formularios activos podría perderse.
+        </p>
+      </Confirmacion>
+    </>
   );
 }

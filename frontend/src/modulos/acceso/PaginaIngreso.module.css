@@ -53,6 +53,26 @@
   font-size: var(--t-sm);
   color: var(--c-texto-tenue);
   text-align: center;
+  line-height: 1.45;
+}
+
+.badgeRoles {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.6rem;
+}
+
+.tagRol {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: var(--c-fondo-franja, var(--c-superficie-tenue));
+  border: 1px solid var(--c-borde);
+  color: var(--c-texto-principal);
 }
 
 .formulario {
@@ -102,7 +122,7 @@
   font-size: var(--t-sm);
   background: var(--c-error-fondo);
   border: 1px solid var(--c-error);
-  color: #7f1d1d;
+  color: var(--c-error-texto, #7f1d1d);
 }
 
 .iconoAviso {

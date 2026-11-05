@@ -34,21 +34,21 @@
 }
 
 .campo:hover {
-  border-color: var(--c-enlace);
+  border-color: var(--c-turquesa-fuerte);
 }
 
 .campo:focus,
 .campo:focus-visible,
 .campo.abierto {
-  border-color: var(--c-enlace);
-  box-shadow: 0 0 0 3px rgba(28, 78, 128, 0.15);
+  border-color: var(--c-turquesa-fuerte);
+  box-shadow: var(--anillo-foco);
   outline: none;
 }
 
 .conError .campo,
 .campo.conError {
   border-color: var(--c-error);
-  box-shadow: 0 0 0 3px rgba(186, 55, 55, 0.12);
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.25);
 }
 
 .chips {
@@ -71,8 +71,8 @@
   gap: var(--s-1);
   padding: var(--s-1) var(--s-2);
   border-radius: 999px;
-  background: rgba(39, 91, 135, 0.1);
-  border: 1px solid rgba(39, 91, 135, 0.2);
+  background: var(--c-superficie-tenue);
+  border: 1px solid var(--c-turquesa-fuerte);
   color: var(--c-marino-titulo);
   font-size: var(--t-sm);
   max-width: 100%;
@@ -93,7 +93,7 @@
 }
 
 .quitarChip:hover {
-  background: rgba(39, 91, 135, 0.08);
+  background: var(--c-borde);
 }
 
 .icono {
@@ -157,7 +157,7 @@
 }
 
 .opcion input {
-  accent-color: var(--c-enlace);
+  accent-color: var(--c-turquesa-fuerte);
 }
 
 .sinResultados {
@@ -186,8 +186,9 @@
 }
 
 .personalizada input:focus {
-  outline: 2px solid rgba(28, 78, 128, 0.25);
-  border-color: var(--c-enlace);
+  outline: none;
+  box-shadow: var(--anillo-foco);
+  border-color: var(--c-turquesa-fuerte);
 }
 
 .acciones {
@@ -198,8 +199,8 @@
 }
 
 .confirmar {
-  border: 1px solid var(--c-enlace);
-  background: var(--c-enlace);
+  border: 1px solid var(--c-turquesa-fuerte);
+  background: var(--c-turquesa-fuerte);
   color: #fff;
   border-radius: var(--r-md);
   padding: var(--s-2) var(--s-3);

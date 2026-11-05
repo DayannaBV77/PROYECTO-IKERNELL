@@ -142,25 +142,25 @@
 
 .badgePendiente {
   background: var(--c-alerta-fondo);
-  color: #92400e;
+  color: var(--c-alerta-texto, #92400e);
   border: 1px solid var(--c-alerta);
 }
 
 .badgeEnGestion {
   background: var(--c-info-fondo);
-  color: #0369a1;
+  color: var(--c-info-texto, #0369a1);
   border: 1px solid var(--c-info);
 }
 
 .badgeRespondida {
   background: var(--c-exito-fondo);
-  color: #15803d;
+  color: var(--c-exito-texto, #15803d);
   border: 1px solid var(--c-exito);
 }
 
 .badgeErrorNotificacion {
   background: var(--c-error-fondo);
-  color: #b91c1c;
+  color: var(--c-error-texto, #b91c1c);
   border: 1px solid var(--c-error);
 }
 
@@ -270,7 +270,7 @@
   border: 1px solid var(--c-info);
   border-radius: var(--r-md);
   font-size: var(--t-xs);
-  color: #075985;
+  color: var(--c-info-texto, #075985);
 }
 
 .accionesFormularioRespuesta {
@@ -352,7 +352,7 @@
 }
 
 .detalleFallo {
-  color: #7f1d1d;
+  color: var(--c-error-texto, #7f1d1d);
   font-size: var(--t-xs);
   margin-top: var(--s-1);
 }

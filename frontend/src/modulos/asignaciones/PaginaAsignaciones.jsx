@@ -17,6 +17,7 @@ import Boton from '../../componentes/ui/Boton.jsx';
 import Campo from '../../componentes/ui/Campo.jsx';
 import Confirmacion from '../../componentes/ui/Confirmacion.jsx';
 import Seccion from '../../componentes/ui/Seccion.jsx';
+import { useNotificador } from '../../componentes/ui/Notificador.jsx';
 import estilos from '../../estilos/gestion.module.css';
 import { listarEspecialidades } from '../trabajadores/catalogoEspecialidades.js';
 import SelectorEspecialidades from '../trabajadores/componentes/SelectorEspecialidades.jsx';
@@ -102,6 +103,7 @@ function hayFiltrosActivos(filtros = FILTROS_TRABAJADOR_VACIOS) {
  * servidor es el que se muestra.
  */
 export default function PaginaAsignaciones() {
+  const notificador = useNotificador();
   const [valores, setValores] = useState(VACIO);
   const [errores, setErrores] = useState({});
   const [fallo, setFallo] = useState(null);
@@ -187,11 +189,11 @@ export default function PaginaAsignaciones() {
         confirmacion,
       );
       setAdvertencias(null);
-      setConfirmado(
-        `${asignacion.trabajadorNombreCompleto} quedo asignado a "${asignacion.proyectoNombre}" como ${
-          ETIQUETA_ROL[asignacion.rolEnProyecto] || asignacion.rolEnProyecto
-        }.`,
-      );
+      const msjExito = `${asignacion.trabajadorNombreCompleto} quedó asignado a "${asignacion.proyectoNombre}" como ${
+        ETIQUETA_ROL[asignacion.rolEnProyecto] || asignacion.rolEnProyecto
+      }.`;
+      setConfirmado(msjExito);
+      notificador.exito(msjExito, 'Asignación confirmada');
       // C05: las consultas de abajo deben reflejar la asignacion recien hecha.
       setRecarga((numero) => numero + 1);
     } catch (error) {
@@ -199,12 +201,14 @@ export default function PaginaAsignaciones() {
       // nada hasta que se confirme.
       if (error.requiereConfirmacion) {
         setAdvertencias(error.advertencias);
+        notificador.advertencia('Se detectaron asignaciones previas que requieren confirmación.', 'Confirmación requerida');
         return;
       }
       if (error.campos) {
         setErrores(error.campos);
       }
       setFallo(error.message);
+      notificador.error(error.message || 'No se pudo realizar la asignación.', 'Error');
     } finally {
       setGuardando(false);
     }

@@ -13,9 +13,14 @@
   inset-block: 0;
   inset-inline-start: 0;
   width: var(--ancho-banda-lateral);
-  background: linear-gradient(180deg, var(--c-marino) 0%, var(--c-marino) 55%, var(--c-turquesa-fuerte) 100%);
+  background: linear-gradient(180deg, #0f172a 0%, #1c3557 55%, var(--c-turquesa-fuerte) 100%);
   z-index: 30;
   pointer-events: none;
+}
+
+:global(html[data-theme='dark']) .banda {
+  background: linear-gradient(180deg, #0f172a 0%, #1e293b 55%, #0284c7 100%);
+  border-right: 1px solid #1e293b;
 }
 
 .contenido {

@@ -59,8 +59,10 @@ export function listarConfiguracionReporte(opciones) {
   return api.obtener('/api/reportes/externos/configuracion', opciones);
 }
 
-export async function descargarArchivoPlano(proyectoIds = [], formato = 'CSV') {
-  const formatoValido = formato === 'TXT' ? 'TXT' : formato === 'PDF' ? 'PDF' : 'CSV';
+export async function descargarArchivoPlano(proyectoIds = [], formato = 'PDF') {
+  const formatoValido = ['PDF', 'CSV', 'TXT', 'DELIMITADO', 'ANCHO_FIJO'].includes(formato)
+    ? formato
+    : 'PDF';
   const ruta = `/api/reportes/archivo-plano${construirConsulta({
     // La lista viaja repetida, que es como Spring espera un List<Long>.
     proyectoIds: proyectoIds.length > 0 ? proyectoIds.join(',') : '',
@@ -84,14 +86,17 @@ export async function descargarArchivoPlano(proyectoIds = [], formato = 'CSV') {
     });
   }
 
+  const extensionPorDefecto = formatoValido === 'PDF' ? 'pdf' : formatoValido === 'CSV' ? 'csv' : 'txt';
   return {
-    nombre: nombreDeLaDescarga(respuesta) || 'ikernell-proyectos.txt',
+    nombre: nombreDeLaDescarga(respuesta) || `ikernell-reporte.${extensionPorDefecto}`,
     blob: await respuesta.blob(),
   };
 }
 
-export function enviarArchivoPlanoPorCorreo(proyectoIds = [], formato = 'CSV') {
-  const formatoValido = formato === 'TXT' ? 'TXT' : formato === 'PDF' ? 'PDF' : 'CSV';
+export function enviarArchivoPlanoPorCorreo(proyectoIds = [], formato = 'PDF') {
+  const formatoValido = ['PDF', 'CSV', 'TXT', 'DELIMITADO', 'ANCHO_FIJO'].includes(formato)
+    ? formato
+    : 'PDF';
   const consulta = new URLSearchParams({
     proyectoIds: proyectoIds.length > 0 ? proyectoIds.join(',') : '',
     formato: formatoValido,

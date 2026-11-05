@@ -328,7 +328,15 @@ function Checklist({
         </div>
 
         <div
-          className={estilos.anillo}
+          className={`${estilos.anillo} ${
+            porcentaje === 100
+              ? estilos.progresoCompleto
+              : porcentaje > 50
+                ? estilos.progresoAvanzado
+                : porcentaje > 0
+                  ? estilos.progresoEnMarcha
+                  : estilos.progresoInicial
+          }`}
           role="img"
           aria-label={`${porcentaje}% del día completado`}
         >
@@ -348,20 +356,31 @@ function Checklist({
       </header>
 
       <div className={estilos.resumen}>
-        <div className={estilos.barra} aria-hidden="true">
+        <div
+          className={`${estilos.barra} ${
+            porcentaje === 100
+              ? estilos.progresoCompleto
+              : porcentaje > 50
+                ? estilos.progresoAvanzado
+                : porcentaje > 0
+                  ? estilos.progresoEnMarcha
+                  : estilos.progresoInicial
+          }`}
+          aria-hidden="true"
+        >
           <span className={estilos.barraValor} style={{ width: `${porcentaje}%` }} />
         </div>
         <div className={estilos.cifras}>
-          <span className={estilos.cifra}>
+          <span className={`${estilos.cifraBadge} ${pendientes > 0 ? estilos.cifraPendiente : estilos.cifraListo}`}>
             <strong>{pendientes}</strong> pendientes
           </span>
-          <span className={estilos.cifra}>
+          <span className={`${estilos.cifraBadge} ${estilos.cifraCompletada}`}>
             <strong>{completadas}</strong> completadas
           </span>
           {atrasadas > 0 && (
-            <span className={estilos.cifraAlerta}>
+            <span className={`${estilos.cifraBadge} ${estilos.cifraAlerta}`}>
               <TriangleAlert size={14} aria-hidden="true" />
-              {atrasadas === 1 ? '1 atrasada' : `${atrasadas} atrasadas`}
+              <strong>{atrasadas}</strong> {atrasadas === 1 ? 'atrasada' : 'atrasadas'}
             </span>
           )}
         </div>

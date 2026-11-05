@@ -26,6 +26,7 @@ import Campo from '../../componentes/ui/Campo.jsx';
 import Confirmacion from '../../componentes/ui/Confirmacion.jsx';
 import EtiquetaEstado from '../../componentes/ui/EtiquetaEstado.jsx';
 import Seccion from '../../componentes/ui/Seccion.jsx';
+import { useNotificador } from '../../componentes/ui/Notificador.jsx';
 import estilos from '../../estilos/gestion.module.css';
 import { usePeticion } from '../../hooks/usePeticion.js';
 import EquipoProyecto from './componentes/EquipoProyecto.jsx';
@@ -101,6 +102,7 @@ function VolverALaBusqueda() {
  */
 function ProyectoCargado({ inicial }) {
   const ubicacion = useLocation();
+  const notificador = useNotificador();
 
   const [proyecto, setProyecto] = useState(inicial);
   const [editables, setEditables] = useState(() => editablesDe(inicial));
@@ -119,6 +121,7 @@ function ProyectoCargado({ inicial }) {
     setProyecto(actualizado);
     setEditables(editablesDe(actualizado));
     setConfirmado(mensaje);
+    notificador.exito(mensaje, 'Proyecto actualizado');
     setFallo(null);
     setErrores({});
   }
@@ -208,7 +211,7 @@ function ProyectoCargado({ inicial }) {
     try {
       aplicar(
         await inhabilitarProyecto(proyecto.id, true),
-        'El proyecto quedo inhabilitado. Sus registros historicos se conservan.',
+        'El proyecto quedó inhabilitado exitosamente. Sus registros históricos se conservan.',
       );
       setDialogo(null);
     } catch (error) {
@@ -219,6 +222,7 @@ function ProyectoCargado({ inicial }) {
         return;
       }
       setFallo(error.message);
+      notificador.error(error.message || 'No se pudo inhabilitar el proyecto.', 'Error');
       setDialogo(null);
     }
   }

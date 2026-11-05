@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, UserPlus, Users } from 'lucide-react';
+import { ArrowRight, RotateCcw, Search, UserPlus, Users } from 'lucide-react';
 
 import { ETIQUETA_TIPO } from '../../api/autenticacion.js';
 import {
@@ -14,6 +14,7 @@ import EstadoVacio from '../../componentes/estados/EstadoVacio.jsx';
 import Boton from '../../componentes/ui/Boton.jsx';
 import Campo from '../../componentes/ui/Campo.jsx';
 import EtiquetaEstado from '../../componentes/ui/EtiquetaEstado.jsx';
+import PaginacionTabla from '../../componentes/ui/PaginacionTabla.jsx';
 import Seccion from '../../componentes/ui/Seccion.jsx';
 import estilos from '../../estilos/gestion.module.css';
 import { usePeticion } from '../../hooks/usePeticion.js';
@@ -28,29 +29,17 @@ const SIN_CRITERIOS = {
   estado: '',
 };
 
-/**
- * Busqueda de trabajadores (RF-004, HU-05 C01 y C02).
- *
- * La busqueda se lanza al pulsar el boton y no mientras se escribe, porque C01
- * la describe asi -"escribo uno o varios datos de busqueda y pulso buscar"- y
- * porque con siete criterios una consulta por cada tecla seria ruido para el
- * servidor (RNF-005). Es la diferencia con los buscadores del sitio publico,
- * donde hay un solo criterio y la busqueda en vivo si ayuda.
- *
- * Los criterios confirmados se guardan aparte del borrador del formulario: de
- * otro modo cada tecla cambiaria las claves de la peticion. Cambiar de
- * criterios vuelve a la primera pagina, para no quedar en una que ya no existe.
- */
 export default function PaginaTrabajadores() {
   const [borrador, setBorrador] = useState(SIN_CRITERIOS);
   const [criterios, setCriterios] = useState(SIN_CRITERIOS);
   const [pagina, setPagina] = useState(0);
+  const [tamano, setTamano] = useState(10);
 
   const cargar = useCallback(
-    ({ senal }) => buscarTrabajadores({ ...criterios, pagina }, { senal }),
-    [criterios, pagina],
+    ({ senal }) => buscarTrabajadores({ ...criterios, pagina, tamano }, { senal }),
+    [criterios, pagina, tamano],
   );
-  const { datos, error, cargando, reintentar } = usePeticion(cargar, [criterios, pagina]);
+  const { datos, error, cargando, reintentar } = usePeticion(cargar, [criterios, pagina, tamano]);
 
   function alCambiar(evento) {
     const { name, value } = evento.target;
@@ -66,6 +55,11 @@ export default function PaginaTrabajadores() {
   function alLimpiar() {
     setBorrador(SIN_CRITERIOS);
     setCriterios(SIN_CRITERIOS);
+    setPagina(0);
+  }
+
+  function alCambiarTamano(nuevoTamano) {
+    setTamano(nuevoTamano);
     setPagina(0);
   }
 
@@ -86,27 +80,37 @@ export default function PaginaTrabajadores() {
       <form className={estilos.buscador} onSubmit={alBuscar}>
         <div className={estilos.criterios}>
           <Campo
-            etiqueta="Identificacion"
+            etiqueta="Nº Identificación"
             nombre="identificacion"
+            placeholder="Buscar por documento..."
             value={borrador.identificacion}
             onChange={alCambiar}
           />
-          <Campo etiqueta="Nombre" nombre="nombre" value={borrador.nombre} onChange={alCambiar} />
+          <Campo
+            etiqueta="Nombre"
+            nombre="nombre"
+            placeholder="Buscar por nombre..."
+            value={borrador.nombre}
+            onChange={alCambiar}
+          />
           <Campo
             etiqueta="Apellido"
             nombre="apellido"
+            placeholder="Buscar por apellido..."
             value={borrador.apellido}
             onChange={alCambiar}
           />
           <Campo
-            etiqueta="Profesion"
+            etiqueta="Profesión"
             nombre="profesion"
+            placeholder="Ej: Ingeniero..."
             value={borrador.profesion}
             onChange={alCambiar}
           />
           <Campo
             etiqueta="Especialidad de desarrollo"
             nombre="especialidadDesarrollo"
+            placeholder="Ej: Backend, React..."
             value={borrador.especialidadDesarrollo}
             onChange={alCambiar}
           />
@@ -114,7 +118,7 @@ export default function PaginaTrabajadores() {
             etiqueta="Tipo de trabajador"
             nombre="tipoTrabajador"
             opciones={TIPOS_TRABAJADOR}
-            textoVacio="Cualquiera"
+            textoVacio="Todos los roles"
             value={borrador.tipoTrabajador}
             onChange={alCambiar}
           />
@@ -122,7 +126,7 @@ export default function PaginaTrabajadores() {
             etiqueta="Estado"
             nombre="estado"
             opciones={ESTADOS_HABILITACION}
-            textoVacio="Cualquiera"
+            textoVacio="Todos los estados"
             value={borrador.estado}
             onChange={alCambiar}
           />
@@ -132,8 +136,8 @@ export default function PaginaTrabajadores() {
           <Boton type="submit" icono={Search} disabled={cargando}>
             Buscar
           </Boton>
-          <Boton type="button" variante="texto" onClick={alLimpiar} disabled={cargando}>
-            Limpiar criterios
+          <Boton type="button" variante="secundario" icono={RotateCcw} onClick={alLimpiar} disabled={cargando}>
+            Limpiar filtros
           </Boton>
         </div>
       </form>
@@ -187,7 +191,8 @@ export default function PaginaTrabajadores() {
                     </td>
                     <td>
                       <Link className={estilos.abrir} to={`/app/trabajadores/${trabajador.id}`}>
-                        Abrir perfil
+                        <span>Ver perfil</span>
+                        <ArrowRight size={13} aria-hidden="true" />
                         <span className="solo-lectores"> de {trabajador.nombreCompleto}</span>
                       </Link>
                     </td>
@@ -197,40 +202,16 @@ export default function PaginaTrabajadores() {
             </table>
           </div>
 
-          <Paginacion datos={datos} pagina={pagina} alCambiarPagina={setPagina} />
+          <PaginacionTabla
+            datos={datos}
+            pagina={pagina}
+            alCambiarPagina={setPagina}
+            tamano={tamano}
+            alCambiarTamano={alCambiarTamano}
+            etiquetaItem="trabajadores"
+          />
         </>
       )}
     </Seccion>
-  );
-}
-
-/** Navegacion entre paginas: el backend pagina los resultados (RNF-005). */
-function Paginacion({ datos, pagina, alCambiarPagina }) {
-  const { totalPaginas = 0, totalElementos = 0 } = datos || {};
-
-  if (totalPaginas <= 1) {
-    return <p className={estilos.recuento}>{totalElementos} trabajador(es).</p>;
-  }
-
-  return (
-    <nav className={estilos.paginacion} aria-label="Paginas de resultados">
-      <Boton
-        variante="secundario"
-        onClick={() => alCambiarPagina(pagina - 1)}
-        disabled={pagina <= 0}
-      >
-        Anterior
-      </Boton>
-      <p className={estilos.recuento} aria-live="polite">
-        Pagina {pagina + 1} de {totalPaginas} · {totalElementos} trabajador(es)
-      </p>
-      <Boton
-        variante="secundario"
-        onClick={() => alCambiarPagina(pagina + 1)}
-        disabled={pagina + 1 >= totalPaginas}
-      >
-        Siguiente
-      </Boton>
-    </nav>
   );
 }

@@ -78,7 +78,7 @@
 
 .avisoTitulo {
   font-weight: var(--p-bold);
-  color: #7f1d1d;
+  color: var(--c-error-texto, #7f1d1d);
 }
 
 .avisoDetalle {

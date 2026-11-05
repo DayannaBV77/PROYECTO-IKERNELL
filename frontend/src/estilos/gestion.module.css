@@ -18,19 +18,25 @@
 /* --- Buscador y formularios --- */
 .buscador,
 .formulario {
-  padding: var(--s-5);
+  padding: var(--s-5) var(--s-6);
   margin-bottom: var(--s-6);
   background: var(--c-superficie);
   border: 1px solid var(--c-borde);
   border-radius: var(--r-lg);
   box-shadow: var(--b-sutil);
+  transition: border-color var(--tr-rapida), box-shadow var(--tr-rapida);
+}
+
+.buscador:focus-within {
+  border-color: var(--c-turquesa);
+  box-shadow: var(--b-media);
 }
 
 .filtrosBarra {
   display: flex;
   flex-direction: column;
   gap: var(--s-4);
-  padding: var(--s-4);
+  padding: var(--s-4) var(--s-5);
   margin-bottom: var(--s-5);
   background: var(--c-fondo-franja);
   border: 1px solid var(--c-borde);
@@ -45,8 +51,8 @@
 
 .filtrosGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: var(--s-3);
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--s-4);
   align-items: end;
 }
 
@@ -56,16 +62,17 @@
   align-items: center;
   flex-wrap: wrap;
   gap: var(--s-3);
+  margin-top: var(--s-2);
 }
 
 /*
- * Rejilla que se adapta al ancho disponible: con siete criterios, columnas
- * fijas obligarian a desplazamiento lateral en pantallas medianas.
+ * Rejilla que se adapta al ancho disponible con espaciado equilibrado
  */
 .criterios {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: var(--s-4);
+  gap: var(--s-4) var(--s-5);
+  align-items: end;
 }
 
 .accionesBuscador {
@@ -73,6 +80,8 @@
   align-items: center;
   gap: var(--s-3);
   margin-top: var(--s-5);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--c-borde);
 }
 
 .rotulo {
@@ -83,8 +92,7 @@
   color: var(--c-texto-tenue);
 }
 
-/* --- Tabla de resultados --- */
-/* El envoltorio permite desplazar la tabla en movil sin romper la pagina. */
+/* --- Tabla de resultados profesional --- */
 .tablaEnvoltorio {
   overflow-x: auto;
   overflow-y: hidden;
@@ -98,7 +106,8 @@
 .tabla {
   width: 100%;
   min-width: 760px;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   table-layout: fixed;
   font-size: var(--t-sm);
   line-height: 1.45;
@@ -107,9 +116,9 @@
 
 .tabla th,
 .tabla td {
-  padding: 0.7rem 0.8rem;
+  padding: 0.85rem 1rem;
   border-bottom: 1px solid var(--c-borde);
-  vertical-align: top;
+  vertical-align: middle;
   white-space: normal;
   word-break: break-word;
   overflow-wrap: anywhere;
@@ -118,16 +127,21 @@
 .tabla thead th {
   background: var(--c-fondo-franja);
   font-size: var(--t-xs);
-  letter-spacing: var(--e-nav);
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--c-marino-titulo);
-  font-weight: var(--p-semi);
+  font-weight: var(--p-bold);
   line-height: 1.2;
+  border-bottom: 2px solid var(--c-borde);
 }
 
 .tabla tbody tr:last-child th,
 .tabla tbody tr:last-child td {
   border-bottom: none;
+}
+
+.tabla tbody tr {
+  transition: background-color var(--tr-rapida);
 }
 
 .tabla tbody tr:hover {
@@ -136,13 +150,29 @@
 
 .celdaNombre,
 .celdaDescripcion {
-  font-weight: var(--p-semi);
+  font-weight: var(--p-bold);
   color: var(--c-marino-titulo);
 }
 
 .abrir {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
   font-weight: var(--p-semi);
+  font-size: var(--t-xs);
+  color: var(--c-turquesa-fuerte);
+  padding: 4px 8px;
+  border-radius: var(--r-sm);
+  background: var(--c-superficie-tenue);
+  border: 1px solid transparent;
+  transition: all var(--tr-rapida);
   white-space: nowrap;
+}
+
+.abrir:hover {
+  background: var(--c-superficie);
+  border-color: var(--c-turquesa-fuerte);
+  text-decoration: none;
 }
 
 /* --- Paginacion --- */
@@ -225,13 +255,13 @@
 .avisoExito {
   background: var(--c-exito-fondo);
   border: 1px solid var(--c-exito);
-  color: #14532d;
+  color: var(--c-exito-texto, #14532d);
 }
 
 .avisoError {
   background: var(--c-error-fondo);
   border: 1px solid var(--c-error);
-  color: #7f1d1d;
+  color: var(--c-error-texto, #7f1d1d);
 }
 
 .notaDialogo {
@@ -269,7 +299,7 @@
   border: 1px solid var(--c-alerta);
   list-style: disc inside;
   font-size: var(--t-sm);
-  color: #78350f;
+  color: var(--c-alerta-texto, #78350f);
 }
 
 .advertencias li + li {
@@ -558,5 +588,5 @@
   background: var(--c-alerta-fondo);
   border: 1px solid var(--c-alerta);
   font-size: var(--t-sm);
-  color: #78350f;
+  color: var(--c-alerta-texto, #78350f);
 }

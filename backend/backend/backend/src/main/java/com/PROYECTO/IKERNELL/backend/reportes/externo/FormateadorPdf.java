@@ -51,34 +51,55 @@ public class FormateadorPdf implements FormateadorReporteExterno {
 		}
 
 		try (PDDocument documento = new PDDocument()) {
-			PDPage pagina = new PDPage(PDRectangle.A4);
+			// Usamos orientación horizontal (Landscape) para presentar limpiamente todas las columnas
+			PDPage pagina = new PDPage(new PDRectangle(PDRectangle.A4.getHeight(), PDRectangle.A4.getWidth()));
 			documento.addPage(pagina);
 
 			PDType1Font fuenteTitulo = new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
 			PDType1Font fuenteNormal = new PDType1Font(Standard14Fonts.FontName.HELVETICA);
 			try (PDPageContentStream flujo = new PDPageContentStream(documento, pagina)) {
+				// Encabezado principal del reporte
 				flujo.beginText();
-				flujo.setFont(fuenteTitulo, 14);
-				flujo.newLineAtOffset(50, 790);
-				flujo.showText("IKernell - Reporte externo para la empresa brasileña");
+				flujo.setFont(fuenteTitulo, 16);
+				flujo.newLineAtOffset(40, 550);
+				flujo.showText("IKernell · Reporte Ejecutivo para la Empresa Aliada");
 				flujo.endText();
 
-				float y = 760f;
+				flujo.beginText();
+				flujo.setFont(fuenteNormal, 10);
+				flujo.newLineAtOffset(40, 534);
+				flujo.showText("Resumen consolidado de proyectos autorizados y estado de ejecución operacional");
+				flujo.endText();
+
+				// Línea divisoria decorativa
+				flujo.setLineWidth(1f);
+				flujo.moveTo(40, 522);
+				flujo.lineTo(802, 522);
+				flujo.stroke();
+
+				// Cabecera de columnas con fondo/espaciado proporcional
+				float y = 505f;
+				float inicioX = 40f;
+				float anchoCol = 54f; // 14 columnas x 54 = ~756px
+
 				String[] cabeceraActual = cabecera.toArray(String[]::new);
 				for (int indice = 0; indice < cabeceraActual.length; indice++) {
 					String texto = cabeceraActual[indice];
-					agregarTexto(flujo, 50 + (indice * 110), y, texto, 9, true, fuenteTitulo, fuenteNormal);
+					// Formatear nombre de columna más legible si contiene guiones bajos
+					String tituloCol = texto.replace('_', ' ');
+					agregarTexto(flujo, inicioX + (indice * anchoCol), y, tituloCol, 7, true, fuenteTitulo, fuenteNormal);
 				}
-				y -= 20;
+
+				y -= 18;
 
 				for (List<String> fila : filas) {
 					String[] valores = fila.toArray(String[]::new);
-					for (int indice = 0; indice < valores.length; indice++) {
+					for (int indice = 0; indice < valores.length && indice < cabeceraActual.length; indice++) {
 						String texto = valores[indice] == null ? "" : valores[indice];
-						agregarTexto(flujo, 50 + (indice * 110), y, texto, 8, false, fuenteTitulo, fuenteNormal);
+						agregarTexto(flujo, inicioX + (indice * anchoCol), y, texto, 7, false, fuenteTitulo, fuenteNormal);
 					}
-					y -= 16;
-					if (y < 60) {
+					y -= 14;
+					if (y < 40) {
 						break;
 					}
 				}

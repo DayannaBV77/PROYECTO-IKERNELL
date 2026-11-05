@@ -1,0 +1,131 @@
+.selectorFormatos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+.tarjetaFormato {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 1.15rem;
+  border-radius: 0.85rem;
+  border: 2px solid var(--c-borde);
+  background: var(--c-fondo-tarjeta, var(--c-fondo-franja));
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  text-align: left;
+}
+
+.tarjetaFormato:hover:not(.deshabilitada) {
+  border-color: var(--c-enlace);
+  transform: translateY(-2px);
+  box-shadow: var(--sombra-media, 0 8px 16px rgba(0, 0, 0, 0.1));
+}
+
+.tarjetaFormato.activa {
+  border-color: var(--c-enlace);
+  background: color-mix(in srgb, var(--c-enlace) 6%, var(--c-fondo-tarjeta, var(--c-fondo-franja)));
+  box-shadow: 0 0 0 1px var(--c-enlace), var(--sombra-media, 0 8px 16px rgba(0, 0, 0, 0.12));
+}
+
+.deshabilitada {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.cabeceraTarjeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.65rem;
+}
+
+.iconoContenedor {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 0.65rem;
+  flex-shrink: 0;
+}
+
+.iconoPdf {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+.iconoExcel {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+}
+
+.iconoPlano {
+  background: rgba(59, 130, 246, 0.12);
+  color: #3b82f6;
+}
+
+.indicadorSeleccion {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--c-borde);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.tarjetaFormato.activa .indicadorSeleccion {
+  border-color: var(--c-enlace);
+  background: var(--c-enlace);
+}
+
+.puntoSeleccion {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: white;
+}
+
+.tituloFormato {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--c-texto-principal);
+  margin: 0 0 0.25rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.badgeExt {
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  background: var(--c-borde);
+  color: var(--c-texto-principal);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.descripcionFormato {
+  font-size: 0.8rem;
+  color: var(--c-texto-secundario);
+  line-height: 1.45;
+  margin: 0;
+}
+
+.detalleTecnico {
+  margin-top: 0.75rem;
+  padding-top: 0.65rem;
+  border-top: 1px dashed var(--c-borde);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  color: var(--c-texto-secundario);
+}

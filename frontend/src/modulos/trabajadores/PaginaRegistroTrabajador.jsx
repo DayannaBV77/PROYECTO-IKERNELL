@@ -10,6 +10,7 @@ import {
 } from '../../api/trabajadores.js';
 import Boton from '../../componentes/ui/Boton.jsx';
 import Campo from '../../componentes/ui/Campo.jsx';
+import Confirmacion from '../../componentes/ui/Confirmacion.jsx';
 import Seccion from '../../componentes/ui/Seccion.jsx';
 import estilos from '../../estilos/gestion.module.css';
 import { aFechaIso } from '../../utilidades/formato.js';
@@ -68,6 +69,28 @@ export default function PaginaRegistroTrabajador() {
   const [fallo, setFallo] = useState(null);
   const [guardando, setGuardando] = useState(false);
   const [identificacionEstado, setIdentificacionEstado] = useState({ tipo: 'inicio', mensaje: '' });
+  const [mostrarConfirmacionVolver, setMostrarConfirmacionVolver] = useState(false);
+
+  const hayCambios = Boolean(
+    valores.identificacion.trim() ||
+    valores.nombre.trim() ||
+    valores.apellido.trim() ||
+    valores.fechaNacimiento ||
+    valores.direccion.trim() ||
+    valores.profesion ||
+    valores.especialidadDesarrollo ||
+    valores.tipoTrabajador ||
+    fotografia
+  );
+
+  function alIntentarVolver(e) {
+    if (e) e.preventDefault();
+    if (hayCambios) {
+      setMostrarConfirmacionVolver(true);
+    } else {
+      navegar('/app/trabajadores');
+    }
+  }
 
   const hayErroresFormulario = Object.keys(validarTrabajador(valores)).length > 0;
   const identificacionPendiente = identificacionEstado.tipo === 'validando';
@@ -206,10 +229,26 @@ export default function PaginaRegistroTrabajador() {
       id="registro-trabajador"
     >
       <div className={estilos.barraSuperior}>
-        <Boton a="/app/trabajadores" variante="texto" icono={ArrowLeft}>
+        <Boton type="button" onClick={alIntentarVolver} variante="texto" icono={ArrowLeft}>
           Volver a la busqueda
         </Boton>
       </div>
+
+      <Confirmacion
+        abierto={mostrarConfirmacionVolver}
+        titulo="¿Desea salir sin guardar?"
+        textoConfirmar="Salir y descartar"
+        alConfirmar={() => {
+          setMostrarConfirmacionVolver(false);
+          navegar('/app/trabajadores');
+        }}
+        alCancelar={() => setMostrarConfirmacionVolver(false)}
+      >
+        <p>
+          Hay información ingresada en el formulario de registro del trabajador. Si vuelve a la búsqueda ahora, se
+          perderán todos los datos ingresados en esta operación.
+        </p>
+      </Confirmacion>
 
       {fallo && (
         <p className={estilos.avisoError} role="alert">

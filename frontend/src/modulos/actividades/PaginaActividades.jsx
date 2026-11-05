@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ClipboardList, Plus, Search } from 'lucide-react';
+import { ArrowRight, ClipboardList, Plus, RotateCcw, Search } from 'lucide-react';
 
 import { ETIQUETA_PRIORIDAD, buscarActividades } from '../../api/actividades.js';
 import EstadoCarga from '../../componentes/estados/EstadoCarga.jsx';
@@ -8,6 +8,7 @@ import EstadoError from '../../componentes/estados/EstadoError.jsx';
 import EstadoVacio from '../../componentes/estados/EstadoVacio.jsx';
 import Boton from '../../componentes/ui/Boton.jsx';
 import Campo from '../../componentes/ui/Campo.jsx';
+import PaginacionTabla from '../../componentes/ui/PaginacionTabla.jsx';
 import Seccion from '../../componentes/ui/Seccion.jsx';
 import estilos from '../../estilos/gestion.module.css';
 import { usePeticion } from '../../hooks/usePeticion.js';
@@ -19,31 +20,20 @@ import {
 
 const SIN_CRITERIOS = { identificador: '', proyectoId: '', etapaId: '', desarrolladorId: '' };
 
-/**
- * Busqueda de actividades (RF-020, HU-13 C03 y C04).
- *
- * Los cuatro criterios son los que nombra C03: "el proyecto, el desarrollador,
- * la etapa o el identificador de la actividad". Los tres primeros se eligen de
- * una lista en vez de escribirse, porque el backend espera identificadores y
- * nadie los conoce de memoria.
- *
- * Etapa y desarrollador dependen del proyecto elegido: no tiene sentido buscar
- * por una etapa sin saber de que proyecto es. Cambiar de proyecto los limpia,
- * para no arrastrar un filtro que ya no corresponde.
- */
 export default function PaginaActividades() {
   const [borrador, setBorrador] = useState(SIN_CRITERIOS);
   const [criterios, setCriterios] = useState(SIN_CRITERIOS);
   const [pagina, setPagina] = useState(0);
+  const [tamano, setTamano] = useState(10);
 
   const { opcionesDeProyecto } = useProyectosComoOpciones();
   const { opcionesDeEtapa, opcionesDeDesarrollador } = useContextoDeProyecto(borrador.proyectoId);
 
   const cargar = useCallback(
-    ({ senal }) => buscarActividades({ ...criterios, pagina }, { senal }),
-    [criterios, pagina],
+    ({ senal }) => buscarActividades({ ...criterios, pagina, tamano }, { senal }),
+    [criterios, pagina, tamano],
   );
-  const { datos, error, cargando, reintentar } = usePeticion(cargar, [criterios, pagina]);
+  const { datos, error, cargando, reintentar } = usePeticion(cargar, [criterios, pagina, tamano]);
 
   function alCambiar(evento) {
     const { name, value } = evento.target;
@@ -63,6 +53,11 @@ export default function PaginaActividades() {
   function alLimpiar() {
     setBorrador(SIN_CRITERIOS);
     setCriterios(SIN_CRITERIOS);
+    setPagina(0);
+  }
+
+  function alCambiarTamano(nuevoTamano) {
+    setTamano(nuevoTamano);
     setPagina(0);
   }
 
@@ -87,6 +82,7 @@ export default function PaginaActividades() {
             nombre="identificador"
             tipo="number"
             min="1"
+            placeholder="Ej: 1"
             value={borrador.identificador}
             onChange={alCambiar}
           />
@@ -94,7 +90,7 @@ export default function PaginaActividades() {
             etiqueta="Proyecto"
             nombre="proyectoId"
             opciones={opcionesDeProyecto}
-            textoVacio="Cualquiera"
+            textoVacio="Todos los proyectos"
             value={borrador.proyectoId}
             onChange={alCambiar}
           />
@@ -102,21 +98,21 @@ export default function PaginaActividades() {
             etiqueta="Etapa"
             nombre="etapaId"
             opciones={opcionesDeEtapa}
-            textoVacio="Cualquiera"
+            textoVacio="Todas las etapas"
             value={borrador.etapaId}
             onChange={alCambiar}
             disabled={!borrador.proyectoId}
-            pista={borrador.proyectoId ? undefined : 'Elija primero un proyecto.'}
+            pista={borrador.proyectoId ? undefined : 'Elija primero un proyecto'}
           />
           <Campo
-            etiqueta="Desarrollador"
+            etiqueta="Desarrollador asignado"
             nombre="desarrolladorId"
             opciones={opcionesDeDesarrollador}
-            textoVacio="Cualquiera"
+            textoVacio="Todos los desarrolladores"
             value={borrador.desarrolladorId}
             onChange={alCambiar}
             disabled={!borrador.proyectoId}
-            pista={borrador.proyectoId ? undefined : 'Elija primero un proyecto.'}
+            pista={borrador.proyectoId ? undefined : 'Elija primero un proyecto'}
           />
         </div>
 
@@ -124,8 +120,8 @@ export default function PaginaActividades() {
           <Boton type="submit" icono={Search} disabled={cargando}>
             Buscar
           </Boton>
-          <Boton type="button" variante="texto" onClick={alLimpiar} disabled={cargando}>
-            Limpiar criterios
+          <Boton type="button" variante="secundario" icono={RotateCcw} onClick={alLimpiar} disabled={cargando}>
+            Limpiar filtros
           </Boton>
         </div>
       </form>
@@ -193,7 +189,8 @@ export default function PaginaActividades() {
                     <td>{actividad.estado || '—'}</td>
                     <td>
                       <Link className={estilos.abrir} to={`/app/actividades/${actividad.id}`}>
-                        Abrir
+                        <span>Ver detalle</span>
+                        <ArrowRight size={13} aria-hidden="true" />
                         <span className="solo-lectores"> la actividad {actividad.id}</span>
                       </Link>
                     </td>
@@ -203,40 +200,16 @@ export default function PaginaActividades() {
             </table>
           </div>
 
-          <Paginacion datos={datos} pagina={pagina} alCambiarPagina={setPagina} />
+          <PaginacionTabla
+            datos={datos}
+            pagina={pagina}
+            alCambiarPagina={setPagina}
+            tamano={tamano}
+            alCambiarTamano={alCambiarTamano}
+            etiquetaItem="actividades"
+          />
         </>
       )}
     </Seccion>
-  );
-}
-
-/** Navegacion entre paginas: el backend pagina los resultados (RNF-005). */
-function Paginacion({ datos, pagina, alCambiarPagina }) {
-  const { totalPaginas = 0, totalElementos = 0 } = datos || {};
-
-  if (totalPaginas <= 1) {
-    return <p className={estilos.recuento}>{totalElementos} actividad(es).</p>;
-  }
-
-  return (
-    <nav className={estilos.paginacion} aria-label="Paginas de resultados">
-      <Boton
-        variante="secundario"
-        onClick={() => alCambiarPagina(pagina - 1)}
-        disabled={pagina <= 0}
-      >
-        Anterior
-      </Boton>
-      <p className={estilos.recuento} aria-live="polite">
-        Pagina {pagina + 1} de {totalPaginas} · {totalElementos} actividad(es)
-      </p>
-      <Boton
-        variante="secundario"
-        onClick={() => alCambiarPagina(pagina + 1)}
-        disabled={pagina + 1 >= totalPaginas}
-      >
-        Siguiente
-      </Boton>
-    </nav>
   );
 }

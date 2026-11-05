@@ -14,6 +14,7 @@ import Boton from '../../../componentes/ui/Boton.jsx';
 import Campo from '../../../componentes/ui/Campo.jsx';
 import Confirmacion from '../../../componentes/ui/Confirmacion.jsx';
 import Seccion from '../../../componentes/ui/Seccion.jsx';
+import { useNotificador } from '../../../componentes/ui/Notificador.jsx';
 import estilos from '../../../estilos/gestion.module.css';
 import { usePeticion } from '../../../hooks/usePeticion.js';
 
@@ -44,6 +45,7 @@ function paraEnviar({ nombre, descripcion, orden }) {
  * llevaria a que las validaciones se separen con el tiempo.
  */
 export default function EtapasProyecto({ proyecto }) {
+  const notificador = useNotificador();
   const [recarga, setRecarga] = useState(0);
   const [edicion, setEdicion] = useState(null);
   const [errores, setErrores] = useState({});
@@ -93,11 +95,11 @@ export default function EtapasProyecto({ proyecto }) {
       } else {
         await modificarEtapa(proyecto.id, edicion.id, paraEnviar(edicion));
       }
-      setConfirmado(
-        esNueva
-          ? 'La etapa se registro y quedo asociada al proyecto.'
-          : 'Los cambios de la etapa se guardaron correctamente.',
-      );
+      const mensajeExito = esNueva
+        ? 'La etapa se registró y quedó asociada al proyecto.'
+        : 'Los cambios de la etapa se guardaron correctamente.';
+      setConfirmado(mensajeExito);
+      notificador.exito(mensajeExito, esNueva ? 'Etapa registrada' : 'Etapa modificada');
       setEdicion(null);
       setRecarga((numero) => numero + 1);
     } catch (fallaApi) {
@@ -106,6 +108,7 @@ export default function EtapasProyecto({ proyecto }) {
         setErrores(fallaApi.campos);
       }
       setFallo(fallaApi.message);
+      notificador.error(fallaApi.message || 'No se pudo guardar la etapa.', 'Error');
     } finally {
       setGuardando(false);
     }
@@ -117,12 +120,15 @@ export default function EtapasProyecto({ proyecto }) {
 
     try {
       await eliminarEtapa(proyecto.id, aEliminar.id);
-      setConfirmado(`La etapa "${aEliminar.nombre}" fue eliminada.`);
+      const msj = `La etapa "${aEliminar.nombre}" fue eliminada exitosamente.`;
+      setConfirmado(msj);
+      notificador.exito(msj, 'Etapa eliminada');
       setRecarga((numero) => numero + 1);
     } catch (fallaApi) {
       // C05: la etapa con registros asociados no se borra; el servidor explica
       // cual es la dependencia que lo impide.
       setFallo(fallaApi.message);
+      notificador.error(fallaApi.message || 'No se pudo eliminar la etapa.', 'Dependencia activa');
     } finally {
       setEliminando(false);
       setAEliminar(null);

@@ -16,8 +16,8 @@ import estilos from './Banner.module.css';
 export default function Banner() {
   return (
     <section className={estilos.banner} aria-labelledby="banner-titulo">
-      <MallaDeRed className={estilos.mallaClara} color="#1c3557" opacidad={0.12} />
-      <MallaDeRed className={estilos.mallaOscura} color="#7dd3dc" opacidad={0.3} />
+      <MallaDeRed className={estilos.mallaClara} color="var(--c-marino-medio)" opacidad={0.16} />
+      <MallaDeRed className={estilos.mallaOscura} color="var(--c-turquesa)" opacidad={0.25} />
       <span className={estilos.velo} aria-hidden="true" />
 
       <div className={estilos.contenido}>

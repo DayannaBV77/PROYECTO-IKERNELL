@@ -5,6 +5,7 @@ import { Eye, EyeOff, LogIn, TriangleAlert } from 'lucide-react';
 import EstadoCarga from '../../componentes/estados/EstadoCarga.jsx';
 import Boton from '../../componentes/ui/Boton.jsx';
 import Campo from '../../componentes/ui/Campo.jsx';
+import { useNotificador } from '../../componentes/ui/Notificador.jsx';
 import { useSesion } from '../../sesion/contexto.js';
 import estilos from './PaginaIngreso.module.css';
 
@@ -32,6 +33,7 @@ export default function PaginaIngreso() {
   const [fallo, setFallo] = useState(null);
   const [enviando, setEnviando] = useState(false);
   const [mostrarPassword, setMostrarPassword] = useState(false);
+  const notificador = useNotificador();
 
   const destino = ubicacion.state?.destino || '/app';
 
@@ -49,6 +51,7 @@ export default function PaginaIngreso() {
 
     try {
       await entrar(valores);
+      notificador.exito('Autenticación exitosa. Bienvenido al sistema.', 'Sesión iniciada');
       setValores(VACIO);
     } catch (error) {
       // `campos` llega solo en los errores de validacion y permite marcar cada
@@ -57,6 +60,7 @@ export default function PaginaIngreso() {
         setErrores(error.campos);
       }
       setFallo(error.message);
+      notificador.error(error.message || 'Credenciales no válidas.', 'Error de ingreso');
     } finally {
       setEnviando(false);
     }
@@ -74,9 +78,16 @@ export default function PaginaIngreso() {
     <div className={estilos.pantalla}>
       <div className={estilos.caja}>
         <h1 className={estilos.titulo}>Iniciar sesion</h1>
-        <p className={estilos.introduccion}>
-          Acceso para los trabajadores de IKernell Soluciones Software.
-        </p>
+        <div className={estilos.introduccion}>
+          <p style={{ margin: 0 }}>
+            Acceso exclusivo para el personal operativo y de gestión de <strong>IKernell Soluciones Software</strong>:
+          </p>
+          <div className={estilos.badgeRoles}>
+            <span className={estilos.tagRol}>Coordinadores</span>
+            <span className={estilos.tagRol}>Líderes de proyecto</span>
+            <span className={estilos.tagRol}>Desarrolladores</span>
+          </div>
+        </div>
 
         {fallo && (
           <p className={estilos.aviso} role="alert">

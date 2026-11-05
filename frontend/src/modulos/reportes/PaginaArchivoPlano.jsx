@@ -1,5 +1,15 @@
 import { useCallback, useState } from 'react';
-import { CircleCheck, Download, FileDown, TriangleAlert } from 'lucide-react';
+import {
+  CircleCheck,
+  Download,
+  FileCode2,
+  FileDown,
+  FileSpreadsheet,
+  FileText,
+  Mail,
+  ShieldCheck,
+  TriangleAlert,
+} from 'lucide-react';
 
 import {
   listarProyectosAutorizados,
@@ -13,28 +23,49 @@ import EstadoVacio from '../../componentes/estados/EstadoVacio.jsx';
 import Boton from '../../componentes/ui/Boton.jsx';
 import Seccion from '../../componentes/ui/Seccion.jsx';
 import estilos from '../../estilos/gestion.module.css';
+import estilosArchivo from './PaginaArchivoPlano.module.css';
 import { usePeticion } from '../../hooks/usePeticion.js';
 
+const OPCIONES_FORMATO = [
+  {
+    id: 'PDF',
+    nombre: 'Documento PDF',
+    extension: '.pdf',
+    icono: FileText,
+    claseIcono: estilosArchivo.iconoPdf,
+    descripcion: 'Informe ejecutivo formal estructurado en apaisado para auditoría, gerencia e impresión.',
+    detalle: 'Formato visual listo para presentación',
+  },
+  {
+    id: 'CSV',
+    nombre: 'Excel / CSV',
+    extension: '.csv',
+    icono: FileSpreadsheet,
+    claseIcono: estilosArchivo.iconoExcel,
+    descripcion: 'Matriz compatible con Microsoft Excel, Google Sheets, Power BI y análisis tabular.',
+    detalle: 'Campos normalizados con delimitación estándar',
+  },
+  {
+    id: 'TXT',
+    nombre: 'Archivo Plano',
+    extension: '.txt',
+    icono: FileCode2,
+    claseIcono: estilosArchivo.iconoPlano,
+    descripcion: 'Estructura por bloques de registros para ingesta rápida de bases de datos y migración.',
+    detalle: 'Codificación UTF-8 sin dependencias visuales',
+  },
+];
+
 /**
- * Archivo plano para la empresa brasileña aliada (RF-025, HU-19).
+ * Archivo plano y reportes consolidados para la empresa aliada (RF-025, HU-19).
  *
- * Reservado al lider (C05). Se puede elegir que proyectos incluir, o dejarlos
- * todos sin marcar ninguno, porque C01 admite las dos cosas: "eligiendo los
- * proyectos a incluir si la empresa lo permite".
- *
- * ESTRUCTURA PENDIENTE (D-28): C02 exige que el archivo cumpla "los campos, el
- * separador y la codificacion definidos", y ese acuerdo con la empresa
- * brasileña sigue sin cerrarse (HU-19 T1). El archivo que se descarga es una
- * propuesta, y la pantalla lo advierte para que nadie lo envie creyendo que ya
- * cumple lo pactado.
- *
- * El archivo no se abre en una pestaña nueva: se pide por fetch para que un
- * fallo llegue como mensaje (C04) y no como una descarga vacia o una pagina de
- * error. Solo cuando el contenido esta completo se entrega al navegador.
+ * Reservado al líder de proyecto. Permite seleccionar proyectos específicos
+ * o exportar todos los autorizados. Soporta generación en PDF ejecutivo,
+ * Excel / CSV analítico y archivo plano TXT.
  */
 export default function PaginaArchivoPlano() {
   const [seleccion, setSeleccion] = useState([]);
-  const [formato, setFormato] = useState('CSV');
+  const [formato, setFormato] = useState('PDF');
   const [generando, setGenerando] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [fallo, setFallo] = useState(null);
@@ -71,13 +102,6 @@ export default function PaginaArchivoPlano() {
   }
 
   async function alGenerar() {
-    if (formato === 'PDF') {
-      setFallo(
-        'El PDF del reporte para la empresa brasileña sigue pendiente de acuerdo con la empresa receptora. Por ahora, el archivo plano debe exportarse en CSV o TXT.',
-      );
-      return;
-    }
-
     setGenerando(true);
     setFallo(null);
     setConfirmado(null);
@@ -96,14 +120,12 @@ export default function PaginaArchivoPlano() {
       URL.revokeObjectURL(url);
 
       setConfirmado(
-        `El archivo "${nombre}" se descargo en ${formato} con ${
-          seleccion.length === 0 ? 'todos los proyectos' : `${seleccion.length} proyecto(s)`
+        `El archivo "${nombre}" se generó y descargó exitosamente en formato ${formato} con ${
+          seleccion.length === 0 ? 'todos los proyectos autorizados' : `${seleccion.length} proyecto(s)`
         }.`,
       );
     } catch (fallaApi) {
-      // C03 y C04: el aviso de que no hay informacion, o el motivo del fallo.
-      // En ninguno de los dos casos se entrega un archivo.
-      setFallo(fallaApi.message);
+      setFallo(fallaApi.message || 'Ocurrió un error al generar el archivo solicitado.');
     } finally {
       setGenerando(false);
     }
@@ -127,7 +149,7 @@ export default function PaginaArchivoPlano() {
   return (
     <Seccion
       titulo="Archivo plano para la empresa aliada"
-      descripcion="Informacion de los proyectos y de su ejecucion, para reportarla a la empresa brasileña."
+      descripcion="Información consolidada de proyectos y ejecución operativa para entrega formal o integración analítica."
       id="archivo-plano"
     >
       {confirmado && (
@@ -144,47 +166,73 @@ export default function PaginaArchivoPlano() {
         </p>
       )}
 
-      {cargando && <EstadoCarga mensaje="Cargando los proyectos..." />}
+      {cargando && <EstadoCarga mensaje="Cargando los proyectos autorizados..." />}
 
       {!cargando && error && <EstadoError error={error} alReintentar={reintentar} />}
 
       {!cargando && !error && proyectos.length === 0 && (
-        <EstadoVacio mensaje={datos?.mensaje} icono={FileDown} />
+        <EstadoVacio mensaje={datos?.mensaje || 'No hay proyectos autorizados para el reporte.'} icono={FileDown} />
       )}
 
       {!cargando && !error && proyectos.length > 0 && (
         <>
           <div>
-            <p className={estilos.rotulo}>Formato de exportacion</p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginTop: '0.75rem' }}>
-              {['CSV', 'TXT'].map((opcion) => (
-                <label key={opcion} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <input
-                    type="radio"
-                    name="formato-reporte"
-                    checked={formato === opcion}
-                    onChange={() => setFormato(opcion)}
-                    disabled={generando}
-                  />
-                  <span>{opcion}</span>
-                </label>
-              ))}
+            <p className={estilos.rotulo}>Formato de exportación</p>
+            <div className={estilosArchivo.selectorFormatos} role="radiogroup" aria-label="Formatos de exportación">
+              {OPCIONES_FORMATO.map((opc) => {
+                const IconoComp = opc.icono;
+                const estaActivo = formato === opc.id;
+                return (
+                  <div
+                    key={opc.id}
+                    className={`${estilosArchivo.tarjetaFormato} ${estaActivo ? estilosArchivo.activa : ''} ${
+                      generando ? estilosArchivo.deshabilitada : ''
+                    }`}
+                    onClick={() => !generando && setFormato(opc.id)}
+                    role="radio"
+                    aria-checked={estaActivo}
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if ((e.key === ' ' || e.key === 'Enter') && !generando) {
+                        e.preventDefault();
+                        setFormato(opc.id);
+                      }
+                    }}
+                  >
+                    <div className={estilosArchivo.cabeceraTarjeta}>
+                      <div className={`${estilosArchivo.iconoContenedor} ${opc.claseIcono}`}>
+                        <IconoComp size={22} aria-hidden="true" />
+                      </div>
+                      <div className={estilosArchivo.indicadorSeleccion}>
+                        {estaActivo && <div className={estilosArchivo.puntoSeleccion} />}
+                      </div>
+                    </div>
+
+                    <p className={estilosArchivo.tituloFormato}>
+                      {opc.nombre}
+                      <span className={estilosArchivo.badgeExt}>{opc.extension}</span>
+                    </p>
+                    <p className={estilosArchivo.descripcionFormato}>{opc.descripcion}</p>
+
+                    <div className={estilosArchivo.detalleTecnico}>
+                      <ShieldCheck size={14} aria-hidden="true" />
+                      <span>{opc.detalle}</span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            <p className={estilos.notaDialogo}>
-              El PDF queda fuera del flujo activo porque todavía requiere acuerdo con la empresa brasileña.
-              Mientras no exista aprobación, el formato disponible es CSV o TXT.
-            </p>
           </div>
 
-          <div style={{ marginTop: '1.5rem' }}>
+          <div style={{ marginTop: '1.75rem' }}>
             <p className={estilos.rotulo}>Proyectos a incluir</p>
             <p className={estilos.notaDialogo}>
-              Sin marcar ninguno se incluyen todos, tambien los inhabilitados: su historial se
-              conserva y lo que se reporta es la ejecucion.
+              Sin marcar ninguno se incluyen todos los autorizados: su historial se
+              conserva y lo que se procesa y reporta es la ejecución registrada.
             </p>
-            <div className={estilos.accionesBuscador} style={{ marginTop: '0.5rem' }}>
-              <Boton onClick={alMarcarTodos} disabled={generando}>
-                {todosSeleccionados ? 'Quitar todos' : 'Seleccionar todos'}
+            <div className={estilos.accionesBuscador} style={{ marginTop: '0.75rem' }}>
+              <Boton onClick={alMarcarTodos} disabled={generando || enviando}>
+                {todosSeleccionados ? 'Quitar todos' : 'Seleccionar todos los proyectos'}
               </Boton>
             </div>
           </div>
@@ -197,7 +245,7 @@ export default function PaginaArchivoPlano() {
                     type="checkbox"
                     checked={seleccion.includes(proyecto.id)}
                     onChange={() => alMarcar(proyecto.id)}
-                    disabled={generando}
+                    disabled={generando || enviando}
                   />
                   <span>
                     <span className={estilos.candidatoNombre}>{proyecto.nombre}</span>
@@ -213,8 +261,9 @@ export default function PaginaArchivoPlano() {
                         marginTop: '0.35rem',
                         padding: '0.15rem 0.5rem',
                         borderRadius: '999px',
-                        background: '#dff7f1',
-                        color: '#0f766e',
+                        background: 'var(--c-exito-fondo)',
+                        color: 'var(--c-exito-texto)',
+                        border: '1px solid var(--c-exito)',
                         fontWeight: 600,
                         fontSize: '0.7rem',
                         letterSpacing: '0.02em',
@@ -228,24 +277,24 @@ export default function PaginaArchivoPlano() {
             ))}
           </ul>
 
-          <div style={{ marginTop: '1rem', padding: '0.75rem 1rem', background: '#f8fafc', border: '1px solid #dfe7f1', borderRadius: '0.75rem' }}>
-            <p className={estilos.rotulo}>Resumen</p>
-            <p style={{ margin: '0.5rem 0 0' }}>
+          <div style={{ marginTop: '1.25rem', padding: '0.9rem 1.15rem', background: 'var(--c-fondo-franja)', border: '1px solid var(--c-borde)', borderRadius: '0.85rem' }}>
+            <p className={estilos.rotulo}>Resumen de generación</p>
+            <p style={{ margin: '0.4rem 0 0', fontSize: '0.9rem', color: 'var(--c-texto-principal)' }}>
               {seleccion.length === 0
-                ? 'Se exportaran todos los proyectos visibles, todos ellos ya autorizados para reporte externo.'
-                : `${seleccion.length} proyecto(s) seleccionados: ${seleccionados
+                ? `Se exportarán todos los proyectos autorizados (${proyectos.length}) en formato ${formato}.`
+                : `${seleccion.length} de ${proyectos.length} proyecto(s) seleccionados: ${seleccionados
                     .map((proyecto) => proyecto.nombre)
                     .join(', ')}`}
             </p>
           </div>
 
-          <div className={estilos.accionesBuscador}>
+          <div className={estilos.accionesBuscador} style={{ marginTop: '1.5rem', display: 'flex', gap: '0.75rem' }}>
             <Boton icono={Download} onClick={alGenerar} disabled={generando || enviando}>
-              {generando ? 'Generando...' : 'Generar y descargar'}
+              {generando ? `Generando ${formato}...` : `Generar y descargar (${formato})`}
             </Boton>
             {envioCorreoHabilitado && (
-              <Boton onClick={alEnviarPorCorreo} disabled={generando || enviando}>
-                {enviando ? 'Enviando...' : 'Enviar por correo'}
+              <Boton icono={Mail} onClick={alEnviarPorCorreo} disabled={generando || enviando}>
+                {enviando ? 'Enviando por correo...' : 'Enviar por correo'}
               </Boton>
             )}
           </div>
