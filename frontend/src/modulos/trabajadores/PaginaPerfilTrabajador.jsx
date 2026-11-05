@@ -22,7 +22,6 @@ import { formatearFecha } from '../../utilidades/formato.js';
 import SelectorEspecialidades from './componentes/SelectorEspecialidades.jsx';
 import SelectorProfesiones from './componentes/SelectorProfesiones.jsx';
 import SubidaFotografia from './componentes/SubidaFotografia.jsx';
-import SelectorHabilidades from './componentes/SelectorHabilidades.jsx';
 
 /** Los tres campos que RF-005 autoriza a modificar. */
 function editablesDe(trabajador) {
@@ -131,11 +130,6 @@ function PerfilCargado({ inicial }) {
     const { name, value } = evento.target;
     setEditables((previos) => ({ ...previos, [name]: value }));
     setErrores((previos) => (previos[name] ? { ...previos, [name]: undefined } : previos));
-    setConfirmado(null);
-  }
-
-  function alCambiarHabilidades(habilidades) {
-    setEditables((previos) => ({ ...previos, habilidades }));
     setConfirmado(null);
   }
 
@@ -312,11 +306,6 @@ function PerfilCargado({ inicial }) {
             value={editables.tipoTrabajador}
             onChange={alCambiar}
             error={errores.tipoTrabajador}
-          />
-
-          <SelectorHabilidades
-            seleccionadas={editables.habilidades}
-            onChange={alCambiarHabilidades}
           />
 
           <div className={estilos.accionesPerfil}>

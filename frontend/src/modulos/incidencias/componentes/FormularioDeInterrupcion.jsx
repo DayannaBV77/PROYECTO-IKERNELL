@@ -148,10 +148,22 @@ export default function FormularioDeInterrupcion({
         etiqueta="Tipo de interrupcion"
         nombre="tipoInterrupcion"
         obligatorio
-        maxLength={50}
         value={valores.tipoInterrupcion}
         onChange={alCambiar}
         error={errores.tipoInterrupcion}
+        pista="Seleccione el tipo estandarizado de interrupcion."
+        opciones={[
+          { valor: 'Fallas en librerías o dependencias', texto: 'Fallas en librerías o dependencias' },
+          { valor: 'Problemas de infraestructura o servidores', texto: 'Problemas de infraestructura o servidores' },
+          { valor: 'Deuda técnica', texto: 'Deuda técnica' },
+          { valor: 'Limitaciones de las herramientas de desarrollo', texto: 'Limitaciones de las herramientas de desarrollo' },
+          { valor: 'Cambios repentinos en los requerimientos (scope creep)', texto: 'Cambios repentinos en los requerimientos (scope creep)' },
+          { valor: 'Especificaciones poco claras', texto: 'Especificaciones poco claras' },
+          { valor: 'Errores en la estimación de tiempos', texto: 'Errores en la estimación de tiempos' },
+          { valor: 'Ausencias o rotación del personal clave', texto: 'Ausencias o rotación del personal clave' },
+          { valor: 'Falta de comunicación interna', texto: 'Falta de comunicación interna' },
+          { valor: 'Cuellos de botella por dependencias de tareas', texto: 'Cuellos de botella por dependencias de tareas' },
+        ]}
       />
       <Campo
         etiqueta="Fecha"

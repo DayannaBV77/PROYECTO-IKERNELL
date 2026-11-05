@@ -12,6 +12,7 @@ import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -48,7 +49,7 @@ public class ServicioNotificacionCorreoImpl implements ServicioNotificacionCorre
 			@Value("${ikernell.correo.smtp.puerto:25}") int smtpPuerto,
 			@Value("${ikernell.reporte-externo.correo-habilitado:false}") boolean reporteExternoHabilitado,
 			@Value("${ikernell.reporte-externo.correo-destinatario:}") String reporteExternoDestinatario,
-			JavaMailSender mailSender) {
+			@Autowired(required = false) JavaMailSender mailSender) {
 		this.simularFallo = simularFallo;
 		this.remitente = remitente;
 		this.smtpHost = smtpHost;

@@ -131,6 +131,29 @@ function FormularioDeError({ proyectos }) {
     setErrores((previos) => (previos[name] ? { ...previos, [name]: undefined } : previos));
   }
 
+  function validarError({ fecha, descripcion }) {
+    const erroresLocales = {};
+    const fechaLimpia = String(fecha || '').trim();
+    const descripcionLimpia = String(descripcion || '').trim();
+
+    if (!fechaLimpia) {
+      erroresLocales.fecha = 'Debe indicar la fecha del error.';
+    } else {
+      const fechaNormalizada = new Date(`${fechaLimpia}T00:00:00`);
+      if (Number.isNaN(fechaNormalizada.getTime())) {
+        erroresLocales.fecha = 'La fecha del error no es válida.';
+      }
+    }
+
+    if (!descripcionLimpia) {
+      erroresLocales.descripcion = 'Debe describir el error encontrado.';
+    } else if (descripcionLimpia.length < 5) {
+      erroresLocales.descripcion = 'La descripcion del error debe tener al menos 5 caracteres.';
+    }
+
+    return erroresLocales;
+  }
+
   async function alEnviar(evento) {
     evento.preventDefault();
     setConfirmado(null);
@@ -139,6 +162,13 @@ function FormularioDeError({ proyectos }) {
     // C03: sin proyecto no hay a donde enviar el registro.
     if (!valores.proyectoId) {
       setErrores({ proyectoId: 'Debe elegir el proyecto al que pertenece el error.' });
+      return;
+    }
+
+    const erroresLocales = validarError(valores);
+    if (Object.keys(erroresLocales).length > 0) {
+      setErrores((previos) => ({ ...previos, ...erroresLocales }));
+      setFallo('Debe corregir la fecha y la descripcion antes de registrar el error.');
       return;
     }
 
@@ -187,7 +217,17 @@ function FormularioDeError({ proyectos }) {
         value={valores.tipoError}
         onChange={alCambiar}
         error={errores.tipoError}
-        pista="Los tipos los define la empresa; por ahora es texto libre."
+        pista="Elija el tipo de error estandarizado para esta incidencia."
+        opciones={[
+          { valor: 'Error de lógica / Algoritmo', texto: 'Error de lógica / Algoritmo' },
+          { valor: 'Fallas en librerías o dependencias', texto: 'Fallas en librerías o dependencias' },
+          { valor: 'Problemas de infraestructura o servidores', texto: 'Problemas de infraestructura o servidores' },
+          { valor: 'Deuda técnica', texto: 'Deuda técnica' },
+          { valor: 'Limitaciones de las herramientas de desarrollo', texto: 'Limitaciones de las herramientas de desarrollo' },
+          { valor: 'Especificaciones poco claras', texto: 'Especificaciones poco claras' },
+          { valor: 'Errores en la estimación de tiempos', texto: 'Errores en la estimación de tiempos' },
+          { valor: 'Cuellos de botella por dependencias de tareas', texto: 'Cuellos de botella por dependencias de tareas' },
+        ]}
       />
       <Campo
         etiqueta="Etapa en que lo encontro"
