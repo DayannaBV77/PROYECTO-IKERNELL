@@ -89,6 +89,7 @@ public class TrabajadorController {
 	 */
 	@GetMapping
 	public PaginaResponse<TrabajadorResumenResponse> buscar(
+			@RequestParam(required = false) String q,
 			@RequestParam(required = false) String identificacion,
 			@RequestParam(required = false) String nombre,
 			@RequestParam(required = false) String apellido,
@@ -100,7 +101,7 @@ public class TrabajadorController {
 			@RequestParam(defaultValue = "20") int tamano) {
 
 		CriteriosBusquedaTrabajador criterios = new CriteriosBusquedaTrabajador(
-				identificacion, nombre, apellido, profesion, especialidadDesarrollo, tipoTrabajador, estado);
+				q, identificacion, nombre, apellido, profesion, especialidadDesarrollo, tipoTrabajador, estado);
 
 		PageRequest paginacion = PageRequest.of(
 				Math.max(pagina, 0),

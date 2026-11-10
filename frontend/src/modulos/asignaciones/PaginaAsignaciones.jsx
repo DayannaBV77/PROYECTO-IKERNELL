@@ -41,7 +41,7 @@ const OPCIONES_PROFESIONES = [
 ];
 
 function FiltroEspecialidad({ value, onChange }) {
-  return <SelectorEspecialidades etiqueta="Especialidad" value={value} onChange={onChange} />;
+  return <SelectorEspecialidades etiqueta="Especialidad" placeholder="Seleccionar" value={value} onChange={onChange} />;
 }
 
 function normalizarTexto(valor = '') {

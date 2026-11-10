@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { Eye, EyeOff, LogIn, TriangleAlert } from 'lucide-react';
+import { Eye, EyeOff, TriangleAlert } from 'lucide-react';
 
 import EstadoCarga from '../../componentes/estados/EstadoCarga.jsx';
 import Boton from '../../componentes/ui/Boton.jsx';
@@ -130,7 +130,7 @@ export default function PaginaIngreso() {
             </button>
           </div>
 
-          <Boton type="submit" icono={LogIn} disabled={enviando} completo>
+          <Boton type="submit" disabled={enviando} completo>
             {enviando ? 'Validando...' : 'Entrar'}
           </Boton>
         </form>

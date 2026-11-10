@@ -22,6 +22,15 @@ final class TrabajadorSpecifications {
 	static Specification<Trabajador> desde(CriteriosBusquedaTrabajador criterios) {
 		Specification<Trabajador> especificacion = (raiz, consulta, cb) -> cb.conjunction();
 
+		if (StringUtils.hasText(criterios.q())) {
+			String patron = "%" + criterios.q().trim().toLowerCase() + "%";
+			especificacion = especificacion.and((raiz, consulta, cb) -> cb.or(
+					cb.like(cb.lower(raiz.get("identificacion")), patron),
+					cb.like(cb.lower(raiz.get("nombre")), patron),
+					cb.like(cb.lower(raiz.get("apellido")), patron)
+			));
+		}
+
 		especificacion = especificacion
 				.and(contiene("identificacion", criterios.identificacion()))
 				.and(contiene("nombre", criterios.nombre()))

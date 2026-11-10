@@ -46,6 +46,12 @@ public class ServicioConsultas {
 	/** RF-035, HU-02 C02: registra la consulta recibida desde el portal público. */
 	@Transactional
 	public ConsultaPublica registrar(RegistroConsultaRequest peticion) {
+		if (ValidadorLenguaje.contieneGroserias(peticion.pregunta())) {
+			throw new ReglaNegocioException("Por favor use un lenguaje respetuoso. No se permiten palabras ofensivas.");
+		}
+		if (ValidadorLenguaje.contieneGroserias(peticion.nombreContacto())) {
+			throw new ReglaNegocioException("El nombre contiene términos inapropiados.");
+		}
 		return consultas.save(new ConsultaPublica(peticion.pregunta(), peticion.nombreContacto(),
 				peticion.correoContacto(), peticion.telefonoContacto()));
 	}

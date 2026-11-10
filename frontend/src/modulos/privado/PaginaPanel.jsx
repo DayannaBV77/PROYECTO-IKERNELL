@@ -4,6 +4,7 @@ import {
   BarChart3,
   FileDown,
   FileText,
+  Inbox,
   Bug,
   Link2,
   ClipboardCheck,
@@ -77,9 +78,16 @@ const GESTION = [
   {
     tipos: ['COORDINADOR'],
     icono: FileText,
-    titulo: 'Contenido y consultas',
-    detalle: 'Actualizar la pagina publica y atender las consultas recibidas.',
+    titulo: 'Contenido',
+    detalle: 'Actualizar la informacion y contenidos de la pagina publica.',
     a: '/app/contenido',
+  },
+  {
+    tipos: ['COORDINADOR'],
+    icono: Inbox,
+    titulo: 'Consultas',
+    detalle: 'Atender y responder las consultas recibidas desde el portal.',
+    a: '/app/consultas',
   },
   {
     tipos: ['LIDER'],
@@ -161,26 +169,59 @@ export default function PaginaPanel() {
 
   const servicios = sesion.serviciosComunes || [];
   const gestion = GESTION.filter(({ tipos }) => tipos.includes(sesion.tipoTrabajador));
+  const esCoordinador = sesion.tipoTrabajador === 'COORDINADOR';
+
+  if (esCoordinador) {
+    return (
+      <main className={estilos.contenedorPanel}>
+        <div className={estilos.cabeceraPrincipal}>
+          <h1 className={estilos.tituloPrincipal}>Nuestros Servicios</h1>
+          <p className={estilos.subtituloPrincipal}>Encuentra todo lo que necesitas en un solo lugar</p>
+        </div>
+
+        <section className={estilos.bloqueSeccion} aria-label="Servicios Internos">
+          <div className={estilos.pildoraLinea}>
+            <span className={estilos.pildoraTitulo}>Servicios Internos</span>
+          </div>
+
+          <div className={estilos.rejillaTarjetas}>
+            {servicios.map((clave) => (
+              <TarjetaServicioUnificada
+                key={clave}
+                clave={clave}
+                titulo={ETIQUETA_SERVICIO[clave] || clave}
+                correo={correo}
+              />
+            ))}
+          </div>
+        </section>
+
+        {gestion.length > 0 && (
+          <section className={estilos.bloqueSeccion} aria-label="Gestión">
+            <div className={estilos.pildoraLinea}>
+              <span className={estilos.pildoraTitulo}>Gestión</span>
+            </div>
+
+            <div className={estilos.rejillaTarjetas}>
+              {gestion.map(({ a, icono: Icono, titulo, detalle }) => (
+                <Link key={a} to={a} className={estilos.tarjetaUnificada}>
+                  <div className={estilos.iconoTarjeta}>
+                    <Icono size={28} strokeWidth={1.7} aria-hidden="true" />
+                  </div>
+                  <h3 className={estilos.tituloTarjeta}>{titulo}</h3>
+                  <p className={estilos.detalleTarjeta}>{detalle}</p>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+      </main>
+    );
+  }
 
   return (
     <>
       {TIPOS_CON_PANEL_DEL_DIA.includes(sesion.tipoTrabajador) && <PaginaMiDia />}
-
-      <Seccion titulo="Mi sesion" id="panel">
-        <div className={estilos.identidad}>
-          <span className={estilos.iniciales} aria-hidden="true">
-            {iniciales(sesion.nombreCompleto)}
-          </span>
-          <div>
-            <p className={estilos.nombre}>{sesion.nombreCompleto}</p>
-            <p className={estilos.detalle}>{sesion.correoCorporativo}</p>
-            <span className={estilos.rol}>
-              {ETIQUETA_TIPO[sesion.tipoTrabajador] || sesion.tipoTrabajador}
-            </span>
-          </div>
-        </div>
-
-      </Seccion>
 
       {gestion.length > 0 && (
         <Seccion
@@ -216,6 +257,72 @@ export default function PaginaPanel() {
         </Rejilla>
       </Seccion>
     </>
+  );
+}
+
+/**
+ * Tarjeta unificada de servicio para la vista de Coordinador.
+ */
+function TarjetaServicioUnificada({ clave, titulo, correo }) {
+  const { icono: Icono, detalle, a } = SERVICIOS[clave] || {};
+
+  if (a) {
+    return (
+      <Link to={a} className={estilos.tarjetaUnificada}>
+        <div className={estilos.iconoTarjeta}>
+          {Icono && <Icono size={28} strokeWidth={1.7} aria-hidden="true" />}
+        </div>
+        <h3 className={estilos.tituloTarjeta}>{titulo}</h3>
+        <p className={estilos.detalleTarjeta}>{detalle}</p>
+      </Link>
+    );
+  }
+
+  if (clave === 'CORREO_ELECTRONICO') {
+    const cargando = correo.cargando;
+    const sinAcceso = correo.error || !correo.datos?.disponible;
+    const mensajeTexto = sinAcceso
+      ? correo.datos?.mensaje || correo.error?.message || 'No se puede acceder al correo corporativo por ahora.'
+      : detalle;
+
+    if (cargando || sinAcceso) {
+      return (
+        <div className={estilos.tarjetaUnificada}>
+          <div className={estilos.iconoTarjeta}>
+            {Icono && <Icono size={28} strokeWidth={1.7} aria-hidden="true" />}
+          </div>
+          <h3 className={estilos.tituloTarjeta}>{titulo}</h3>
+          <p className={estilos.detalleTarjeta}>
+            {cargando ? 'Comprobando el acceso al correo corporativo...' : mensajeTexto}
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <a
+        href={correo.datos.url}
+        target="_blank"
+        rel="noreferrer noopener"
+        className={estilos.tarjetaUnificada}
+      >
+        <div className={estilos.iconoTarjeta}>
+          {Icono && <Icono size={28} strokeWidth={1.7} aria-hidden="true" />}
+        </div>
+        <h3 className={estilos.tituloTarjeta}>{titulo}</h3>
+        <p className={estilos.detalleTarjeta}>{detalle}</p>
+      </a>
+    );
+  }
+
+  return (
+    <div className={estilos.tarjetaUnificada}>
+      <div className={estilos.iconoTarjeta}>
+        {Icono && <Icono size={28} strokeWidth={1.7} aria-hidden="true" />}
+      </div>
+      <h3 className={estilos.tituloTarjeta}>{titulo}</h3>
+      <p className={estilos.detalleTarjeta}>{detalle}</p>
+    </div>
   );
 }
 

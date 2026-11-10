@@ -16,6 +16,7 @@ import com.PROYECTO.IKERNELL.backend.trabajadores.domain.TipoTrabajador;
  * mezclaria habilitados e inhabilitados sin posibilidad de separarlos.
  */
 public record CriteriosBusquedaTrabajador(
+		String q,
 		String identificacion,
 		String nombre,
 		String apellido,
@@ -23,4 +24,15 @@ public record CriteriosBusquedaTrabajador(
 		String especialidadDesarrollo,
 		TipoTrabajador tipoTrabajador,
 		EstadoHabilitacion estado) {
+
+	public CriteriosBusquedaTrabajador(
+			String identificacion,
+			String nombre,
+			String apellido,
+			String profesion,
+			String especialidadDesarrollo,
+			TipoTrabajador tipoTrabajador,
+			EstadoHabilitacion estado) {
+		this(null, identificacion, nombre, apellido, profesion, especialidadDesarrollo, tipoTrabajador, estado);
+	}
 }

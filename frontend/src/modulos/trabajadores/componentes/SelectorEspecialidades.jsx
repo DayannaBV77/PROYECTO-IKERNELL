@@ -1,5 +1,5 @@
 import { Search, X, ChevronDown, ChevronUp } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   ESPECIALIDADES_DESARROLLO,
@@ -8,10 +8,33 @@ import {
 } from '../catalogoEspecialidades.js';
 import estilos from './SelectorEspecialidades.module.css';
 
-export default function SelectorEspecialidades({ value = '', onChange, error, obligatorio = false, etiqueta = 'Especialidad de desarrollo' }) {
+export default function SelectorEspecialidades({
+  value = '',
+  onChange,
+  error,
+  obligatorio = false,
+  etiqueta = 'Especialidad de desarrollo',
+  placeholder = 'Seleccionar...',
+}) {
   const seleccionadas = listarEspecialidades(value);
   const [abierto, setAbierto] = useState(false);
   const [busqueda, setBusqueda] = useState('');
+  const contenedorRef = useRef(null);
+
+  useEffect(() => {
+    function manejarClicFuera(evento) {
+      if (contenedorRef.current && !contenedorRef.current.contains(evento.target)) {
+        setAbierto(false);
+      }
+    }
+
+    if (abierto) {
+      document.addEventListener('mousedown', manejarClicFuera);
+    }
+    return () => {
+      document.removeEventListener('mousedown', manejarClicFuera);
+    };
+  }, [abierto]);
 
   const opcionesVisibles = useMemo(() => {
     const termino = busqueda.trim().toLocaleLowerCase();
@@ -37,7 +60,7 @@ export default function SelectorEspecialidades({ value = '', onChange, error, ob
   }
 
   return (
-    <div className={`${estilos.selector} ${error ? estilos.conError : ''}`}>
+    <div ref={contenedorRef} className={`${estilos.selector} ${error ? estilos.conError : ''}`}>
       <label className={estilos.etiqueta} htmlFor="especialidades-desarrollo">
         {etiqueta}
         {obligatorio && (
@@ -81,7 +104,7 @@ export default function SelectorEspecialidades({ value = '', onChange, error, ob
               </span>
             ))
           ) : (
-            <span className={estilos.placeholder}>Seleccionar especialidades...</span>
+            <span className={estilos.placeholder}>{placeholder}</span>
           )}
         </div>
 

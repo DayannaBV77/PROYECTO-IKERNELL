@@ -53,7 +53,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: var(--s-4);
-  align-items: end;
+  align-items: flex-start;
 }
 
 .filtrosAcciones {
@@ -72,7 +72,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: var(--s-4) var(--s-5);
-  align-items: end;
+  align-items: flex-start;
 }
 
 .accionesBuscador {
@@ -82,6 +82,169 @@
   margin-top: var(--s-5);
   padding-top: var(--s-4);
   border-top: 1px solid var(--c-borde);
+}
+
+/* --- Filtro moderno de trabajadores --- */
+
+.filtroCampoGeneral {
+  margin-bottom: var(--s-4);
+}
+
+.filtroEtiqueta {
+  display: block;
+  font-size: var(--t-xs);
+  font-weight: var(--p-semi);
+  letter-spacing: var(--e-nav);
+  text-transform: uppercase;
+  color: var(--c-texto-tenue);
+  margin-bottom: var(--s-2);
+}
+
+.filtroInputIcono {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.filtroIconoBusqueda {
+  position: absolute;
+  left: 0.85rem;
+  color: var(--c-texto-tenue);
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+.filtroInput {
+  width: 100%;
+  padding: 0.65rem 1rem 0.65rem 2.4rem;
+  font-size: var(--t-sm);
+  font-family: inherit;
+  color: var(--c-texto);
+  background: var(--c-fondo);
+  border: 1px solid var(--c-borde-tarjeta);
+  border-radius: var(--r-md);
+  outline: none;
+  transition: border-color var(--tr-rapida), box-shadow var(--tr-rapida);
+}
+
+.filtroInput::placeholder {
+  color: var(--c-texto-tenue);
+  opacity: 0.7;
+}
+
+.filtroInput:focus {
+  border-color: var(--c-turquesa-fuerte);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-turquesa-fuerte) 15%, transparent);
+}
+
+.filtroFilaDoble {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-4);
+  margin-bottom: var(--s-4);
+}
+
+.filtroToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: 0.3rem 0;
+  margin-bottom: var(--s-4);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: var(--t-sm);
+  font-weight: var(--p-semi);
+  color: var(--c-turquesa-fuerte);
+  transition: opacity var(--tr-rapida);
+}
+
+.filtroToggle:hover {
+  opacity: 0.75;
+}
+
+.filtroAcciones {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--c-borde);
+}
+
+.filtroBtnBuscar {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  padding: 0.65rem 1.5rem;
+  font-size: var(--t-sm);
+  font-weight: var(--p-semi);
+  font-family: inherit;
+  color: #fff;
+  background: var(--c-marino-titulo);
+  border: none;
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition: background var(--tr-rapida), opacity var(--tr-rapida);
+}
+
+.filtroBtnBuscar:hover:not(:disabled) {
+  background: var(--c-turquesa-fuerte);
+}
+
+.filtroBtnBuscar:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.filtroBtnLimpiar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  padding: 0.65rem 1.1rem;
+  font-size: var(--t-sm);
+  font-weight: var(--p-semi);
+  font-family: inherit;
+  color: var(--c-texto-tenue);
+  background: transparent;
+  border: 1px solid var(--c-borde-tarjeta);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color var(--tr-rapida), color var(--tr-rapida);
+}
+
+.filtroBtnLimpiar:hover:not(:disabled) {
+  border-color: var(--c-turquesa-fuerte);
+  color: var(--c-turquesa-fuerte);
+}
+
+.filtroBtnLimpiar:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.filtroConteo {
+  font-size: var(--t-sm);
+  color: var(--c-texto-tenue);
+  margin-bottom: var(--s-4);
+}
+
+@media (max-width: 640px) {
+  .filtroFilaDoble {
+    grid-template-columns: 1fr;
+  }
+
+  .filtroAcciones {
+    flex-direction: column;
+  }
+
+  .filtroBtnBuscar,
+  .filtroBtnLimpiar {
+    width: 100%;
+  }
 }
 
 .rotulo {

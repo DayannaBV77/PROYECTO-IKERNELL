@@ -1,4 +1,138 @@
-/* --- Identidad de la sesion --- */
+/* --- Panel Unificado Coordinador / Servicios --- */
+.contenedorPanel {
+  max-width: var(--ancho-contenido);
+  margin: 0 auto;
+  padding: var(--s-7) var(--s-4);
+}
+
+.cabeceraPrincipal {
+  text-align: center;
+  margin-bottom: var(--s-7);
+}
+
+.tituloPrincipal {
+  font-size: var(--t-xl);
+  font-weight: var(--p-bold);
+  color: var(--c-marino-titulo);
+  margin: 0 0 var(--s-2);
+  letter-spacing: -0.01em;
+}
+
+.subtituloPrincipal {
+  font-size: var(--t-base);
+  color: var(--c-texto-tenue);
+  margin: 0;
+}
+
+.bloqueSeccion {
+  margin-bottom: var(--s-7);
+}
+
+.pildoraLinea {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--s-5);
+}
+
+.pildoraLinea::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--c-borde-tarjeta, #7dd3dc);
+  opacity: 0.7;
+  z-index: 1;
+}
+
+.pildoraTitulo {
+  position: relative;
+  z-index: 2;
+  margin-left: 0.5rem;
+  padding: 0.35rem 1.25rem;
+  background: var(--c-superficie-tenue, #eaf7fa);
+  border: 1px solid var(--c-borde-tarjeta, #7dd3dc);
+  border-radius: var(--r-full);
+  color: var(--c-marino-titulo);
+  font-size: var(--t-sm);
+  font-weight: var(--p-bold);
+  letter-spacing: 0.01em;
+}
+
+.rejillaTarjetas {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--s-4);
+}
+
+.tarjetaUnificada {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  padding: var(--s-5);
+  background: var(--c-superficie);
+  border: 1px solid var(--c-borde-tarjeta, #7dd3dc);
+  border-radius: var(--r-lg);
+  box-shadow: var(--b-sutil);
+  text-decoration: none;
+  color: inherit;
+  min-height: 175px;
+  transition:
+    transform var(--tr-rapida),
+    box-shadow var(--tr-rapida),
+    border-color var(--tr-rapida);
+}
+
+.tarjetaUnificada:hover {
+  text-decoration: none;
+  transform: translateY(-2px);
+  box-shadow: var(--b-media);
+  border-color: var(--c-turquesa-fuerte);
+}
+
+.iconoTarjeta {
+  display: flex;
+  align-items: center;
+  color: var(--c-marino-titulo);
+  margin-bottom: var(--s-1);
+}
+
+.tituloTarjeta {
+  font-size: 0.82rem;
+  font-weight: var(--p-bold);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--c-marino-titulo);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.detalleTarjeta {
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--c-texto);
+  margin: 0;
+}
+
+@media (max-width: 1024px) {
+  .rejillaTarjetas {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .rejillaTarjetas {
+    grid-template-columns: 1fr;
+  }
+
+  .contenedorPanel {
+    padding-block: var(--s-5);
+  }
+}
+
+/* --- Identidad de la sesion (mantenido por compatibilidad) --- */
 .identidad {
   display: flex;
   align-items: center;

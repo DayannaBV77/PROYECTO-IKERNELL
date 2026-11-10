@@ -1,6 +1,15 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, RotateCcw, Search, UserPlus, Users } from 'lucide-react';
+import {
+  ArrowRight,
+  ChevronDown,
+  ChevronUp,
+  RotateCcw,
+  Search,
+  SlidersHorizontal,
+  UserPlus,
+  Users,
+} from 'lucide-react';
 
 import { ETIQUETA_TIPO } from '../../api/autenticacion.js';
 import {
@@ -8,6 +17,7 @@ import {
   TIPOS_TRABAJADOR,
   buscarTrabajadores,
 } from '../../api/trabajadores.js';
+import { PROFESIONES } from './catalogoProfesiones.js';
 import EstadoCarga from '../../componentes/estados/EstadoCarga.jsx';
 import EstadoError from '../../componentes/estados/EstadoError.jsx';
 import EstadoVacio from '../../componentes/estados/EstadoVacio.jsx';
@@ -19,40 +29,63 @@ import Seccion from '../../componentes/ui/Seccion.jsx';
 import estilos from '../../estilos/gestion.module.css';
 import { usePeticion } from '../../hooks/usePeticion.js';
 
+const OPCIONES_PROFESIONES = [
+  { valor: '', texto: 'Todas las profesiones' },
+  ...PROFESIONES.map((profesion) => ({ valor: profesion, texto: profesion })),
+];
+
 const SIN_CRITERIOS = {
-  identificacion: '',
-  nombre: '',
-  apellido: '',
+  q: '',
   profesion: '',
   especialidadDesarrollo: '',
   tipoTrabajador: '',
   estado: '',
 };
 
+/** Milisegundos de espera tras el ultimo cambio antes de lanzar la busqueda. */
+const RETARDO_MS = 400;
+
 export default function PaginaTrabajadores() {
+  const [busquedaGeneral, setBusquedaGeneral] = useState('');
   const [borrador, setBorrador] = useState(SIN_CRITERIOS);
   const [criterios, setCriterios] = useState(SIN_CRITERIOS);
   const [pagina, setPagina] = useState(0);
   const [tamano, setTamano] = useState(10);
+  const [mostrarMasFiltros, setMostrarMasFiltros] = useState(false);
 
-  const cargar = useCallback(
-    ({ senal }) => buscarTrabajadores({ ...criterios, pagina, tamano }, { senal }),
-    [criterios, pagina, tamano],
-  );
-  const { datos, error, cargando, reintentar } = usePeticion(cargar, [criterios, pagina, tamano]);
+  const temporizador = useRef(null);
+
+  /**
+   * Aplica los criterios actuales con un retardo (debounce).
+   * Se llama cada vez que cambia busquedaGeneral o cualquier campo del borrador.
+   */
+  function aplicarConRetardo(nuevaBusqueda, nuevoBorrador) {
+    clearTimeout(temporizador.current);
+    temporizador.current = setTimeout(() => {
+      setCriterios({
+        ...nuevoBorrador,
+        q: nuevaBusqueda.trim(),
+      });
+      setPagina(0);
+    }, RETARDO_MS);
+  }
+
+  function alCambiarBusqueda(e) {
+    const valor = e.target.value;
+    setBusquedaGeneral(valor);
+    aplicarConRetardo(valor, borrador);
+  }
 
   function alCambiar(evento) {
     const { name, value } = evento.target;
-    setBorrador((previos) => ({ ...previos, [name]: value }));
-  }
-
-  function alBuscar(evento) {
-    evento.preventDefault();
-    setCriterios(borrador);
-    setPagina(0);
+    const nuevoBorrador = { ...borrador, [name]: value };
+    setBorrador(nuevoBorrador);
+    aplicarConRetardo(busquedaGeneral, nuevoBorrador);
   }
 
   function alLimpiar() {
+    clearTimeout(temporizador.current);
+    setBusquedaGeneral('');
     setBorrador(SIN_CRITERIOS);
     setCriterios(SIN_CRITERIOS);
     setPagina(0);
@@ -62,6 +95,15 @@ export default function PaginaTrabajadores() {
     setTamano(nuevoTamano);
     setPagina(0);
   }
+
+  /* Limpia el temporizador al desmontar el componente. */
+  useEffect(() => () => clearTimeout(temporizador.current), []);
+
+  const cargar = useCallback(
+    ({ senal }) => buscarTrabajadores({ ...criterios, pagina, tamano }, { senal }),
+    [criterios, pagina, tamano],
+  );
+  const { datos, error, cargando, reintentar } = usePeticion(cargar, [criterios, pagina, tamano]);
 
   const resultados = datos?.contenido || [];
 
@@ -77,43 +119,28 @@ export default function PaginaTrabajadores() {
         </Boton>
       </div>
 
-      <form className={estilos.buscador} onSubmit={alBuscar}>
-        <div className={estilos.criterios}>
-          <Campo
-            etiqueta="Nº Identificación"
-            nombre="identificacion"
-            placeholder="Buscar por documento..."
-            value={borrador.identificacion}
-            onChange={alCambiar}
-          />
-          <Campo
-            etiqueta="Nombre"
-            nombre="nombre"
-            placeholder="Buscar por nombre..."
-            value={borrador.nombre}
-            onChange={alCambiar}
-          />
-          <Campo
-            etiqueta="Apellido"
-            nombre="apellido"
-            placeholder="Buscar por apellido..."
-            value={borrador.apellido}
-            onChange={alCambiar}
-          />
-          <Campo
-            etiqueta="Profesión"
-            nombre="profesion"
-            placeholder="Ej: Ingeniero..."
-            value={borrador.profesion}
-            onChange={alCambiar}
-          />
-          <Campo
-            etiqueta="Especialidad de desarrollo"
-            nombre="especialidadDesarrollo"
-            placeholder="Ej: Backend, React..."
-            value={borrador.especialidadDesarrollo}
-            onChange={alCambiar}
-          />
+      <div className={estilos.buscador}>
+        {/* Campo de búsqueda general */}
+        <div className={estilos.filtroCampoGeneral}>
+          <label className={estilos.filtroEtiqueta} htmlFor="busquedaGeneral">
+            Buscar por nombre, apellido o identificación
+          </label>
+          <div className={estilos.filtroInputIcono}>
+            <Search size={16} className={estilos.filtroIconoBusqueda} aria-hidden="true" />
+            <input
+              id="busquedaGeneral"
+              className={estilos.filtroInput}
+              type="text"
+              placeholder="Escriba un nombre, apellido o número de documento..."
+              value={busquedaGeneral}
+              onChange={alCambiarBusqueda}
+              autoComplete="off"
+            />
+          </div>
+        </div>
+
+        {/* Fila de selectores: tipo y estado */}
+        <div className={estilos.filtroFilaDoble}>
           <Campo
             etiqueta="Tipo de trabajador"
             nombre="tipoTrabajador"
@@ -132,15 +159,64 @@ export default function PaginaTrabajadores() {
           />
         </div>
 
-        <div className={estilos.accionesBuscador}>
-          <Boton type="submit" icono={Search} disabled={cargando}>
-            Buscar
-          </Boton>
-          <Boton type="button" variante="secundario" icono={RotateCcw} onClick={alLimpiar} disabled={cargando}>
+        {/* Toggle más filtros */}
+        <button
+          type="button"
+          className={estilos.filtroToggle}
+          onClick={() => setMostrarMasFiltros((v) => !v)}
+          aria-expanded={mostrarMasFiltros}
+        >
+          <SlidersHorizontal size={15} aria-hidden="true" />
+          <span>{mostrarMasFiltros ? 'Ocultar filtros adicionales' : 'Más filtros'}</span>
+          {mostrarMasFiltros
+            ? <ChevronUp size={15} aria-hidden="true" />
+            : <ChevronDown size={15} aria-hidden="true" />}
+        </button>
+
+        {/* Filtros adicionales colapsables */}
+        {mostrarMasFiltros && (
+          <div className={estilos.filtroFilaDoble}>
+            <Campo
+              etiqueta="Profesión"
+              nombre="profesion"
+              opciones={OPCIONES_PROFESIONES}
+              textoVacio="Todas las profesiones"
+              value={borrador.profesion}
+              onChange={alCambiar}
+            />
+            <Campo
+              etiqueta="Especialidad de desarrollo"
+              nombre="especialidadDesarrollo"
+              placeholder="Ej. Backend, React"
+              value={borrador.especialidadDesarrollo}
+              onChange={alCambiar}
+            />
+          </div>
+        )}
+
+        {/* Solo botón Limpiar */}
+        <div className={estilos.filtroAcciones}>
+          <button
+            type="button"
+            className={estilos.filtroBtnLimpiar}
+            onClick={alLimpiar}
+            disabled={cargando}
+          >
+            <RotateCcw size={15} aria-hidden="true" />
             Limpiar filtros
-          </Boton>
+          </button>
         </div>
-      </form>
+      </div>
+
+      {/* Conteo de resultados */}
+      {!cargando && !error && datos && resultados.length > 0 && (
+        <p className={estilos.filtroConteo}>
+          {datos.totalElementos ?? resultados.length}{' '}
+          {(datos.totalElementos ?? resultados.length) === 1
+            ? 'trabajador encontrado'
+            : 'trabajadores encontrados'}
+        </p>
+      )}
 
       {cargando && <EstadoCarga mensaje="Buscando trabajadores..." />}
 

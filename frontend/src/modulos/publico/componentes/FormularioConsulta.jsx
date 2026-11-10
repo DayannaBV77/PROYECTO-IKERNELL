@@ -4,6 +4,7 @@ import { CircleCheck, TriangleAlert } from 'lucide-react';
 import { enviarConsulta } from '../../../api/contenidoPublico.js';
 import Boton from '../../../componentes/ui/Boton.jsx';
 import Campo from '../../../componentes/ui/Campo.jsx';
+import { contieneGroserias } from '../../../utilidades/validadorLenguaje.js';
 import estilos from './FormularioConsulta.module.css';
 
 const VACIO = { pregunta: '', nombreContacto: '', correoContacto: '', telefonoContacto: '' };
@@ -38,9 +39,23 @@ export default function FormularioConsulta() {
 
   async function alEnviar(evento) {
     evento.preventDefault();
-    setEnviando(true);
     setFallo(null);
     setErrores({});
+
+    const nuevosErrores = {};
+    if (contieneGroserias(valores.pregunta)) {
+      nuevosErrores.pregunta = 'Por favor use un lenguaje respetuoso. No se permiten palabras ofensivas.';
+    }
+    if (contieneGroserias(valores.nombreContacto)) {
+      nuevosErrores.nombreContacto = 'El nombre contiene términos inapropiados.';
+    }
+
+    if (Object.keys(nuevosErrores).length > 0) {
+      setErrores(nuevosErrores);
+      return;
+    }
+
+    setEnviando(true);
 
     try {
       const respuesta = await enviarConsulta(valores);
@@ -110,7 +125,6 @@ export default function FormularioConsulta() {
             error={errores.correoContacto}
             maxLength={150}
             autoComplete="email"
-            pista="Para poder responderle."
           />
         </div>
 

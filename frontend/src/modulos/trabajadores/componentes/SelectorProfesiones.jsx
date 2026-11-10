@@ -1,5 +1,5 @@
 import { Search, X, ChevronDown, ChevronUp } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { listarProfesiones, PROFESIONES, serializarProfesiones } from '../catalogoProfesiones.js';
 import estilos from './SelectorEspecialidades.module.css';
@@ -19,6 +19,22 @@ export default function SelectorProfesiones({ value = '', onChange, error, oblig
   const seleccionadas = listarProfesiones(value);
   const [abierto, setAbierto] = useState(false);
   const [busqueda, setBusqueda] = useState('');
+  const contenedorRef = useRef(null);
+
+  useEffect(() => {
+    function manejarClicFuera(evento) {
+      if (contenedorRef.current && !contenedorRef.current.contains(evento.target)) {
+        setAbierto(false);
+      }
+    }
+
+    if (abierto) {
+      document.addEventListener('mousedown', manejarClicFuera);
+    }
+    return () => {
+      document.removeEventListener('mousedown', manejarClicFuera);
+    };
+  }, [abierto]);
   const [personalizado, setPersonalizado] = useState(
     () => obtenerValorPersonalizado(seleccionadas.find((item) => item.startsWith(OTRO)) ?? ''),
   );
@@ -85,7 +101,7 @@ export default function SelectorProfesiones({ value = '', onChange, error, oblig
     : personalizado;
 
   return (
-    <div className={`${estilos.selector} ${error ? estilos.conError : ''}`}>
+    <div ref={contenedorRef} className={`${estilos.selector} ${error ? estilos.conError : ''}`}>
       <label className={estilos.etiqueta} htmlFor="profesiones-trabajador">
         Profesión
         {obligatorio && (

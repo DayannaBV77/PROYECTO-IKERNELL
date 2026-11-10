@@ -1,40 +1,48 @@
 .selector {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: var(--s-2);
+  gap: 6px;
+  width: 100%;
 }
 
 .etiquta,
 .etiqueta {
   font-size: var(--t-xs);
-  letter-spacing: var(--e-nav);
+  letter-spacing: 0.02em;
   text-transform: uppercase;
   font-weight: var(--p-semi);
-  color: var(--c-texto-tenue);
+  color: var(--c-marino-titulo);
 }
 
 .obligatorio {
   color: var(--c-error);
-  margin-left: var(--s-1);
+  margin-inline-start: var(--s-1);
 }
 
 .campo {
   display: flex;
   align-items: center;
-  gap: var(--s-3);
+  justify-content: space-between;
+  gap: var(--s-2);
   width: 100%;
-  min-height: 48px;
-  padding: var(--s-3) var(--s-4);
-  border: 1px solid var(--c-borde);
+  min-height: 42px;
+  box-sizing: border-box;
+  padding: 10px 14px;
+  border: 1px solid var(--c-borde-campo);
   border-radius: var(--r-md);
   background: var(--c-superficie);
   color: var(--c-texto);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  font-size: var(--t-sm);
+  transition:
+    border-color var(--tr-rapida),
+    box-shadow var(--tr-rapida),
+    background-color var(--tr-rapida);
   cursor: pointer;
 }
 
 .campo:hover {
-  border-color: var(--c-turquesa-fuerte);
+  border-color: var(--c-turquesa);
 }
 
 .campo:focus,
@@ -55,14 +63,17 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--s-2);
+  gap: var(--s-1);
   flex: 1;
   min-width: 0;
 }
 
 .placeholder {
-  color: var(--c-texto-tenue);
+  color: var(--c-neutro);
   font-size: var(--t-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .chip {
@@ -100,16 +111,23 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--c-marino-titulo);
+  color: var(--c-info, #0284c7);
+  flex-shrink: 0;
 }
 
 .panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
   margin-top: var(--s-2);
   border: 1px solid var(--c-borde);
   border-radius: var(--r-md);
   background: var(--c-superficie);
-  box-shadow: var(--b-sutil);
+  box-shadow: var(--b-elevada, 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1));
   overflow: hidden;
+  z-index: 50;
+  min-width: 280px;
 }
 
 .buscador {
