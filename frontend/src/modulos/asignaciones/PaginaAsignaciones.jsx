@@ -1,590 +1,493 @@
-import { useCallback, useEffect, useState } from 'react';
-import { CircleCheck, Link2, Search, TriangleAlert } from 'lucide-react';
+import { useCallback, useState } from 'react';
+import {
+  ArrowRight,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  FolderKanban,
+  Info,
+  Plus,
+  RotateCcw,
+  Search,
+  Users,
+} from 'lucide-react';
 
 import {
-  ETIQUETA_ROL,
-  ROLES_EN_PROYECTO,
-  asignacionesDeProyecto,
-  asignacionesDeTrabajador,
-  asignarTrabajador,
-  obtenerProyectosAsignables,
+  buscarProyectosParaAsignaciones,
+  obtenerEquipoCompleto,
+  obtenerProyectoParaAsignaciones,
 } from '../../api/asignaciones.js';
-import { buscarTrabajadores } from '../../api/trabajadores.js';
+import { buscarActividades } from '../../api/actividades.js';
+import {
+  ESTADOS_HABILITACION,
+  etiquetaEstadoOperativo,
+  obtenerEtapas,
+} from '../../api/proyectos.js';
 import EstadoCarga from '../../componentes/estados/EstadoCarga.jsx';
 import EstadoError from '../../componentes/estados/EstadoError.jsx';
 import EstadoVacio from '../../componentes/estados/EstadoVacio.jsx';
 import Boton from '../../componentes/ui/Boton.jsx';
 import Campo from '../../componentes/ui/Campo.jsx';
-import Confirmacion from '../../componentes/ui/Confirmacion.jsx';
+import EtiquetaEstado from '../../componentes/ui/EtiquetaEstado.jsx';
 import Seccion from '../../componentes/ui/Seccion.jsx';
-import { useNotificador } from '../../componentes/ui/Notificador.jsx';
-import estilos from '../../estilos/gestion.module.css';
-import { listarEspecialidades } from '../trabajadores/catalogoEspecialidades.js';
-import SelectorEspecialidades from '../trabajadores/componentes/SelectorEspecialidades.jsx';
-import { PROFESIONES } from '../trabajadores/catalogoProfesiones.js';
 import { usePeticion } from '../../hooks/usePeticion.js';
 import { formatearFecha } from '../../utilidades/formato.js';
+import ModalAsignarTrabajadores from './ModalAsignarTrabajadores.jsx';
+import estilos from './PaginaAsignaciones.module.css';
 
-const VACIO = { trabajadorId: '', proyectoId: '', rolEnProyecto: '' };
-const RETRASO_FILTRO_MS = 300;
-const FILTROS_TRABAJADOR_VACIOS = {
-  identificacion: '',
-  especialidadDesarrollo: '',
-  profesion: '',
-  nombre: '',
-  apellido: '',
-};
+const FILTROS_VACIOS = { q: '', estado: '', orden: 'recientes' };
+const TAMANO_PAGINA = 6;
 
-const OPCIONES_PROFESIONES = [
-  { valor: '', texto: 'Todas las profesiones' },
-  ...PROFESIONES.map((profesion) => ({ valor: profesion, texto: profesion })),
+const PESTANAS = [
+  { id: 'general', etiqueta: 'General' },
+  { id: 'equipo', etiqueta: 'Equipo de trabajo' },
+  { id: 'etapas', etiqueta: 'Etapas' },
+  { id: 'actividades', etiqueta: 'Actividades' },
 ];
 
-function FiltroEspecialidad({ value, onChange }) {
-  return <SelectorEspecialidades etiqueta="Especialidad" placeholder="Seleccionar" value={value} onChange={onChange} />;
-}
-
-function normalizarTexto(valor = '') {
-  return String(valor ?? '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .trim();
-}
-
-function filtrarTrabajadores(trabajadores, filtros = FILTROS_TRABAJADOR_VACIOS) {
-  const criterios = Object.entries(filtros).filter(([, valor]) => String(valor ?? '').trim() !== '');
-
-  if (criterios.length === 0) {
-    return trabajadores;
-  }
-
-  return trabajadores.filter((trabajador) => {
-    return criterios.every(([campo, valor]) => {
-      const texto = {
-        identificacion: trabajador.identificacion ?? '',
-        especialidadDesarrollo: trabajador.especialidadDesarrollo ?? '',
-        profesion: trabajador.profesion ?? '',
-        nombre: trabajador.nombre ?? '',
-        apellido: trabajador.apellido ?? '',
-      }[campo];
-
-      if (campo === 'especialidadDesarrollo') {
-        const especialidades = listarEspecialidades(valor);
-        if (especialidades.length === 0) {
-          return true;
-        }
-
-        return especialidades.some((especialidad) =>
-          normalizarTexto(texto).includes(normalizarTexto(especialidad)),
-        );
-      }
-
-      return normalizarTexto(texto).includes(normalizarTexto(valor));
-    });
-  });
-}
-
-function hayFiltrosActivos(filtros = FILTROS_TRABAJADOR_VACIOS) {
-  return Object.values(filtros).some((valor) => String(valor ?? '').trim() !== '');
-}
-
-/**
- * Asignacion de trabajadores a proyectos (RF-003, HU-06).
- *
- * Es la asignacion del coordinador, distinta de la de HU-10: alli el lider
- * arma el equipo de SU proyecto con desarrolladores, y aqui se deja registrado
- * en que proyecto participa cada persona y con que rol.
- *
- * Las dos listas vienen filtradas por el servidor: trabajadores habilitados y
- * proyectos habilitados. Asignar a uno inhabilitado lo rechaza la operacion
- * (C02 y C03), de modo que ofrecerlo seria ofrecer un fracaso; aun asi, si el
- * estado cambiara entre que se carga la lista y se guarda, el mensaje del
- * servidor es el que se muestra.
- */
 export default function PaginaAsignaciones() {
-  const notificador = useNotificador();
-  const [valores, setValores] = useState(VACIO);
-  const [errores, setErrores] = useState({});
-  const [fallo, setFallo] = useState(null);
-  const [confirmado, setConfirmado] = useState(null);
-  const [guardando, setGuardando] = useState(false);
-  const [advertencias, setAdvertencias] = useState(null);
+  const [borrador, setBorrador] = useState(FILTROS_VACIOS);
+  const [filtros, setFiltros] = useState(FILTROS_VACIOS);
+  const [pagina, setPagina] = useState(0);
+  const [proyectoIdSeleccionado, setProyectoIdSeleccionado] = useState('');
+  const [pestana, setPestana] = useState('general');
+  const [modalAbierto, setModalAbierto] = useState(false);
   const [recarga, setRecarga] = useState(0);
-  const [filtrosTrabajador, setFiltrosTrabajador] = useState(FILTROS_TRABAJADOR_VACIOS);
-  const [filtrosAplicados, setFiltrosAplicados] = useState(FILTROS_TRABAJADOR_VACIOS);
 
-  const cargarTrabajadores = useCallback(
-    ({ senal }) => buscarTrabajadores({ estado: 'HABILITADO', tamano: 100 }, { senal }),
-    [],
-  );
-  const trabajadores = usePeticion(cargarTrabajadores, []);
-
-  const cargarProyectos = useCallback(({ senal }) => obtenerProyectosAsignables({ senal }), []);
-  const proyectos = usePeticion(cargarProyectos, []);
-
-  const trabajadoresFiltrados = filtrarTrabajadores(trabajadores.datos?.contenido || [], filtrosAplicados);
-  const opcionesDeTrabajador = trabajadoresFiltrados.map((trabajador) => ({
-    valor: String(trabajador.id),
-    texto: `${trabajador.nombreCompleto} (${trabajador.identificacion})`,
-  }));
-  const opcionesDeProyecto = (proyectos.datos?.contenido || []).map((proyecto) => ({
-    valor: String(proyecto.id),
-    texto: proyecto.nombre,
-  }));
-
-  useEffect(() => {
-    const idRetardo = window.setTimeout(() => {
-      setFiltrosAplicados({ ...filtrosTrabajador });
-
-      if (valores.trabajadorId && !filtrarTrabajadores(trabajadores.datos?.contenido || [], filtrosTrabajador).some((trabajador) => String(trabajador.id) === String(valores.trabajadorId))) {
-        setValores((previos) => ({ ...previos, trabajadorId: '' }));
-      }
-
-      if (valores.proyectoId && !opcionesDeProyecto.some((proyecto) => proyecto.valor === String(valores.proyectoId))) {
-        setValores((previos) => ({ ...previos, proyectoId: '' }));
-      }
-    }, RETRASO_FILTRO_MS);
-
-    return () => window.clearTimeout(idRetardo);
-  }, [filtrosTrabajador, valores.trabajadorId, valores.proyectoId, opcionesDeProyecto, trabajadores.datos?.contenido]);
-
-  function alCambiar(evento) {
-    const { name, value } = evento.target;
-    setValores((previos) => ({ ...previos, [name]: value }));
-    setErrores((previos) => (previos[name] ? { ...previos, [name]: undefined } : previos));
-  }
-
-  function alCambiarFiltroTrabajador(evento) {
-    const { name, value } = evento.target;
-    setFiltrosTrabajador((previos) => ({ ...previos, [name]: value }));
-  }
-
-  function aplicarFiltrosTrabajadores() {
-    setFiltrosAplicados({ ...filtrosTrabajador });
-    if (valores.trabajadorId && !filtrarTrabajadores(trabajadores.datos?.contenido || [], { ...filtrosTrabajador }).some((trabajador) => String(trabajador.id) === String(valores.trabajadorId))) {
-      setValores((previos) => ({ ...previos, trabajadorId: '' }));
-    }
-  }
-
-  function limpiarFiltrosTrabajadores() {
-    setFiltrosTrabajador(FILTROS_TRABAJADOR_VACIOS);
-    setFiltrosAplicados(FILTROS_TRABAJADOR_VACIOS);
-    setValores((previos) => ({ ...previos, trabajadorId: '', proyectoId: '' }));
-  }
-
-  async function guardar(confirmacion) {
-    setGuardando(true);
-    setFallo(null);
-    setConfirmado(null);
-    setErrores({});
-
-    try {
-      const asignacion = await asignarTrabajador(
-        {
-          trabajadorId: valores.trabajadorId ? Number(valores.trabajadorId) : null,
-          proyectoId: valores.proyectoId ? Number(valores.proyectoId) : null,
-          rolEnProyecto: valores.rolEnProyecto || null,
-        },
-        confirmacion,
-      );
-      setAdvertencias(null);
-      const msjExito = `${asignacion.trabajadorNombreCompleto} quedó asignado a "${asignacion.proyectoNombre}" como ${
-        ETIQUETA_ROL[asignacion.rolEnProyecto] || asignacion.rolEnProyecto
-      }.`;
-      setConfirmado(msjExito);
-      notificador.exito(msjExito, 'Asignación confirmada');
-      // C05: las consultas de abajo deben reflejar la asignacion recien hecha.
-      setRecarga((numero) => numero + 1);
-    } catch (error) {
-      // C04: el servidor avisa de la asignacion equivalente activa y no registra
-      // nada hasta que se confirme.
-      if (error.requiereConfirmacion) {
-        setAdvertencias(error.advertencias);
-        notificador.advertencia('Se detectaron asignaciones previas que requieren confirmación.', 'Confirmación requerida');
-        return;
-      }
-      if (error.campos) {
-        setErrores(error.campos);
-      }
-      setFallo(error.message);
-      notificador.error(error.message || 'No se pudo realizar la asignación.', 'Error');
-    } finally {
-      setGuardando(false);
-    }
-  }
-
-  const cargandoListas = trabajadores.cargando || proyectos.cargando;
-  const errorListas = trabajadores.error || proyectos.error;
-
-  return (
-    <>
-      <Seccion
-        titulo="Asignar un trabajador a un proyecto"
-        descripcion="Deja registrado en que proyecto participa cada persona y con que rol."
-        id="asignaciones"
-      >
-        <div className={estilos.filtrosBarra}>
-          <div className={estilos.filtrosCabecera}>
-            <span className={estilos.rotulo}>Filtrar trabajadores</span>
-          </div>
-          <div className={estilos.filtrosGrid}>
-            <Campo
-              etiqueta="Identificacion"
-              nombre="identificacion"
-              value={filtrosTrabajador.identificacion}
-              onInput={alCambiarFiltroTrabajador}
-            />
-            <FiltroEspecialidad
-              value={filtrosTrabajador.especialidadDesarrollo}
-              onChange={(valor) => setFiltrosTrabajador((previos) => ({ ...previos, especialidadDesarrollo: valor }))}
-            />
-            <Campo
-              etiqueta="Profesion"
-              nombre="profesion"
-              opciones={OPCIONES_PROFESIONES}
-              value={filtrosTrabajador.profesion}
-              onInput={alCambiarFiltroTrabajador}
-            />
-            <Campo
-              etiqueta="Nombre"
-              nombre="nombre"
-              value={filtrosTrabajador.nombre}
-              onInput={alCambiarFiltroTrabajador}
-            />
-            <Campo
-              etiqueta="Apellido"
-              nombre="apellido"
-              value={filtrosTrabajador.apellido}
-              onInput={alCambiarFiltroTrabajador}
-            />
-          </div>
-          <div className={estilos.filtrosAcciones}>
-            <Boton type="button" icono={Search} onClick={aplicarFiltrosTrabajadores}>
-              Buscar
-            </Boton>
-            <Boton type="button" variante="texto" onClick={limpiarFiltrosTrabajadores}>
-              Limpiar filtros
-            </Boton>
-          </div>
-        </div>
-
-        {filtrosAplicados && hayFiltrosActivos(filtrosAplicados) && trabajadoresFiltrados.length === 0 && (
-          <div style={{ marginBottom: 'var(--s-5)' }}>
-            <EstadoVacio mensaje="No hay trabajadores que coincidan con los filtros indicados." icono={Search} />
-          </div>
-        )}
-
-        {confirmado && (
-          <p className={estilos.avisoExito} role="status">
-            <CircleCheck size={18} aria-hidden="true" />
-            {confirmado}
-          </p>
-        )}
-
-        {fallo && (
-          <p className={estilos.avisoError} role="alert">
-            <TriangleAlert size={18} aria-hidden="true" />
-            {fallo}
-          </p>
-        )}
-
-        {cargandoListas && <EstadoCarga mensaje="Cargando trabajadores y proyectos..." />}
-
-        {!cargandoListas && errorListas && (
-          <EstadoError
-            error={errorListas}
-            alReintentar={trabajadores.error ? trabajadores.reintentar : proyectos.reintentar}
-          />
-        )}
-
-        {!cargandoListas && !errorListas && opcionesDeProyecto.length === 0 && (
-          <EstadoVacio mensaje={proyectos.datos?.mensaje} icono={Link2} />
-        )}
-
-        {!cargandoListas && !errorListas && opcionesDeProyecto.length > 0 && (
-          <form
-            className={estilos.formulario}
-            onSubmit={(evento) => {
-              evento.preventDefault();
-              guardar(false);
-            }}
-            noValidate
-          >
-            <div className={estilos.criterios}>
-              <Campo
-                etiqueta="Trabajador"
-                nombre="trabajadorId"
-                opciones={opcionesDeTrabajador}
-                obligatorio
-                value={valores.trabajadorId}
-                onChange={alCambiar}
-                error={errores.trabajadorId}
-                pista="Solo trabajadores habilitados."
-              />
-              <Campo
-                etiqueta="Proyecto"
-                nombre="proyectoId"
-                opciones={opcionesDeProyecto}
-                obligatorio
-                value={valores.proyectoId}
-                onChange={alCambiar}
-                error={errores.proyectoId}
-                pista="Solo proyectos habilitados."
-              />
-              <Campo
-                etiqueta="Rol en el proyecto"
-                nombre="rolEnProyecto"
-                opciones={ROLES_EN_PROYECTO}
-                obligatorio
-                value={valores.rolEnProyecto}
-                onChange={alCambiar}
-                error={errores.rolEnProyecto}
-              />
-            </div>
-
-            <div className={estilos.accionesBuscador}>
-              <Boton type="submit" icono={Link2} disabled={guardando}>
-                {guardando ? 'Registrando...' : 'Registrar asignacion'}
-              </Boton>
-            </div>
-          </form>
-        )}
-
-        <Confirmacion
-          abierto={advertencias !== null}
-          titulo="Confirmar la asignacion"
-          textoConfirmar="Asignar de todos modos"
-          varianteConfirmar="primario"
-          ocupado={guardando}
-          alConfirmar={() => guardar(true)}
-          alCancelar={() => setAdvertencias(null)}
-        >
-          <p>El servidor advierte lo siguiente:</p>
-          <ul className={estilos.advertencias}>
-            {(advertencias || []).map((advertencia) => (
-              <li key={advertencia}>{advertencia}</li>
-            ))}
-          </ul>
-        </Confirmacion>
-      </Seccion>
-
-      {/* C05: consultar las asignaciones de un trabajador o de un proyecto. */}
-      <ConsultaDeAsignaciones
-        trabajadoresHabilitados={trabajadores.datos?.contenido || []}
-        opcionesDeProyecto={opcionesDeProyecto}
-        recarga={recarga}
-      />
-    </>
-  );
-}
-
-/**
- * Consulta de asignaciones registradas (HU-06 C05).
- *
- * Dos vistas del mismo dato -por trabajador o por proyecto- porque el criterio
- * nombra las dos: "consulto las asignaciones de ese trabajador o de ese
- * proyecto".
- */
-function ConsultaDeAsignaciones({ trabajadoresHabilitados, opcionesDeProyecto, recarga }) {
-  const [por, setPor] = useState('trabajador');
-  const [id, setId] = useState('');
-  const [consulta, setConsulta] = useState(null);
-  const [filtrosTrabajador, setFiltrosTrabajador] = useState(FILTROS_TRABAJADOR_VACIOS);
-  const [filtrosAplicados, setFiltrosAplicados] = useState(FILTROS_TRABAJADOR_VACIOS);
-
-  const cargar = useCallback(
+  const cargarProyectos = useCallback(
     ({ senal }) =>
-      consulta
-        ? consulta.por === 'trabajador'
-          ? asignacionesDeTrabajador(consulta.id, { senal })
-          : asignacionesDeProyecto(consulta.id, { senal })
-        : Promise.resolve(null),
-    [consulta],
+      buscarProyectosParaAsignaciones(
+        { ...filtros, pagina, tamano: TAMANO_PAGINA },
+        { senal },
+      ),
+    [filtros, pagina],
   );
-  const { datos, error, cargando, reintentar } = usePeticion(cargar, [consulta, recarga]);
+  const proyectos = usePeticion(cargarProyectos, [filtros, pagina, recarga]);
+  const resultados = proyectos.datos?.contenido || [];
+  const proyectoSeleccionado =
+    resultados.find((proyecto) => String(proyecto.id) === proyectoIdSeleccionado) ||
+    resultados[0] ||
+    null;
+  const idActivo = proyectoSeleccionado ? String(proyectoSeleccionado.id) : '';
 
-  const opcionesDeTrabajador = filtrarTrabajadores(trabajadoresHabilitados, filtrosAplicados).map(
-    (trabajador) => ({
-      valor: String(trabajador.id),
-      texto: `${trabajador.nombreCompleto} (${trabajador.identificacion})`,
-    }),
+  const cargarDetalle = useCallback(
+    ({ senal }) =>
+      idActivo ? obtenerProyectoParaAsignaciones(idActivo, { senal }) : Promise.resolve(null),
+    [idActivo],
   );
-  const opciones = por === 'trabajador' ? opcionesDeTrabajador : opcionesDeProyecto;
+  const detalle = usePeticion(cargarDetalle, [idActivo, recarga]);
 
-  useEffect(() => {
-    const idRetardo = window.setTimeout(() => {
-      setFiltrosAplicados({ ...filtrosTrabajador });
-      if (id && !opciones.some((opcion) => opcion.valor === String(id))) {
-        setId('');
-        setConsulta(null);
-      }
-    }, RETRASO_FILTRO_MS);
-
-    return () => window.clearTimeout(idRetardo);
-  }, [filtrosTrabajador, id, opciones]);
-
-  function alCambiarFiltroTrabajador(evento) {
+  function alCambiarFiltro(evento) {
     const { name, value } = evento.target;
-    setFiltrosTrabajador((previos) => ({ ...previos, [name]: value }));
+    setBorrador((actual) => ({ ...actual, [name]: value }));
   }
 
-  function aplicarFiltrosTrabajador() {
-    setFiltrosAplicados({ ...filtrosTrabajador });
-    if (id && !opciones.some((opcion) => opcion.valor === String(id))) {
-      setId('');
-      setConsulta(null);
-    }
+  function buscar(evento) {
+    evento.preventDefault();
+    setFiltros({ ...borrador });
+    setPagina(0);
+    setProyectoIdSeleccionado('');
   }
 
-  function limpiarFiltrosTrabajador() {
-    setFiltrosTrabajador(FILTROS_TRABAJADOR_VACIOS);
-    setFiltrosAplicados(FILTROS_TRABAJADOR_VACIOS);
-    setId('');
-    setConsulta(null);
+  function limpiarFiltros() {
+    setBorrador(FILTROS_VACIOS);
+    setFiltros(FILTROS_VACIOS);
+    setPagina(0);
+    setProyectoIdSeleccionado('');
+  }
+
+  function seleccionarProyecto(proyecto) {
+    setProyectoIdSeleccionado(String(proyecto.id));
+    setPestana('general');
+  }
+
+  function asignacionGuardada() {
+    setModalAbierto(false);
+    setRecarga((actual) => actual + 1);
   }
 
   return (
     <Seccion
-      titulo="Asignaciones registradas"
-      descripcion="Consulte en que proyectos participa un trabajador, o quienes participan en un proyecto."
-      fondo="tenue"
-      id="consulta-asignaciones"
+      titulo="Gestión de proyectos"
+      descripcion="Consulta la información de los proyectos y gestiona sus equipos de trabajo."
+      id="asignaciones"
     >
-      <form
-        className={estilos.buscador}
-        onSubmit={(evento) => {
-          evento.preventDefault();
-          if (id) {
-            setConsulta({ por, id });
-          }
-        }}
-      >
-        <div className={estilos.filtrosBarra}>
-          <div className={estilos.filtrosCabecera}>
-            <span className={estilos.rotulo}>Filtrar trabajadores</span>
-          </div>
-          {por === 'trabajador' && (
-            <div className={estilos.filtrosGrid}>
-              <Campo
-                etiqueta="Identificacion"
-                nombre="identificacion"
-                value={filtrosTrabajador.identificacion}
-                onInput={alCambiarFiltroTrabajador}
-              />
-              <FiltroEspecialidad
-                value={filtrosTrabajador.especialidadDesarrollo}
-                onChange={(valor) => setFiltrosTrabajador((previos) => ({ ...previos, especialidadDesarrollo: valor }))}
-              />
-              <Campo
-                etiqueta="Profesion"
-                nombre="profesion"
-                opciones={OPCIONES_PROFESIONES}
-                value={filtrosTrabajador.profesion}
-                onInput={alCambiarFiltroTrabajador}
-              />
-              <Campo
-                etiqueta="Nombre"
-                nombre="nombre"
-                value={filtrosTrabajador.nombre}
-                onInput={alCambiarFiltroTrabajador}
-              />
-              <Campo
-                etiqueta="Apellido"
-                nombre="apellido"
-                value={filtrosTrabajador.apellido}
-                onInput={alCambiarFiltroTrabajador}
-              />
+      <div className={estilos.pagina}>
+        <form className={estilos.busquedaProyectos} onSubmit={buscar}>
+          <div className={estilos.tituloBuscador}>
+            <span className={estilos.iconoBuscador}><Search size={22} aria-hidden="true" /></span>
+            <div>
+              <h2>Buscar proyectos</h2>
+              <p>Encuentra un proyecto por nombre, identificador o estado.</p>
             </div>
-          )}
-          <div className={estilos.filtrosAcciones}>
-            <Boton type="button" icono={Search} onClick={aplicarFiltrosTrabajador}>
+          </div>
+          <div className={estilos.filtrosProyecto}>
+            <label className={estilos.busquedaTexto} htmlFor="buscar-proyectos-asignaciones">
+              <Search size={17} aria-hidden="true" />
+              <input
+                id="buscar-proyectos-asignaciones"
+                name="q"
+                type="search"
+                value={borrador.q}
+                onChange={alCambiarFiltro}
+                placeholder="Buscar por nombre o identificador..."
+              />
+            </label>
+            <Campo
+              etiqueta="Estado"
+              nombre="estado"
+              opciones={ESTADOS_HABILITACION}
+              textoVacio="Todos los estados"
+              value={borrador.estado}
+              onChange={alCambiarFiltro}
+            />
+            <Campo
+              etiqueta="Ordenar por"
+              nombre="orden"
+              opciones={[
+                { valor: 'recientes', texto: 'Más recientes' },
+                { valor: 'nombre', texto: 'Nombre' },
+              ]}
+              textoVacio={null}
+              value={borrador.orden}
+              onChange={alCambiarFiltro}
+            />
+            <Boton type="submit" icono={Search} disabled={proyectos.cargando}>
               Buscar
             </Boton>
-            <Boton type="button" variante="texto" onClick={limpiarFiltrosTrabajador}>
+            <Boton type="button" variante="secundario" icono={RotateCcw} onClick={limpiarFiltros}>
               Limpiar filtros
             </Boton>
           </div>
-        </div>
+        </form>
 
-        {por === 'trabajador' &&
-          filtrosAplicados &&
-          hayFiltrosActivos(filtrosAplicados) &&
-          opcionesDeTrabajador.length === 0 && (
-            <div style={{ marginBottom: 'var(--s-5)' }}>
-              <EstadoVacio mensaje="No hay trabajadores que coincidan con los filtros indicados." icono={Search} />
-            </div>
+        <section className={estilos.panelResultados} aria-labelledby="proyectos-encontrados">
+          <div className={estilos.cabeceraResultados}>
+            <h2 id="proyectos-encontrados">
+              <FolderKanban size={19} aria-hidden="true" />
+              Proyectos encontrados
+            </h2>
+            {proyectos.datos && (
+              <span>
+                Mostrando {resultados.length} de {proyectos.datos.totalElementos} proyectos
+              </span>
+            )}
+          </div>
+
+          {proyectos.cargando && <EstadoCarga mensaje="Buscando proyectos..." />}
+          {!proyectos.cargando && proyectos.error && (
+            <EstadoError error={proyectos.error} alReintentar={proyectos.reintentar} />
+          )}
+          {!proyectos.cargando && !proyectos.error && resultados.length === 0 && (
+            <EstadoVacio
+              mensaje={proyectos.datos?.mensaje || 'No hay proyectos que coincidan con los filtros.'}
+              icono={FolderKanban}
+            />
           )}
 
-        <div className={estilos.criterios}>
-          <Campo
-            etiqueta="Consultar por"
-            nombre="por"
-            opciones={[
-              { valor: 'trabajador', texto: 'Trabajador' },
-              { valor: 'proyecto', texto: 'Proyecto' },
-            ]}
-            textoVacio={null}
-            value={por}
-            onChange={(evento) => {
-              setPor(evento.target.value);
-              setId('');
-              setConsulta(null);
-            }}
-          />
-          <Campo
-            etiqueta={por === 'trabajador' ? 'Trabajador' : 'Proyecto'}
-            nombre="id"
-            opciones={opciones}
-            value={id}
-            onChange={(evento) => setId(evento.target.value)}
-          />
-        </div>
+          {!proyectos.cargando && !proyectos.error && resultados.length > 0 && (
+            <>
+              <div className={estilos.tarjetas}>
+                {resultados.map((proyecto) => (
+                  <TarjetaProyecto
+                    key={proyecto.id}
+                    proyecto={proyecto}
+                    seleccionada={String(proyecto.id) === idActivo}
+                    onSelect={() => seleccionarProyecto(proyecto)}
+                  />
+                ))}
+              </div>
+              {proyectos.datos.totalPaginas > 1 && (
+                <nav className={estilos.paginacion} aria-label="Paginación de proyectos">
+                  <button
+                    type="button"
+                    disabled={pagina === 0 || proyectos.cargando}
+                    onClick={() => setPagina((actual) => actual - 1)}
+                  >
+                    <ChevronLeft size={16} aria-hidden="true" />
+                    Anterior
+                  </button>
+                  <span>Página {pagina + 1} de {proyectos.datos.totalPaginas}</span>
+                  <button
+                    type="button"
+                    disabled={pagina + 1 >= proyectos.datos.totalPaginas || proyectos.cargando}
+                    onClick={() => setPagina((actual) => actual + 1)}
+                  >
+                    Siguiente
+                    <ChevronRight size={16} aria-hidden="true" />
+                  </button>
+                </nav>
+              )}
+            </>
+          )}
+        </section>
 
-        <div className={estilos.accionesBuscador}>
-          <Boton type="submit" icono={Search} disabled={!id || cargando}>
-            Consultar
-          </Boton>
-        </div>
-      </form>
+        {proyectoSeleccionado && (
+          <section className={estilos.panelDetalle} aria-labelledby="detalle-proyecto-asignaciones">
+            <header className={estilos.cabeceraDetalle}>
+              <div className={estilos.tituloDetalle}>
+                <span className={estilos.iconoDetalle}><Info size={20} aria-hidden="true" /></span>
+                <div>
+                  <h2 id="detalle-proyecto-asignaciones">Detalle del proyecto</h2>
+                  <p>Información general y gestión del equipo.</p>
+                </div>
+              </div>
+              <Boton
+                type="button"
+                icono={Plus}
+                disabled={proyectoSeleccionado.estadoHabilitacion === 'INHABILITADO'}
+                onClick={() => setModalAbierto(true)}
+              >
+                Asignar trabajadores
+              </Boton>
+            </header>
 
-      {consulta && cargando && <EstadoCarga mensaje="Consultando asignaciones..." />}
-
-      {consulta && !cargando && error && <EstadoError error={error} alReintentar={reintentar} />}
-
-      {consulta && !cargando && !error && (datos?.length || 0) === 0 && (
-        <EstadoVacio mensaje="No hay asignaciones registradas para lo que eligio." icono={Link2} />
-      )}
-
-      {consulta && !cargando && !error && datos?.length > 0 && (
-        <div className={estilos.tablaEnvoltorio}>
-          <table className={estilos.tabla}>
-            <caption className="solo-lectores">Asignaciones registradas</caption>
-            <thead>
-              <tr>
-                <th scope="col">Trabajador</th>
-                <th scope="col">Proyecto</th>
-                <th scope="col">Rol</th>
-                <th scope="col">Desde</th>
-                <th scope="col">Estado</th>
-              </tr>
-            </thead>
-            <tbody>
-              {datos.map((asignacion) => (
-                <tr key={asignacion.id}>
-                  <th scope="row" className={estilos.celdaNombre}>
-                    {asignacion.trabajadorNombreCompleto}
-                  </th>
-                  <td>{asignacion.proyectoNombre}</td>
-                  <td>{ETIQUETA_ROL[asignacion.rolEnProyecto] || asignacion.rolEnProyecto}</td>
-                  <td>{formatearFecha(asignacion.fechaAsignacion)}</td>
-                  <td>{asignacion.activa ? 'Activa' : 'Terminada'}</td>
-                </tr>
+            <div className={estilos.pestanas} role="tablist" aria-label="Secciones del proyecto">
+              {PESTANAS.map(({ id, etiqueta }) => (
+                <button
+                  key={id}
+                  type="button"
+                  role="tab"
+                  id={`pestana-${id}`}
+                  aria-selected={pestana === id}
+                  aria-controls={`panel-${id}`}
+                  className={pestana === id ? estilos.pestanaActiva : ''}
+                  onClick={() => setPestana(id)}
+                >
+                  {etiqueta}
+                </button>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </div>
+
+            <div
+              id={`panel-${pestana}`}
+              className={estilos.contenidoPestana}
+              role="tabpanel"
+              aria-labelledby={`pestana-${pestana}`}
+              tabIndex={0}
+            >
+              {detalle.cargando && <EstadoCarga mensaje="Cargando detalle del proyecto..." />}
+              {!detalle.cargando && detalle.error && (
+                <EstadoError error={detalle.error} alReintentar={detalle.reintentar} />
+              )}
+              {!detalle.cargando && !detalle.error && detalle.datos && (
+                <ContenidoPestana
+                  pestana={pestana}
+                  proyecto={detalle.datos}
+                />
+              )}
+            </div>
+          </section>
+        )}
+      </div>
+
+      {modalAbierto && proyectoSeleccionado && (
+        <ModalAsignarTrabajadores
+          abierto={modalAbierto}
+          proyecto={proyectoSeleccionado}
+          alCerrar={() => setModalAbierto(false)}
+          alGuardar={asignacionGuardada}
+        />
       )}
     </Seccion>
   );
+}
+
+function TarjetaProyecto({ proyecto, seleccionada, onSelect }) {
+  const fechaCreacion = proyecto.fechaCreacion
+    ? formatearFecha(proyecto.fechaCreacion.slice(0, 10))
+    : 'Sin dato histórico';
+
+  return (
+    <article className={`${estilos.tarjetaProyecto} ${seleccionada ? estilos.tarjetaSeleccionada : ''}`}>
+      <div className={estilos.resumenTarjeta}>
+        <span className={estilos.marcaProyecto} aria-hidden="true">K</span>
+        <div className={estilos.nombreProyecto}>
+          <h3>{proyecto.nombre}</h3>
+          <span>{proyecto.codigo}</span>
+        </div>
+        <EtiquetaEstado estado={proyecto.estadoHabilitacion} />
+      </div>
+      <div className={estilos.datosTarjeta}>
+        <span><Users size={15} aria-hidden="true" /> {proyecto.numeroIntegrantes} integrantes</span>
+        <span><CalendarDays size={15} aria-hidden="true" /> Creado: {fechaCreacion}</span>
+      </div>
+      <button className={estilos.verDetalle} type="button" onClick={onSelect}>
+        Ver detalles <ArrowRight size={15} aria-hidden="true" />
+      </button>
+    </article>
+  );
+}
+
+function ContenidoPestana({ pestana, proyecto }) {
+  if (pestana === 'equipo') {
+    return <EquipoProyectoTab proyecto={proyecto} />;
+  }
+  if (pestana === 'etapas') {
+    return <EtapasTab proyecto={proyecto} />;
+  }
+  if (pestana === 'actividades') {
+    return <ActividadesTab proyecto={proyecto} />;
+  }
+  return <GeneralTab proyecto={proyecto} />;
+}
+
+function GeneralTab({ proyecto }) {
+  return (
+    <div className={estilos.general}>
+      <div className={estilos.resumenGeneral}>
+        <span className={estilos.marcaGrande} aria-hidden="true">K</span>
+        <div className={estilos.detalleGeneral}>
+          <div className={estilos.nombreConEstado}>
+            <div>
+              <h3>{proyecto.nombre}</h3>
+              <span className={estilos.codigo}>{proyecto.codigo}</span>
+            </div>
+            <EtiquetaEstado estado={proyecto.estadoHabilitacion} />
+          </div>
+          <p>{proyecto.descripcion || 'Este proyecto no tiene descripción registrada.'}</p>
+          <div className={estilos.metadatosGeneral}>
+            <span><CalendarDays size={16} aria-hidden="true" /> Creado: {proyecto.fechaCreacion ? formatearFecha(proyecto.fechaCreacion.slice(0, 10)) : 'Sin dato histórico'}</span>
+            <span><Users size={16} aria-hidden="true" /> Líder: {proyecto.liderResponsableNombre || 'Sin líder registrado'}</span>
+            <span>{etiquetaEstadoOperativo(proyecto.estadoOperativo)}</span>
+          </div>
+        </div>
+      </div>
+      <EquipoVistaPrevia proyectoId={proyecto.id} />
+    </div>
+  );
+}
+
+function EquipoProyectoTab({ proyecto }) {
+  return (
+    <div className={estilos.contenidoListado}>
+      <div className={estilos.encabezadoListado}>
+        <div>
+          <h3>Equipo de trabajo actual</h3>
+          <p>{proyecto.numeroIntegrantes} integrantes en el proyecto.</p>
+        </div>
+        {proyecto.estadoHabilitacion === 'INHABILITADO' && (
+          <p className={estilos.avisoInhabilitado}>No se pueden registrar nuevas asignaciones en un proyecto inhabilitado.</p>
+        )}
+      </div>
+      <EquipoLista proyectoId={proyecto.id} />
+    </div>
+  );
+}
+
+function EquipoVistaPrevia({ proyectoId }) {
+  const equipo = useEquipo(proyectoId);
+  if (equipo.cargando) {
+    return <div className={estilos.panelEquipo}><EstadoCarga mensaje="Cargando equipo..." /></div>;
+  }
+  if (equipo.error) {
+    return <div className={estilos.panelEquipo}><EstadoError error={equipo.error} alReintentar={equipo.reintentar} /></div>;
+  }
+  const integrantes = equipo.datos || [];
+  return (
+    <aside className={estilos.panelEquipo} aria-label="Equipo de trabajo actual">
+      <div className={estilos.encabezadoEquipo}>
+        <h3><Users size={17} aria-hidden="true" /> Equipo de trabajo actual</h3>
+        <span>{integrantes.length} asignaciones</span>
+      </div>
+      {integrantes.length === 0 ? (
+        <p className={estilos.sinEquipo}>Aún no hay trabajadores asignados.</p>
+      ) : (
+        <ul className={estilos.listaEquipoCompacta}>
+          {integrantes.slice(0, 3).map((asignacion) => (
+            <li key={asignacion.id}>
+              <span className={estilos.avatarInicial}>{asignacion.trabajadorNombreCompleto?.[0] || '?'}</span>
+              <strong>{asignacion.trabajadorNombreCompleto}</strong>
+              <span className={estilos.badgeRol}>{nombreRol(asignacion.rolEnProyecto)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </aside>
+  );
+}
+
+function EquipoLista({ proyectoId }) {
+  const equipo = useEquipo(proyectoId);
+  if (equipo.cargando) return <EstadoCarga mensaje="Cargando el equipo..." />;
+  if (equipo.error) return <EstadoError error={equipo.error} alReintentar={equipo.reintentar} />;
+  if (!equipo.datos?.length) {
+    return <EstadoVacio mensaje="Todavía no hay asignaciones activas para este proyecto." icono={Users} />;
+  }
+
+  return (
+    <ul className={estilos.listaEquipo}>
+      {equipo.datos.map((asignacion) => (
+        <li key={asignacion.id}>
+          <span className={estilos.avatarInicial}>{asignacion.trabajadorNombreCompleto?.[0] || '?'}</span>
+          <div className={estilos.datosIntegrante}>
+            <strong>{asignacion.trabajadorNombreCompleto}</strong>
+            <span>{asignacion.trabajadorIdentificacion}</span>
+          </div>
+          <span className={estilos.badgeRol}>{nombreRol(asignacion.rolEnProyecto)}</span>
+          {asignacion.dedicacionPorcentaje && (
+            <span className={estilos.dedicacion}>{asignacion.dedicacionPorcentaje}%</span>
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function EtapasTab({ proyecto }) {
+  const cargar = useCallback(({ senal }) => obtenerEtapas(proyecto.id, { senal }), [proyecto.id]);
+  const etapas = usePeticion(cargar, [proyecto.id]);
+  if (etapas.cargando) return <EstadoCarga mensaje="Cargando etapas..." />;
+  if (etapas.error) return <EstadoError error={etapas.error} alReintentar={etapas.reintentar} />;
+  if (!etapas.datos?.length) return <EstadoVacio mensaje="Este proyecto aún no tiene etapas registradas." />;
+  return (
+    <ol className={estilos.listaEtapas}>
+      {etapas.datos.map((etapa) => (
+        <li key={etapa.id}>
+          <span className={estilos.numeroEtapa}>{etapa.orden || '•'}</span>
+          <div><h3>{etapa.nombre}</h3><p>{etapa.descripcion || 'Sin descripción.'}</p></div>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function ActividadesTab({ proyecto }) {
+  const cargar = useCallback(
+    ({ senal }) => buscarActividades({ proyectoId: proyecto.id, pagina: 0, tamano: 100 }, { senal }),
+    [proyecto.id],
+  );
+  const actividades = usePeticion(cargar, [proyecto.id]);
+  if (actividades.cargando) return <EstadoCarga mensaje="Cargando actividades..." />;
+  if (actividades.error) return <EstadoError error={actividades.error} alReintentar={actividades.reintentar} />;
+  const lista = actividades.datos?.contenido || [];
+  if (!lista.length) return <EstadoVacio mensaje={actividades.datos?.mensaje || 'Este proyecto aún no tiene actividades.'} />;
+  return (
+    <div className={estilos.listaActividades}>
+      {lista.map((actividad) => (
+        <article key={actividad.id}>
+          <div>
+            <h3>{actividad.descripcion}</h3>
+            <p>{actividad.etapaNombre} · {actividad.desarrolladorNombreCompleto}</p>
+          </div>
+          <span>{actividad.estado || 'Sin estado'}</span>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+function useEquipo(proyectoId) {
+  const cargar = useCallback(
+    ({ senal }) => obtenerEquipoCompleto(proyectoId, { senal }),
+    [proyectoId],
+  );
+  return usePeticion(cargar, [proyectoId]);
+}
+
+function nombreRol(rol) {
+  return {
+    LIDER: 'Líder de proyecto',
+    DESARROLLADOR: 'Desarrollador',
+  }[rol] || rol;
 }

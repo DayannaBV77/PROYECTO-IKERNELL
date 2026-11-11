@@ -1,4 +1,4 @@
-import { api } from './cliente.js';
+import { api, construirConsulta } from './cliente.js';
 
 /**
  * Asignacion de trabajadores a proyectos por el coordinador (RF-003, HU-06).
@@ -39,6 +39,29 @@ export function obtenerProyectosAsignables(opciones) {
  */
 export function asignarTrabajador(datos, confirmado = false) {
   return api.crear(`/api/asignaciones?confirmado=${confirmado}`, datos);
+}
+
+/** Busca proyectos y resúmenes para la vista de asignaciones del coordinador. */
+export function buscarProyectosParaAsignaciones(criterios, opciones) {
+  return api.obtener(`/api/asignaciones/proyectos${construirConsulta(criterios)}`, opciones);
+}
+
+/** Detalle de solo lectura del proyecto para el coordinador. */
+export function obtenerProyectoParaAsignaciones(proyectoId, opciones) {
+  return api.obtener(`/api/asignaciones/proyectos/${proyectoId}`, opciones);
+}
+
+/** Equipo activo completo, con todos los roles del proyecto. */
+export function obtenerEquipoCompleto(proyectoId, opciones) {
+  return api.obtener(`/api/asignaciones/proyectos/${proyectoId}/equipo`, opciones);
+}
+
+/** Registra en lote asignaciones con rol y dedicación individuales. */
+export function asignarEquipoCoordinador(proyectoId, asignaciones, confirmado = false) {
+  return api.crear(
+    `/api/asignaciones/proyectos/${proyectoId}/equipo?confirmado=${confirmado}`,
+    { asignaciones },
+  );
 }
 
 /**

@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "IKernell Backend (Maven)",
+      "request": "launch",
+      "mainClass": "com.PROYECTO.IKERNELL.backend.BackendApplication",
+      "projectName": "backend",
+      "cwd": "${workspaceFolder}/backend/backend/backend"
+    }
+  ]
+}

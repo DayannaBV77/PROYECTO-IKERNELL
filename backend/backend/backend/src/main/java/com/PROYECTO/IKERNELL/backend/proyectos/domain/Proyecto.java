@@ -1,6 +1,8 @@
 package com.PROYECTO.IKERNELL.backend.proyectos.domain;
 
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 
 import com.PROYECTO.IKERNELL.backend.shared.domain.EstadoHabilitacion;
 import com.PROYECTO.IKERNELL.backend.trabajadores.domain.Trabajador;
@@ -52,6 +54,9 @@ public class Proyecto {
 	@Column(name = "estado_operativo", length = 30)
 	private String estadoOperativo;
 
+	@Column(name = "fecha_creacion")
+	private OffsetDateTime fechaCreacion;
+
 	@Column(name = "fecha_inicio_real")
 	private LocalDate fechaInicioReal;
 
@@ -89,6 +94,7 @@ public class Proyecto {
 		this.nombre = nombre;
 		this.descripcion = descripcion;
 		this.liderResponsable = liderResponsable;
+		this.fechaCreacion = OffsetDateTime.now(ZoneOffset.UTC);
 		// HU-08 C04: el proyecto recien registrado queda habilitado y disponible
 		// para asignarle desarrolladores y registrar sus etapas.
 		this.estadoHabilitacion = EstadoHabilitacion.HABILITADO;
@@ -130,6 +136,10 @@ public class Proyecto {
 
 	public String getEstadoOperativo() {
 		return estadoOperativo;
+	}
+
+	public OffsetDateTime getFechaCreacion() {
+		return fechaCreacion;
 	}
 
 	public LocalDate getFechaInicioReal() {

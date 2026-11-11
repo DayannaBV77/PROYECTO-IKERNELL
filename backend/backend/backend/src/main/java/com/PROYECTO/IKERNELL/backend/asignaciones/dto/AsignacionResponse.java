@@ -1,6 +1,7 @@
 package com.PROYECTO.IKERNELL.backend.asignaciones.dto;
 
 import java.time.LocalDate;
+import java.math.BigDecimal;
 
 import com.PROYECTO.IKERNELL.backend.asignaciones.domain.Asignacion;
 import com.PROYECTO.IKERNELL.backend.asignaciones.domain.RolEnProyecto;
@@ -15,7 +16,8 @@ public record AsignacionResponse(
 		String proyectoNombre,
 		RolEnProyecto rolEnProyecto,
 		boolean activa,
-		LocalDate fechaAsignacion) {
+		LocalDate fechaAsignacion,
+		BigDecimal dedicacionPorcentaje) {
 
 	public static AsignacionResponse de(Asignacion asignacion) {
 		return new AsignacionResponse(
@@ -27,7 +29,8 @@ public record AsignacionResponse(
 				asignacion.getProyecto().getNombre(),
 				asignacion.getRolEnProyecto(),
 				asignacion.estaActiva(),
-				asignacion.getFechaAsignacion());
+				asignacion.getFechaAsignacion(),
+				asignacion.getDedicacionPorcentaje());
 	}
 
 }

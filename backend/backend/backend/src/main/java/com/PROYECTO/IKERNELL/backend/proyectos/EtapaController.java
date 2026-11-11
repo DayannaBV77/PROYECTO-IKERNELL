@@ -47,7 +47,7 @@ import jakarta.validation.Valid;
 public class EtapaController {
 
 	/** Lectura: el lider, o quien participe en el proyecto con cualquier rol. */
-	private static final String PUEDE_CONSULTAR = "hasRole('LIDER') or @servicioAsignaciones"
+	private static final String PUEDE_CONSULTAR = "hasRole('LIDER') or hasRole('COORDINADOR') or @servicioAsignaciones"
 			+ ".participaEnProyecto(authentication.principal.trabajadorId, #proyectoId)";
 
 	private final ServicioEtapas servicio;

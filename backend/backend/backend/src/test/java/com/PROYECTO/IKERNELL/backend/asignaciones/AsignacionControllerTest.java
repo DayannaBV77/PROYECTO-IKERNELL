@@ -147,6 +147,117 @@ class AsignacionControllerTest {
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(cuerpo(desarrollador.getId(), proyecto.getId(), "DESARROLLADOR")))
 				.andExpect(status().isCreated());
+
+		mockMvc.perform(get("/api/asignaciones/proyecto/" + proyecto.getId())
+				.with(authentication(coordinador)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.length()").value(1));
+	}
+
+	@Test
+	@DisplayName("La pantalla del coordinador lista y detalla proyectos con código y conteo")
+	void buscaProyectosParaAsignaciones() throws Exception {
+		mockMvc.perform(post("/api/asignaciones").with(csrf()).with(authentication(coordinador))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(cuerpo(desarrollador.getId(), proyecto.getId(), "DESARROLLADOR")))
+				.andExpect(status().isCreated());
+
+		mockMvc.perform(get("/api/asignaciones/proyectos")
+				.param("q", "PRY-" + proyecto.getId())
+				.param("estado", "HABILITADO")
+				.param("orden", "recientes")
+				.with(authentication(coordinador)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.contenido[0].codigo").value("PRY-%03d".formatted(proyecto.getId())))
+				.andExpect(jsonPath("$.contenido[0].numeroIntegrantes").value(1));
+
+		mockMvc.perform(get("/api/asignaciones/proyectos/" + proyecto.getId())
+				.with(authentication(coordinador)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.nombre").value("Proyecto asignable"));
+	}
+
+	@Test
+	@DisplayName("Asigna roles y dedicacion por trabajador en una sola peticion")
+	void asignaLoteConRolIndividualYCuentaPersonasDistintas() throws Exception {
+		String cuerpo = """
+				{"asignaciones":[
+				  {"trabajadorId":%d,"rolEnProyecto":"DESARROLLADOR","dedicacionPorcentaje":50},
+				  {"trabajadorId":%d,"rolEnProyecto":"LIDER","dedicacionPorcentaje":100}
+				]}
+				""".formatted(desarrollador.getId(), desarrollador.getId());
+
+		mockMvc.perform(post("/api/asignaciones/proyectos/" + proyecto.getId() + "/equipo")
+				.with(csrf()).with(authentication(coordinador))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(cuerpo))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.asignadas.length()").value(2));
+
+		mockMvc.perform(get("/api/asignaciones/proyectos/" + proyecto.getId())
+				.with(authentication(coordinador)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.numeroIntegrantes").value(1));
+
+		mockMvc.perform(get("/api/asignaciones/proyectos/" + proyecto.getId() + "/equipo")
+				.with(authentication(coordinador)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.length()").value(2))
+				.andExpect(jsonPath("$[0].dedicacionPorcentaje").exists());
+	}
+
+	@Test
+	@DisplayName("El lote no inserta asignaciones si un trabajador esta inhabilitado")
+	void loteEsTodoONadaSiHayUnTrabajadorInhabilitado() throws Exception {
+		Trabajador inhabilitado = nuevoTrabajador("7000000004", TipoTrabajador.DESARROLLADOR);
+		inhabilitado.inhabilitar();
+		trabajadores.saveAndFlush(inhabilitado);
+		String cuerpo = """
+				{"asignaciones":[
+				  {"trabajadorId":%d,"rolEnProyecto":"DESARROLLADOR"},
+				  {"trabajadorId":%d,"rolEnProyecto":"LIDER"}
+				]}
+				""".formatted(desarrollador.getId(), inhabilitado.getId());
+
+		mockMvc.perform(post("/api/asignaciones/proyectos/" + proyecto.getId() + "/equipo")
+				.with(csrf()).with(authentication(coordinador))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(cuerpo))
+				.andExpect(status().isConflict());
+
+		mockMvc.perform(get("/api/asignaciones/proyectos/" + proyecto.getId() + "/equipo")
+				.with(authentication(coordinador)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.length()").value(0));
+	}
+
+	@Test
+	@DisplayName("Advertir y confirmar una asignacion equivalente no crea un duplicado")
+	void confirmacionDeDuplicadoEsIdempotente() throws Exception {
+		String cuerpo = """
+				{"asignaciones":[{"trabajadorId":%d,"rolEnProyecto":"DESARROLLADOR"}]}
+				""".formatted(desarrollador.getId());
+		String ruta = "/api/asignaciones/proyectos/" + proyecto.getId() + "/equipo";
+
+		mockMvc.perform(post(ruta).with(csrf()).with(authentication(coordinador))
+				.contentType(MediaType.APPLICATION_JSON).content(cuerpo))
+				.andExpect(status().isOk());
+
+		mockMvc.perform(post(ruta).with(csrf()).with(authentication(coordinador))
+				.contentType(MediaType.APPLICATION_JSON).content(cuerpo))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.advertencias.length()").value(1));
+
+		mockMvc.perform(post(ruta).param("confirmado", "true")
+				.with(csrf()).with(authentication(coordinador))
+				.contentType(MediaType.APPLICATION_JSON).content(cuerpo))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.yaExistentes.length()").value(1))
+				.andExpect(jsonPath("$.asignadas.length()").value(0));
+
+		mockMvc.perform(get(ruta).with(authentication(coordinador)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.length()").value(1));
 	}
 
 	@Test

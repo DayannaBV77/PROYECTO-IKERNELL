@@ -61,6 +61,7 @@ public class ActividadController {
 	}
 
 	/** RF-020, HU-13 C03 y C04. */
+	@PreAuthorize("hasRole('LIDER') or hasRole('COORDINADOR')")
 	@GetMapping
 	public PaginaResponse<ActividadResponse> buscar(
 			@RequestParam(required = false) Long identificador,

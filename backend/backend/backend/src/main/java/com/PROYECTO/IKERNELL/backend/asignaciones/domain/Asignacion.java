@@ -1,6 +1,7 @@
 package com.PROYECTO.IKERNELL.backend.asignaciones.domain;
 
 import java.time.LocalDate;
+import java.math.BigDecimal;
 
 import com.PROYECTO.IKERNELL.backend.proyectos.domain.Proyecto;
 import com.PROYECTO.IKERNELL.backend.trabajadores.domain.Trabajador;
@@ -60,18 +61,27 @@ public class Asignacion {
 	@Column(name = "fecha_asignacion", nullable = false)
 	private LocalDate fechaAsignacion;
 
+	@Column(name = "dedicacion_porcentaje", precision = 5, scale = 2)
+	private BigDecimal dedicacionPorcentaje;
+
 	protected Asignacion() {
 		// requerido por JPA
 	}
 
 	public Asignacion(Trabajador trabajador, Proyecto proyecto, RolEnProyecto rolEnProyecto,
 			Trabajador asignadaPor) {
+		this(trabajador, proyecto, rolEnProyecto, asignadaPor, null);
+	}
+
+	public Asignacion(Trabajador trabajador, Proyecto proyecto, RolEnProyecto rolEnProyecto,
+			Trabajador asignadaPor, BigDecimal dedicacionPorcentaje) {
 		this.trabajador = trabajador;
 		this.proyecto = proyecto;
 		this.rolEnProyecto = rolEnProyecto;
 		this.asignadaPor = asignadaPor;
 		this.activa = true;
 		this.fechaAsignacion = LocalDate.now();
+		this.dedicacionPorcentaje = dedicacionPorcentaje;
 	}
 
 	public Long getId() {
@@ -100,6 +110,10 @@ public class Asignacion {
 
 	public LocalDate getFechaAsignacion() {
 		return fechaAsignacion;
+	}
+
+	public BigDecimal getDedicacionPorcentaje() {
+		return dedicacionPorcentaje;
 	}
 
 }

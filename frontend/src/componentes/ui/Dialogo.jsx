@@ -17,7 +17,7 @@ import estilos from './Dialogo.module.css';
  * @param {Function} [alCerrar]  se invoca con Escape, con el boton de cerrar o
  *                               al hacer clic fuera del contenido
  */
-export default function Dialogo({ abierto, titulo, descripcion, alCerrar, children }) {
+export default function Dialogo({ abierto, titulo, descripcion, alCerrar, children, className = '' }) {
   const dialogo = useRef(null);
   const idTitulo = useId();
   const idDescripcion = useId();
@@ -37,7 +37,7 @@ export default function Dialogo({ abierto, titulo, descripcion, alCerrar, childr
   return (
     <dialog
       ref={dialogo}
-      className={estilos.dialogo}
+      className={`${estilos.dialogo} ${className}`}
       aria-labelledby={idTitulo}
       aria-describedby={descripcion ? idDescripcion : undefined}
       onCancel={(evento) => {

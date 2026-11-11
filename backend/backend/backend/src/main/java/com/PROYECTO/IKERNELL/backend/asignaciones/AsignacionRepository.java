@@ -1,6 +1,7 @@
 package com.PROYECTO.IKERNELL.backend.asignaciones;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -30,6 +31,10 @@ public interface AsignacionRepository extends JpaRepository<Asignacion, Long> {
 	boolean existsByTrabajadorIdAndProyectoIdAndRolEnProyectoAndActivaTrue(
 			Long trabajadorId, Long proyectoId, RolEnProyecto rolEnProyecto);
 
+	@EntityGraph(attributePaths = { "trabajador", "proyecto" })
+	Optional<Asignacion> findFirstByTrabajadorIdAndProyectoIdAndRolEnProyectoAndActivaTrue(
+			Long trabajadorId, Long proyectoId, RolEnProyecto rolEnProyecto);
+
 	/** HU-06 C05: consultar las asignaciones de un trabajador. */
 	@EntityGraph(attributePaths = { "trabajador", "proyecto" })
 	List<Asignacion> findByTrabajadorIdOrderByFechaAsignacionDesc(Long trabajadorId);
@@ -52,6 +57,19 @@ public interface AsignacionRepository extends JpaRepository<Asignacion, Long> {
 	/** HU-10 C05: equipo activo del proyecto, filtrado por rol. */
 	@EntityGraph(attributePaths = { "trabajador", "proyecto" })
 	List<Asignacion> findByProyectoIdAndRolEnProyectoAndActivaTrue(Long proyectoId, RolEnProyecto rolEnProyecto);
+
+	/** Todas las asignaciones activas para mostrar el equipo con cada rol. */
+	@EntityGraph(attributePaths = { "trabajador", "proyecto" })
+	List<Asignacion> findByProyectoIdAndActivaTrueOrderByFechaAsignacionDesc(Long proyectoId);
+
+	/** Conteos distintos para las tarjetas; evita contar roles duplicados de una persona. */
+	@Query("""
+			select a.proyecto.id, count(distinct a.trabajador.id)
+			from Asignacion a
+			where a.proyecto.id in :proyectoIds and a.activa = true
+			group by a.proyecto.id
+			""")
+	List<Object[]> contarTrabajadoresActivosPorProyecto(@Param("proyectoIds") List<Long> proyectoIds);
 
 	/**
 	 * Nivel 2 de autorizacion: el trabajador tiene una asignacion activa con el

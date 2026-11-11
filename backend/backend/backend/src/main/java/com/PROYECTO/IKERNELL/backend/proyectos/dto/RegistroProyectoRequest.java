@@ -25,5 +25,9 @@ public record RegistroProyectoRequest(
 		 * RF-025: deja el proyecto listo para el reporte externo desde su
 		 * creacion. Omitirlo equivale a no autorizarlo, que es el valor seguro.
 		 */
-		boolean reporteExternoAutorizado) {
+		Boolean reporteExternoAutorizado) {
+
+	public RegistroProyectoRequest {
+		reporteExternoAutorizado = Boolean.TRUE.equals(reporteExternoAutorizado);
+	}
 }

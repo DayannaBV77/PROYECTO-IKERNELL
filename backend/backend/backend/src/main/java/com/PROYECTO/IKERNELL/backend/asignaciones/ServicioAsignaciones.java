@@ -1,7 +1,9 @@
 package com.PROYECTO.IKERNELL.backend.asignaciones;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -10,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.PROYECTO.IKERNELL.backend.asignaciones.domain.Asignacion;
 import com.PROYECTO.IKERNELL.backend.asignaciones.domain.RolEnProyecto;
+import com.PROYECTO.IKERNELL.backend.asignaciones.dto.AsignacionEquipoTrabajadorRequest;
 import com.PROYECTO.IKERNELL.backend.asignaciones.dto.AsignacionRequest;
 import com.PROYECTO.IKERNELL.backend.asignaciones.dto.ResultadoAsignacionEquipoResponse.DesarrolladorRechazado;
 import com.PROYECTO.IKERNELL.backend.proyectos.ServicioProyectos;
@@ -62,16 +65,15 @@ public class ServicioAsignaciones {
 	 */
 	@Transactional
 	public Asignacion asignarTrabajador(AsignacionRequest peticion, Trabajador coordinador, boolean confirmado) {
-		Proyecto proyecto = servicioProyectos.obtener(peticion.proyectoId());
+		Proyecto proyecto = servicioProyectos.obtenerParaAsignacion(peticion.proyectoId());
 		Trabajador trabajador = servicioTrabajadores.obtener(peticion.trabajadorId());
 
 		exigirProyectoHabilitado(proyecto);
 		exigirTrabajadorHabilitado(trabajador);
 
-		boolean equivalenteActiva = asignaciones
-				.existsByTrabajadorIdAndProyectoIdAndRolEnProyectoAndActivaTrue(
-						trabajador.getId(), proyecto.getId(), peticion.rolEnProyecto());
-		if (equivalenteActiva && !confirmado) {
+		var equivalenteActiva = asignaciones.findFirstByTrabajadorIdAndProyectoIdAndRolEnProyectoAndActivaTrue(
+				trabajador.getId(), proyecto.getId(), peticion.rolEnProyecto());
+		if (equivalenteActiva.isPresent() && !confirmado) {
 			throw new ConfirmacionRequeridaException(
 					"El trabajador ya tiene una asignacion equivalente activa en este proyecto.",
 					List.of("%s ya esta asignado al proyecto '%s' como %s."
@@ -79,8 +81,75 @@ public class ServicioAsignaciones {
 									peticion.rolEnProyecto())));
 		}
 
+		if (equivalenteActiva.isPresent()) {
+			return equivalenteActiva.get();
+		}
+
 		return asignaciones.save(
-				new Asignacion(trabajador, proyecto, peticion.rolEnProyecto(), coordinador));
+				new Asignacion(trabajador, proyecto, peticion.rolEnProyecto(), coordinador,
+						peticion.dedicacionPorcentaje()));
+	}
+
+	/**
+	 * Asigna el equipo del coordinador en una unica transaccion. Todas las
+	 * referencias y estados se validan antes de guardar cualquier fila.
+	 */
+	@Transactional
+	public ResultadoAsignacionesCoordinador asignarEquipoCoordinador(
+			Long proyectoId,
+			List<AsignacionEquipoTrabajadorRequest> solicitudes,
+			Trabajador coordinador,
+			boolean confirmado) {
+		Proyecto proyecto = servicioProyectos.obtenerParaAsignacion(proyectoId);
+		exigirProyectoHabilitado(proyecto);
+
+		Set<String> clavesDelLote = new HashSet<>();
+		List<Asignacion> existentes = new ArrayList<>();
+		List<AsignacionEquipoTrabajadorRequest> nuevas = new ArrayList<>();
+		List<Trabajador> trabajadoresNuevos = new ArrayList<>();
+		List<String> advertencias = new ArrayList<>();
+
+		for (AsignacionEquipoTrabajadorRequest solicitud : solicitudes) {
+			String clave = solicitud.trabajadorId() + ":" + solicitud.rolEnProyecto();
+			if (!clavesDelLote.add(clave)) {
+				throw new ReglaNegocioException(
+						"No repita al mismo trabajador con el mismo rol dentro de una solicitud.");
+			}
+
+			Trabajador trabajador = servicioTrabajadores.obtener(solicitud.trabajadorId());
+			exigirTrabajadorHabilitado(trabajador);
+			var asignacionExistente = asignaciones.findFirstByTrabajadorIdAndProyectoIdAndRolEnProyectoAndActivaTrue(
+					trabajador.getId(), proyecto.getId(), solicitud.rolEnProyecto());
+			if (asignacionExistente.isPresent()) {
+				existentes.add(asignacionExistente.get());
+				advertencias.add("%s ya tiene una asignacion activa en '%s' como %s; al confirmar no se duplicara."
+						.formatted(trabajador.nombreCompleto(), proyecto.getNombre(),
+								solicitud.rolEnProyecto()));
+			}
+			else {
+				nuevas.add(solicitud);
+				trabajadoresNuevos.add(trabajador);
+			}
+		}
+
+		if (!advertencias.isEmpty() && !confirmado) {
+			throw new ConfirmacionRequeridaException(
+					"Hay asignaciones equivalentes activas. Revise las advertencias antes de continuar.",
+					advertencias);
+		}
+
+		List<Asignacion> asignadas = new ArrayList<>();
+		for (int indice = 0; indice < nuevas.size(); indice++) {
+			AsignacionEquipoTrabajadorRequest solicitud = nuevas.get(indice);
+			asignadas.add(new Asignacion(
+					trabajadoresNuevos.get(indice),
+					proyecto,
+					solicitud.rolEnProyecto(),
+					coordinador,
+					solicitud.dedicacionPorcentaje()));
+		}
+
+		return new ResultadoAsignacionesCoordinador(asignaciones.saveAll(asignadas), existentes);
 	}
 
 	/**
@@ -96,7 +165,7 @@ public class ServicioAsignaciones {
 	 */
 	@Transactional
 	public ResultadoLote asignarEquipo(Long proyectoId, List<Long> desarrolladorIds, Trabajador lider) {
-		Proyecto proyecto = servicioProyectos.obtener(proyectoId);
+		Proyecto proyecto = servicioProyectos.obtenerParaAsignacion(proyectoId);
 		exigirProyectoHabilitado(proyecto);
 
 		List<Asignacion> asignados = new ArrayList<>();
@@ -167,6 +236,25 @@ public class ServicioAsignaciones {
 				proyectoId, RolEnProyecto.DESARROLLADOR);
 	}
 
+	/** Todas las asignaciones activas de un proyecto, con todos sus roles. */
+	@Transactional(readOnly = true)
+	public List<Asignacion> equipoCompletoDeProyecto(Long proyectoId) {
+		servicioProyectos.obtener(proyectoId);
+		return asignaciones.findByProyectoIdAndActivaTrueOrderByFechaAsignacionDesc(proyectoId);
+	}
+
+	/** Conteo distinto de integrantes activos para la página de resultados. */
+	@Transactional(readOnly = true)
+	public Map<Long, Long> conteosActivosPorProyecto(List<Long> proyectoIds) {
+		if (proyectoIds.isEmpty()) {
+			return Map.of();
+		}
+		return asignaciones.contarTrabajadoresActivosPorProyecto(proyectoIds).stream()
+				.collect(Collectors.toMap(
+						fila -> (Long) fila[0],
+						fila -> ((Number) fila[1]).longValue()));
+	}
+
 	/**
 	 * Nivel 2 de autorizacion, para las fases siguientes: comprueba si el
 	 * trabajador puede actuar con ese rol en ese proyecto.
@@ -229,6 +317,11 @@ public class ServicioAsignaciones {
 	}
 
 	public record ResultadoLote(List<Asignacion> asignados, List<DesarrolladorRechazado> rechazados) {
+	}
+
+	public record ResultadoAsignacionesCoordinador(
+			List<Asignacion> asignadas,
+			List<Asignacion> yaExistentes) {
 	}
 
 }

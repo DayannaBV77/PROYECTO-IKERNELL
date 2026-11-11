@@ -177,6 +177,24 @@ class ActividadControllerTest {
 	}
 
 	@Test
+	@DisplayName("Coordinador: puede consultar actividades, pero no registrarlas")
+	void coordinadorConsultaActividadesSinPermisoDeEscritura() throws Exception {
+		Authentication coordinador = AutenticacionDePrueba.comoTrabajador(trabajadores, cuentas,
+				"9000000003", "coord.actividades@ikernell.com", TipoTrabajador.COORDINADOR);
+
+		mockMvc.perform(get("/api/actividades").with(authentication(coordinador))
+				.param("proyectoId", String.valueOf(proyecto.getId())))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.totalElementos").value(0));
+
+		mockMvc.perform(post("/api/actividades/proyecto/" + proyecto.getId())
+				.with(csrf()).with(authentication(coordinador))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(cuerpoRegistro(etapa.getId(), desarrollador.getId(), "Actividad no autorizada")))
+				.andExpect(status().isForbidden());
+	}
+
+	@Test
 	@DisplayName("HU-13 C04: sin coincidencias devuelve aviso, no una lista vacia")
 	void avisaCuandoNoHayActividades() throws Exception {
 		mockMvc.perform(get("/api/actividades").with(authentication(lider))

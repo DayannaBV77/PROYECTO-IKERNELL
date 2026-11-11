@@ -85,6 +85,18 @@ public class ServicioProyectos {
 				.orElseThrow(() -> new RecursoNoEncontradoException("No existe un proyecto con el id " + id + "."));
 	}
 
+	@Transactional(readOnly = true)
+	public Proyecto obtenerConLiderResponsable(Long id) {
+		return proyectos.findConLiderResponsable(id)
+				.orElseThrow(() -> new RecursoNoEncontradoException("No existe un proyecto con el id " + id + "."));
+	}
+
+	@Transactional
+	public Proyecto obtenerParaAsignacion(Long id) {
+		return proyectos.findByIdParaAsignacion(id)
+				.orElseThrow(() -> new RecursoNoEncontradoException("No existe un proyecto con el id " + id + "."));
+	}
+
 	/**
 	 * RF-014, HU-09 C03: modifica el proyecto.
 	 *

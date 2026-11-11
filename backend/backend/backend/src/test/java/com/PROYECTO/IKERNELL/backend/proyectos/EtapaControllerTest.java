@@ -148,6 +148,24 @@ class EtapaControllerTest {
 	}
 
 	@Test
+	@DisplayName("Coordinador: puede consultar etapas, pero no modificarlas")
+	void coordinadorConsultaEtapasSinPermisoDeEscritura() throws Exception {
+		registrarEtapa("Analisis", 1);
+		Authentication coordinador = AutenticacionDePrueba.comoTrabajador(trabajadores, cuentas,
+				"6000000002", "coord.etapas@ikernell.com", TipoTrabajador.COORDINADOR);
+
+		mockMvc.perform(get("/api/proyectos/" + proyectoId + "/etapas").with(authentication(coordinador)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.length()").value(1));
+
+		mockMvc.perform(post("/api/proyectos/" + proyectoId + "/etapas")
+				.with(csrf()).with(authentication(coordinador))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"nombre\":\"Diseno\",\"descripcion\":\"d\",\"orden\":2}"))
+				.andExpect(status().isForbidden());
+	}
+
+	@Test
 	@DisplayName("RF-010: no se admiten dos etapas con el mismo nombre en un proyecto")
 	void rechazaEtapaDuplicadaEnElMismoProyecto() throws Exception {
 		registrarEtapa("Analisis", 1);
