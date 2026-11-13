@@ -27,5 +27,9 @@ public record ModificacionProyectoRequest(
 		 * aqui. Retirarla no borra ningun dato: solo impide que el proyecto se
 		 * vuelva a exportar.
 		 */
-		boolean reporteExternoAutorizado) {
+		Boolean reporteExternoAutorizado) {
+
+	public ModificacionProyectoRequest {
+		reporteExternoAutorizado = Boolean.TRUE.equals(reporteExternoAutorizado);
+	}
 }

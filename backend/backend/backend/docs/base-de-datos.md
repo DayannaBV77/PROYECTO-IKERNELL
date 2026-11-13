@@ -427,4 +427,4 @@ cd backend/backend/backend
 JAVA_HOME=/usr/lib/jvm/java-25 ./mvnw spring-boot:run
 ```
 
-Requiere JDK 21 o superior; el JDK 17 que el sistema trae por omision no sirve.
+Requiere JDK 25 LTS; el JDK 17 que el sistema trae por omision no sirve.

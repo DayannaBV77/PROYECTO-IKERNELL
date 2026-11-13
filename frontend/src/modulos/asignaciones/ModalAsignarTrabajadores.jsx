@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { Check, Search, UserRoundPlus, X } from 'lucide-react';
 
 import { asignarEquipoCoordinador, ROLES_EN_PROYECTO } from '../../api/asignaciones.js';
-import { buscarTrabajadores, ESTADOS_HABILITACION, TIPOS_TRABAJADOR } from '../../api/trabajadores.js';
+import { buscarTrabajadores, TIPOS_TRABAJADOR_ASIGNABLES } from '../../api/trabajadores.js';
 import EstadoCarga from '../../componentes/estados/EstadoCarga.jsx';
 import EstadoError from '../../componentes/estados/EstadoError.jsx';
 import EstadoVacio from '../../componentes/estados/EstadoVacio.jsx';
@@ -26,7 +26,6 @@ export default function ModalAsignarTrabajadores({ abierto, proyecto, alCerrar, 
   const notificador = useNotificador();
   const [busqueda, setBusqueda] = useState('');
   const [tipo, setTipo] = useState('');
-  const [estado, setEstado] = useState('');
   const [pagina, setPagina] = useState(0);
   const [seleccionados, setSeleccionados] = useState({});
   const [advertencias, setAdvertencias] = useState(null);
@@ -35,20 +34,32 @@ export default function ModalAsignarTrabajadores({ abierto, proyecto, alCerrar, 
   const consulta = useDebounce(busqueda, 250);
 
   const cargarTrabajadores = useCallback(
-    ({ senal }) =>
-      buscarTrabajadores(
+    async ({ senal }) => {
+      const respuesta = await buscarTrabajadores(
         {
           q: consulta,
           tipoTrabajador: tipo,
-          estado,
+          estado: 'HABILITADO',
           pagina,
           tamano: TAMANO_PAGINA,
         },
         { senal },
-      ),
-    [consulta, tipo, estado, pagina],
+      );
+
+      // Si no se filtró por un tipo específico, nos aseguramos en cliente
+      // de excluir trabajadores con tipo COORDINADOR
+      const contenidoFiltrado = (respuesta.contenido || []).filter(
+        (t) => t.estado === 'HABILITADO' && t.tipoTrabajador !== 'COORDINADOR',
+      );
+
+      return {
+        ...respuesta,
+        contenido: contenidoFiltrado,
+      };
+    },
+    [consulta, tipo, pagina],
   );
-  const trabajadores = usePeticion(cargarTrabajadores, [consulta, tipo, estado, pagina]);
+  const trabajadores = usePeticion(cargarTrabajadores, [consulta, tipo, pagina]);
   const listaTrabajadores = trabajadores.datos?.contenido || [];
   const listaSeleccionados = Object.values(seleccionados);
 
@@ -154,18 +165,10 @@ export default function ModalAsignarTrabajadores({ abierto, proyecto, alCerrar, 
           <Campo
             etiqueta="Tipo de trabajador"
             nombre="tipoTrabajadorModal"
-            opciones={TIPOS_TRABAJADOR}
+            opciones={TIPOS_TRABAJADOR_ASIGNABLES}
             textoVacio="Todos los tipos"
             value={tipo}
             onChange={(evento) => cambiarFiltro(setTipo, evento.target.value)}
-          />
-          <Campo
-            etiqueta="Estado"
-            nombre="estadoModal"
-            opciones={ESTADOS_HABILITACION}
-            textoVacio="Todos los estados"
-            value={estado}
-            onChange={(evento) => cambiarFiltro(setEstado, evento.target.value)}
           />
         </section>
 

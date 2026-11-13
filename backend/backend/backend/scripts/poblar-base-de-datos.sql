@@ -67,16 +67,16 @@ ON CONFLICT (correo_corporativo) DO NOTHING;
 -- -----------------------------------------------------------------------------
 -- 3. PROYECTOS (RF-008, RF-015, RF-016)
 -- -----------------------------------------------------------------------------
-INSERT INTO proyecto (nombre, descripcion, estado_habilitacion, estado_operativo, lider_responsable_id)
-SELECT p.nombre, p.descripcion, p.estado_hab, p.estado_op, t.id
+INSERT INTO proyecto (nombre, descripcion, estado_habilitacion, estado_operativo, lider_responsable_id, fecha_creacion)
+SELECT p.nombre, p.descripcion, p.estado_hab, p.estado_op, t.id, p.fecha_crea
 FROM (
   VALUES
-    ('Portal de Gestión Empresarial ERP', 'Sistema integral de recursos empresariales para automatizar contabilidad, inventario, talento humano y facturación electrónica.', 'HABILITADO', 'EN_PROCESO', '1000000002'),
-    ('Plataforma Web de Comercio Electrónico', 'Solución de e-commerce omnicanal de alto rendimiento con pasarelas de pago PSE/Stripe, catálogo dinámico y notificaciones en tiempo real.', 'HABILITADO', 'EN_DESARROLLO', '1000000003'),
-    ('App Móvil de Gestión de Incidentes', 'Aplicación móvil para reporte y seguimiento de fallos operativos en campo, soporte offline y geolocalización de eventos.', 'HABILITADO', 'EN_PRUEBAS', '1000000004'),
-    ('Tablero Ejecutivo y Analítica BI', 'Plataforma de visualización de indicadores clave (KPIs), reportes de desempeño y métricas operativas automatizadas.', 'HABILITADO', 'PLANIFICADO', '1000000003'),
-    ('Migración de Infraestructura y Servicios Legados', 'Modernización de microservicios e infraestructura interna hacia contenedores y cloud privado.', 'INHABILITADO', 'CANCELADO', '1000000002')
-) AS p(nombre, descripcion, estado_hab, estado_op, lider_ident)
+    ('Portal de Gestión Empresarial ERP', 'Sistema integral de recursos empresariales para automatizar contabilidad, inventario, talento humano y facturación electrónica.', 'HABILITADO', 'EN_PROCESO', '1000000002', '2026-09-26 00:00:00+00'::timestamptz),
+    ('Plataforma Web de Comercio Electrónico', 'Solución de e-commerce omnicanal de alto rendimiento con pasarelas de pago PSE/Stripe, catálogo dinámico y notificaciones en tiempo real.', 'HABILITADO', 'EN_DESARROLLO', '1000000003', '2026-09-28 00:00:00+00'::timestamptz),
+    ('App Móvil de Gestión de Incidentes', 'Aplicación móvil para reporte y seguimiento de fallos operativos en campo, soporte offline y geolocalización de eventos.', 'HABILITADO', 'EN_PRUEBAS', '1000000004', '2026-10-06 00:00:00+00'::timestamptz),
+    ('Tablero Ejecutivo y Analítica BI', 'Plataforma de visualización de indicadores clave (KPIs), reportes de desempeño y métricas operativas automatizadas.', 'HABILITADO', 'PLANIFICADO', '1000000003', '2026-10-16 00:00:00+00'::timestamptz),
+    ('Migración de Infraestructura y Servicios Legados', 'Modernización de microservicios e infraestructura interna hacia contenedores y cloud privado.', 'INHABILITADO', 'CANCELADO', '1000000002', '2026-08-15 10:00:00+00'::timestamptz)
+) AS p(nombre, descripcion, estado_hab, estado_op, lider_ident, fecha_crea)
 JOIN trabajador t ON t.identificacion = p.lider_ident
 WHERE NOT EXISTS (SELECT 1 FROM proyecto WHERE proyecto.nombre = p.nombre);
 

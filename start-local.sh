@@ -5,9 +5,25 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FRONTEND="$ROOT/frontend"
 BACKEND="$ROOT/backend/backend/backend"
 
-if [[ -z "${JAVA_HOME:-}" && -d "$HOME/.sdkman/candidates/java/current" ]]; then
-    export JAVA_HOME="$HOME/.sdkman/candidates/java/current"
+if [[ -z "${JAVA_HOME:-}" && -x /usr/lib/jvm/java-21-temurin-jdk/bin/java ]]; then
+    export JAVA_HOME="/usr/lib/jvm/java-21-temurin-jdk"
+elif [[ -z "${JAVA_HOME:-}" ]]; then
+    for candidate in "$HOME"/.sdkman/candidates/java/21*; do
+        if [[ -x "$candidate/bin/java" ]]; then
+            export JAVA_HOME="$candidate"
+            break
+        fi
+    done
+fi
+
+if [[ -n "${JAVA_HOME:-}" ]]; then
     export PATH="$JAVA_HOME/bin:$PATH"
+fi
+
+JAVA_COMMAND="${JAVA_HOME:+$JAVA_HOME/bin/}java"
+if ! "$JAVA_COMMAND" -version 2>&1 | grep -Eq 'version "21([.]|")'; then
+    echo ">> Se requiere Java 21 LTS para iniciar el backend. Configura JAVA_HOME con un JDK 21." >&2
+    exit 1
 fi
 
 if [[ ! -f "$BACKEND/.env" && -f "$BACKEND/.env.example" ]]; then

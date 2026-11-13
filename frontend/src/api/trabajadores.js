@@ -15,6 +15,12 @@ export const TIPOS_TRABAJADOR = [
   { valor: 'DESARROLLADOR', texto: 'Desarrollador' },
 ];
 
+/** Tipos de trabajador elegibles para asignación a proyectos (sin coordinador). */
+export const TIPOS_TRABAJADOR_ASIGNABLES = [
+  { valor: 'LIDER', texto: 'Lider de proyectos' },
+  { valor: 'DESARROLLADOR', texto: 'Desarrollador' },
+];
+
 /** Estados de habilitacion (RF-007, RN-02: inhabilitar no borra). */
 export const ESTADOS_HABILITACION = [
   { valor: 'HABILITADO', texto: 'Habilitado' },
