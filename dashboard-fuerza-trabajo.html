@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard de Fuerza de Trabajo - Gestión y Asignaciones</title>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            sena: {
+              50: '#f0fdf4',
+              100: '#dcfce7',
+              500: '#22c55e',
+              600: '#16a34a',
+              700: '#15803d',
+            },
+            corporativo: {
+              navy: '#0f172a',
+              surface: '#f8fafc',
+              border: '#e2e8f0',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Estilos personalizados para inputs y transiciones */
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      cursor: pointer;
+      opacity: 0.6;
+      transition: opacity 0.2s;
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator:hover {
+      opacity: 1;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="bg-[#f4f6f9] text-slate-800 font-sans min-h-screen py-8 px-4 sm:px-6 lg:px-8">
+
+  <div class="max-w-7xl mx-auto space-y-6">
+
+    <!-- ========================================== -->
+    <!-- 1. PANEL SUPERIOR: FILTROS DE BÚSQUEDA Y RANGO -->
+    <!-- ========================================== -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/90 p-6 transition-all duration-300">
+      
+      <!-- Cabecera de Filtros -->
+      <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
+            <!-- Icono de Filtro tipo embudo -->
+            <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
+              <path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/>
+            </svg>
+          </div>
+          <h2 class="text-base font-bold text-slate-800 tracking-tight">Filtros de Búsqueda y Rango</h2>
+        </div>
+
+        <button 
+          id="btn-limpiar" 
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors shadow-2xs"
+        >
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          Limpiar filtros
+        </button>
+      </div>
+
+      <!-- Formulario de Filtros Vertical/Organizado -->
+      <form id="formulario-filtros" class="mt-5 space-y-4" onsubmit="event.preventDefault(); aplicarFiltro();">
+        
+        <!-- Fila 1: Buscador general + Selectores -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+          
+          <!-- Buscador por texto -->
+          <div class="md:col-span-5">
+            <label class="block text-[11px] font-bold text-slate-600 tracking-wider uppercase mb-1.5">
+              Buscar por nombre, apellido o identificación
+            </label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+              </span>
+              <input 
+                type="text" 
+                id="filtro-texto"
+                placeholder="Escriba un nombre, apellido o número de documento..." 
+                class="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm placeholder:text-slate-400 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+              />
+            </div>
+          </div>
+
+          <!-- Selector de Desarrollador -->
+          <div class="md:col-span-4">
+            <label class="block text-[11px] font-bold text-slate-600 tracking-wider uppercase mb-1.5">
+              Desarrollador <span class="text-rose-500">*</span>
+            </label>
+            <div class="relative">
+              <select 
+                id="filtro-desarrollador"
+                class="w-full appearance-none pl-3.5 pr-10 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none transition-all duration-200 cursor-pointer"
+              >
+                <option value="">Seleccione un desarrollador</option>
+                <!-- Opciones dinámicas -->
+              </select>
+              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-400">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Selector de Proyecto -->
+          <div class="md:col-span-3">
+            <label class="block text-[11px] font-bold text-slate-600 tracking-wider uppercase mb-1.5">
+              Proyecto <span class="text-rose-500">*</span>
+            </label>
+            <div class="relative">
+              <select 
+                id="filtro-proyecto"
+                class="w-full appearance-none pl-3.5 pr-10 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none transition-all duration-200 cursor-pointer"
+              >
+                <option value="">Todos los proyectos</option>
+                <option value="App Móvil" selected>App Móvil</option>
+                <option value="Portal ERP">Portal ERP</option>
+                <option value="E-Commerce">E-Commerce</option>
+                <option value="Tablero BI">Tablero BI</option>
+              </select>
+              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-400">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Fila 2: Rango de Fechas + Botón de Acción -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end pt-1">
+          
+          <!-- Fecha Desde -->
+          <div class="md:col-span-3">
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="block text-[11px] font-bold text-slate-600 tracking-wider uppercase">Desde</label>
+              <span class="text-[10px] font-medium text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">Periodo opcional</span>
+            </div>
+            <input 
+              type="date" 
+              id="filtro-fecha-desde"
+              class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+            />
+          </div>
+
+          <!-- Fecha Hasta -->
+          <div class="md:col-span-3">
+            <label class="block text-[11px] font-bold text-slate-600 tracking-wider uppercase mb-1.5">Hasta</label>
+            <input 
+              type="date" 
+              id="filtro-fecha-hasta"
+              class="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+            />
+          </div>
+
+          <!-- Botón Generar Reporte -->
+          <div class="md:col-span-6">
+            <button 
+              type="button" 
+              id="btn-generar-reporte"
+              class="w-full py-2.5 px-6 bg-[#1e293b] hover:bg-[#0f172a] text-white rounded-xl text-sm font-semibold inline-flex items-center justify-center gap-2 shadow-sm transition-all active:scale-[0.99] cursor-pointer"
+            >
+              <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+              </svg>
+              Generar Reporte
+            </button>
+          </div>
+
+        </div>
+
+      </form>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 2. TABLA PRINCIPAL: ASIGNACIONES -->
+    <!-- ========================================== -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/90 overflow-hidden">
+      
+      <!-- Encabezado de la tabla -->
+      <div class="px-6 py-4.5 border-b border-slate-100 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <!-- Icono de tabla / spreadsheet -->
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 19H5v-4h4v4zm0-6H5V9h4v4zm0-6H5V5h4v2zm6 12h-4v-4h4v4zm0-6h-4V9h4v4zm0-6h-4V5h4v2zm4 12h-4v-4h4v4zm0-6h-4V9h4v4zm0-6h-4V5h4v2z"/>
+              </svg>
+            </div>
+            <h3 class="text-base font-bold text-slate-800">Desarrolladores por Proyecto y Fechas</h3>
+          </div>
+          <p id="conteo-registros" class="text-xs text-slate-500 mt-0.5 ml-9">Cargando trabajadores...</p>
+        </div>
+
+        <button 
+          id="btn-exportar"
+          class="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl shadow-2xs transition-colors cursor-pointer"
+        >
+          <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+          </svg>
+          Exportar CSV
+        </button>
+      </div>
+
+      <!-- Contenedor scrollable de tabla -->
+      <div class="overflow-x-auto custom-scrollbar">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-slate-50/75 border-b border-slate-100 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+              <th scope="col" class="py-3 px-6">Identificación</th>
+              <th scope="col" class="py-3 px-6">Trabajador</th>
+              <th scope="col" class="py-3 px-6">Rol</th>
+              <th scope="col" class="py-3 px-6">Proyecto Asignado</th>
+              <th scope="col" class="py-3 px-6">Fecha Inicio</th>
+              <th scope="col" class="py-3 px-6">Fecha Fin</th>
+              <th scope="col" class="py-3 px-6">Estado</th>
+              <th scope="col" class="py-3 px-6 text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="cuerpo-tabla" class="divide-y divide-slate-100 text-sm">
+            <!-- Filas generadas dinámicamente con JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Estado vacío cuando no hay resultados -->
+      <div id="estado-vacio" class="hidden py-16 px-6 text-center">
+        <div class="w-14 h-14 mx-auto mb-3 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+          <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <h4 class="text-sm font-semibold text-slate-700">No se encontraron trabajadores</h4>
+        <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+          Intente ajustando los términos de búsqueda, el selector de desarrollador o las fechas de filtro.
+        </p>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: DETALLE DEL PERFIL DEL TRABAJADOR   -->
+  <!-- ========================================== -->
+  <div id="modal-perfil" class="fixed inset-0 z-50 hidden bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full shadow-xl border border-slate-100 overflow-hidden transform transition-all animate-in fade-in zoom-in-95">
+      
+      <div class="relative bg-gradient-to-r from-emerald-600 to-teal-700 px-6 pt-6 pb-12 text-white">
+        <button 
+          onclick="cerrarModalPerfil()" 
+          class="absolute top-4 right-4 text-white/80 hover:text-white bg-black/10 hover:bg-black/20 p-1.5 rounded-full transition-colors cursor-pointer"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+        <span class="inline-block text-[10px] font-bold uppercase tracking-wider bg-white/20 px-2.5 py-0.5 rounded-full mb-1">
+          Ficha del Desarrollador
+        </span>
+        <h3 id="modal-nombre" class="text-xl font-bold">Nombre Completo</h3>
+        <p id="modal-rol" class="text-sm text-emerald-100 font-medium">Especialidad</p>
+      </div>
+
+      <div class="px-6 py-5 -mt-6">
+        <div class="bg-white rounded-xl shadow-xs border border-slate-100 p-4 space-y-3.5">
+          
+          <div class="flex items-center justify-between text-xs border-b border-slate-100 pb-2.5">
+            <span class="text-slate-500 font-medium">Identificación:</span>
+            <span id="modal-identificacion" class="font-mono font-semibold text-slate-800">1000000000</span>
+          </div>
+
+          <div class="flex items-center justify-between text-xs border-b border-slate-100 pb-2.5">
+            <span class="text-slate-500 font-medium">Proyecto Asignado:</span>
+            <span id="modal-proyecto" class="font-semibold text-slate-800 flex items-center gap-1.5">
+              <span>📱</span> App Móvil
+            </span>
+          </div>
+
+          <div class="flex items-center justify-between text-xs border-b border-slate-100 pb-2.5">
+            <span class="text-slate-500 font-medium">Vigencia Asignación:</span>
+            <span id="modal-periodo" class="text-slate-700 font-medium">2024-05-16 al 2026-11-30</span>
+          </div>
+
+          <div class="flex items-center justify-between text-xs border-b border-slate-100 pb-2.5">
+            <span class="text-slate-500 font-medium">Estado del Perfil:</span>
+            <span id="modal-estado-badge"></span>
+          </div>
+
+          <div class="text-xs">
+            <span class="text-slate-500 font-medium block mb-1">Habilidades y Tecnologías:</span>
+            <div id="modal-skills" class="flex flex-wrap gap-1.5 pt-1">
+              <!-- Tags dinámicos -->
+            </div>
+          </div>
+
+        </div>
+
+        <div class="mt-5 flex justify-end">
+          <button 
+            onclick="cerrarModalPerfil()" 
+            class="px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
+          >
+            Cerrar Ficha
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Toast de Notificaciones -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+    <div class="bg-slate-900 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 text-xs font-medium">
+      <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+      <span id="toast-mensaje">Notificación</span>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 3. JAVASCRIPT VANILLA & LÓGICA DE NEGOCIO -->
+  <!-- ========================================== -->
+  <script>
+    // Dataset inicial inspirado exactamente en la vista del sistema IKERNELL
+    const TRABAJADORES = [
+      {
+        identificacion: "1028820902",
+        nombre: "Dayanna Boada Valderrama",
+        rol: "Frontend",
+        proyecto: "App Móvil",
+        fechaInicio: "2024-05-16",
+        fechaFin: "2026-11-30",
+        estado: "HABILITADO",
+        skills: ["React Native", "Tailwind CSS", "JavaScript ES6+", "UI/UX"]
+      },
+      {
+        identificacion: "1793721118",
+        nombre: "Prueba Conexion",
+        rol: "Frontend",
+        proyecto: "App Móvil",
+        fechaInicio: "2024-08-16",
+        fechaFin: "2026-12-01",
+        estado: "HABILITADO",
+        skills: ["React", "HTML5", "CSS3", "Git"]
+      },
+      {
+        identificacion: "1793721118",
+        nombre: "Prueba Conexion",
+        rol: "Desarrollador Backend",
+        proyecto: "App Móvil",
+        fechaInicio: "2024-08-16",
+        fechaFin: "2026-12-01",
+        estado: "HABILITADO",
+        skills: ["Spring Boot", "Java 17", "PostgreSQL", "REST APIs"]
+      },
+      {
+        identificacion: "1000000009",
+        nombre: "Camilo Herrera",
+        rol: "Tecnólogo en Análisis y Desarrollo",
+        proyecto: "App Móvil",
+        fechaInicio: "2024-03-07",
+        fechaFin: "2026-08-31",
+        estado: "INHABILITADO",
+        skills: ["Análisis de Sistemas", "UML", "SQL", "Scrum"]
+      },
+      {
+        identificacion: "1000000001",
+        nombre: "Coordinador Inicial",
+        rol: "Desarrollador Backend",
+        proyecto: "App Móvil",
+        fechaInicio: "2023-08-08",
+        fechaFin: "2026-06-30",
+        estado: "INHABILITADO",
+        skills: ["Arquitectura Hexagonal", "Docker", "Java", "Seguridad"]
+      },
+      {
+        identificacion: "1000000015",
+        nombre: "Lucía Méndez",
+        rol: "QA Engineer",
+        proyecto: "App Móvil",
+        fechaInicio: "2024-03-20",
+        fechaFin: "2026-09-15",
+        estado: "HABILITADO",
+        skills: ["Cypress", "Selenium", "JUnit", "Pruebas de Carga"]
+      },
+      // Registros complementarios para otros proyectos
+      {
+        identificacion: "1000000002",
+        nombre: "Carlos Mendoza",
+        rol: "Líder Técnico Full-Stack",
+        proyecto: "Portal ERP",
+        fechaInicio: "2024-01-10",
+        fechaFin: "2026-12-31",
+        estado: "HABILITADO",
+        skills: ["Spring Cloud", "React", "PostgreSQL", "Flyway"]
+      },
+      {
+        identificacion: "1000000007",
+        nombre: "Mateo Vargas",
+        rol: "DevOps & Cloud Engineer",
+        proyecto: "Portal ERP",
+        fechaInicio: "2024-02-15",
+        fechaFin: "2026-11-30",
+        estado: "HABILITADO",
+        skills: ["Docker", "Kubernetes", "CI/CD", "Linux"]
+      },
+      {
+        identificacion: "1000000006",
+        nombre: "Sofía Martínez",
+        rol: "Frontend React Developer",
+        proyecto: "Portal ERP",
+        fechaInicio: "2024-02-01",
+        fechaFin: "2026-10-15",
+        estado: "HABILITADO",
+        skills: ["React.js", "Zustand", "Tailwind CSS", "Vite"]
+      },
+      {
+        identificacion: "1000000008",
+        nombre: "Valentina Castro",
+        rol: "Especialista en Pagos",
+        proyecto: "E-Commerce",
+        fechaInicio: "2024-04-10",
+        fechaFin: "2026-11-20",
+        estado: "HABILITADO",
+        skills: ["PCI-DSS", "Webhooks", "Node.js", "Redis"]
+      },
+      {
+        identificacion: "1000000010",
+        nombre: "Mariana Ortiz",
+        rol: "Data Engineer BI",
+        proyecto: "Tablero BI",
+        fechaInicio: "2024-05-01",
+        fechaFin: "2026-12-15",
+        estado: "HABILITADO",
+        skills: ["Power BI", "ETL", "Python", "BigQuery"]
+      }
+    ];
+
+    // Elementos del DOM
+    const inputTexto = document.getElementById('filtro-texto');
+    const selectDesarrollador = document.getElementById('filtro-desarrollador');
+    const selectProyecto = document.getElementById('filtro-proyecto');
+    const inputFechaDesde = document.getElementById('filtro-fecha-desde');
+    const inputFechaHasta = document.getElementById('filtro-fecha-hasta');
+    const btnLimpiar = document.getElementById('btn-limpiar');
+    const btnGenerarReporte = document.getElementById('btn-generar-reporte');
+    const btnExportar = document.getElementById('btn-exportar');
+    const cuerpoTabla = document.getElementById('cuerpo-tabla');
+    const conteoRegistros = document.getElementById('conteo-registros');
+    const estadoVacio = document.getElementById('estado-vacio');
+
+    // Inicialización al cargar la página
+    document.addEventListener('DOMContentLoaded', () => {
+      poblarSelectDesarrolladores();
+      actualizarEstiloVisualSelect(selectProyecto);
+      actualizarEstiloVisualSelect(selectDesarrollador);
+      aplicarFiltro();
+      
+      // Event Listeners en tiempo real
+      inputTexto.addEventListener('input', aplicarFiltro);
+      
+      selectDesarrollador.addEventListener('change', () => {
+        actualizarEstiloVisualSelect(selectDesarrollador);
+        aplicarFiltro();
+      });
+
+      selectProyecto.addEventListener('change', () => {
+        actualizarEstiloVisualSelect(selectProyecto);
+        aplicarFiltro();
+      });
+
+      inputFechaDesde.addEventListener('change', aplicarFiltro);
+      inputFechaHasta.addEventListener('change', aplicarFiltro);
+
+      btnLimpiar.addEventListener('click', limpiarFiltros);
+      btnGenerarReporte.addEventListener('click', () => {
+        aplicarFiltro();
+        mostrarToast("Reporte actualizado con los criterios seleccionados");
+      });
+
+      btnExportar.addEventListener('click', exportarCSV);
+    });
+
+    // Poblar el combo de desarrolladores únicos
+    function poblarSelectDesarrolladores() {
+      const desarrolladoresUnicos = [...new Set(TRABAJADORES.map(t => t.nombre))].sort();
+      desarrolladoresUnicos.forEach(nombre => {
+        const option = document.createElement('option');
+        option.value = nombre;
+        option.textContent = nombre;
+        selectDesarrollador.appendChild(option);
+      });
+    }
+
+    /**
+     * Requisito Funcional:
+     * Al seleccionar una opción en el selector, debe cambiar dinámicamente
+     * y destacar visualmente con un tono verde característico de confirmación.
+     */
+    function actualizarEstiloVisualSelect(elementoSelect) {
+      const estaSeleccionado = elementoSelect.value !== "";
+      if (estaSeleccionado) {
+        elementoSelect.className = "w-full appearance-none pl-3.5 pr-10 py-2.5 bg-emerald-50/40 border-2 border-emerald-500 rounded-xl text-sm font-semibold text-emerald-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all duration-200 cursor-pointer shadow-xs";
+      } else {
+        elementoSelect.className = "w-full appearance-none pl-3.5 pr-10 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:border-emerald-500 transition-all duration-200 cursor-pointer";
+      }
+    }
+
+    // Lógica central de filtrado
+    function obtenerRegistrosFiltrados() {
+      const texto = inputTexto.value.trim().toLowerCase();
+      const dev = selectDesarrollador.value;
+      const proy = selectProyecto.value;
+      const desde = inputFechaDesde.value;
+      const hasta = inputFechaHasta.value;
+
+      return TRABAJADORES.filter(t => {
+        // Filtro por texto (nombre, apellido o identificación)
+        if (texto) {
+          const coincideIdent = t.identificacion.includes(texto);
+          const coincideNombre = t.nombre.toLowerCase().includes(texto);
+          const coincideRol = t.rol.toLowerCase().includes(texto);
+          if (!coincideIdent && !coincideNombre && !coincideRol) return false;
+        }
+
+        // Filtro por desarrollador seleccionado
+        if (dev && t.nombre !== dev) {
+          return false;
+        }
+
+        // Filtro por proyecto
+        if (proy && t.proyecto !== proy) {
+          return false;
+        }
+
+        // Filtro por rango de fechas
+        if (desde && t.fechaFin < desde) {
+          return false;
+        }
+        if (hasta && t.fechaInicio > hasta) {
+          return false;
+        }
+
+        return true;
+      });
+    }
+
+    // Renderizar registros en la tabla
+    function aplicarFiltro() {
+      const registros = obtenerRegistrosFiltrados();
+      cuerpoTabla.innerHTML = "";
+
+      conteoRegistros.textContent = `${registros.length} trabajador${registros.length === 1 ? '' : 'es'} encontrado${registros.length === 1 ? '' : 's'}`;
+
+      if (registros.length === 0) {
+        estadoVacio.classList.remove('hidden');
+        return;
+      } else {
+        estadoVacio.classList.add('hidden');
+      }
+
+      registros.forEach(t => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50/75 transition-colors group";
+
+        // Icono representativo según el proyecto
+        let iconoProyecto = "📱";
+        if (t.proyecto.includes('ERP')) iconoProyecto = "📊";
+        if (t.proyecto.includes('Commerce')) iconoProyecto = "🛍️";
+        if (t.proyecto.includes('BI')) iconoProyecto = "📈";
+
+        // Badge de Estado HABILITADO / INHABILITADO
+        const esHabilitado = t.estado === 'HABILITADO';
+        const badgeEstado = esHabilitado
+          ? `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+               <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> HABILITADO
+             </span>`
+          : `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+               <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> INHABILITADO
+             </span>`;
+
+        tr.innerHTML = `
+          <td class="py-4 px-6 text-slate-400 font-mono text-xs select-all">
+            ${t.identificacion}
+          </td>
+          <td class="py-4 px-6">
+            <span class="font-bold text-slate-800 text-sm group-hover:text-emerald-700 transition-colors">
+              ${t.nombre}
+            </span>
+          </td>
+          <td class="py-4 px-6 text-slate-600 text-xs font-medium">
+            ${t.rol}
+          </td>
+          <td class="py-4 px-6">
+            <div class="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
+              <span class="text-sm">${iconoProyecto}</span>
+              <span>${t.proyecto}</span>
+            </div>
+          </td>
+          <td class="py-4 px-6 text-slate-600 font-mono text-xs">
+            ${t.fechaInicio}
+          </td>
+          <td class="py-4 px-6 text-slate-600 font-mono text-xs">
+            ${t.fechaFin}
+          </td>
+          <td class="py-4 px-6">
+            ${badgeEstado}
+          </td>
+          <td class="py-4 px-6 text-center">
+            <button 
+              onclick='abrirModalPerfil(${JSON.stringify(t)})'
+              class="px-3.5 py-1.5 text-xs font-medium text-sky-700 bg-sky-50 hover:bg-sky-100 hover:text-sky-800 border border-sky-200 rounded-lg transition-colors cursor-pointer shadow-2xs"
+            >
+              Ver perfil
+            </button>
+          </td>
+        `;
+
+        cuerpoTabla.appendChild(tr);
+      });
+    }
+
+    // Limpieza de todos los filtros
+    function limpiarFiltros() {
+      inputTexto.value = "";
+      selectDesarrollador.value = "";
+      selectProyecto.value = "";
+      inputFechaDesde.value = "";
+      inputFechaHasta.value = "";
+
+      actualizarEstiloVisualSelect(selectDesarrollador);
+      actualizarEstiloVisualSelect(selectProyecto);
+
+      aplicarFiltro();
+      mostrarToast("Filtros restablecidos");
+    }
+
+    // Modal de Detalle de Perfil
+    function abrirModalPerfil(trabajador) {
+      document.getElementById('modal-nombre').textContent = trabajador.nombre;
+      document.getElementById('modal-rol').textContent = trabajador.rol;
+      document.getElementById('modal-identificacion').textContent = trabajador.identificacion;
+      document.getElementById('modal-proyecto').innerHTML = `<span>📱</span> ${trabajador.proyecto}`;
+      document.getElementById('modal-periodo').textContent = `${trabajador.fechaInicio} al ${trabajador.fechaFin}`;
+
+      const badge = trabajador.estado === 'HABILITADO'
+        ? `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800">● HABILITADO</span>`
+        : `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-100 text-rose-800">● INHABILITADO</span>`;
+      document.getElementById('modal-estado-badge').innerHTML = badge;
+
+      const contSkills = document.getElementById('modal-skills');
+      contSkills.innerHTML = "";
+      trabajador.skills.forEach(s => {
+        const span = document.createElement('span');
+        span.className = "px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-100 text-slate-700 border border-slate-200";
+        span.textContent = s;
+        contSkills.appendChild(span);
+      });
+
+      document.getElementById('modal-perfil').classList.remove('hidden');
+    }
+
+    function cerrarModalPerfil() {
+      document.getElementById('modal-perfil').classList.add('hidden');
+    }
+
+    // Exportación a CSV
+    function exportarCSV() {
+      const registros = obtenerRegistrosFiltrados();
+      if (registros.length === 0) {
+        mostrarToast("No hay registros para exportar");
+        return;
+      }
+
+      const encabezados = ["Identificacion", "Nombre", "Rol", "Proyecto", "Fecha Inicio", "Fecha Fin", "Estado"];
+      const lineas = [encabezados.join(";")];
+
+      registros.forEach(t => {
+        lineas.push([
+          `"${t.identificacion}"`,
+          `"${t.nombre}"`,
+          `"${t.rol}"`,
+          `"${t.proyecto}"`,
+          `"${t.fechaInicio}"`,
+          `"${t.fechaFin}"`,
+          `"${t.estado}"`
+        ].join(";"));
+      });
+
+      const contenidoCSV = "\uFEFF" + lineas.join("\r\n");
+      const blob = new Blob([contenidoCSV], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `Fuerza_Trabajo_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      mostrarToast(`Exportados ${registros.length} registros a CSV exitosamente`);
+    }
+
+    // Utilidad de Notificación Toast
+    function mostrarToast(mensaje) {
+      const toast = document.getElementById('toast');
+      const toastMensaje = document.getElementById('toast-mensaje');
+      toastMensaje.textContent = mensaje;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 3000);
+    }
+  </script>
+</body>
+</html>
