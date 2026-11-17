@@ -12,6 +12,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 /**
  * Perfil personal y profesional de un trabajador (RF-001, RF-002, RF-007).
@@ -22,15 +23,22 @@ import jakarta.persistence.Table;
  * credencial de acceso.
  */
 @Entity
-@Table(name = "trabajador")
+@Table(name = "trabajador", uniqueConstraints = {
+		@UniqueConstraint(name = "uk_trabajador_tipo_identificacion_identificacion", columnNames = {
+				"tipo_identificacion", "identificacion" })
+})
 public class Trabajador {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	/** Unica en el sistema (RN-01: RF-001, RF-005, HU-04 C03, RNF-003). */
-	@Column(nullable = false, unique = true, length = 20)
+	@Enumerated(EnumType.STRING)
+	@Column(name = "tipo_identificacion", nullable = false, length = 30)
+	private TipoIdentificacion tipoIdentificacion = TipoIdentificacion.CEDULA_CIUDADANIA;
+
+	/** Unica en el sistema por tipo de identificacion (RN-01). Almacenada como VARCHAR. */
+	@Column(nullable = false, length = 20)
 	private String identificacion;
 
 	@Column(nullable = false, length = 100)
@@ -75,6 +83,12 @@ public class Trabajador {
 
 	public Trabajador(String identificacion, String nombre, String apellido, LocalDate fechaNacimiento,
 			String direccion, String profesion, String especialidadDesarrollo, TipoTrabajador tipoTrabajador) {
+		this(TipoIdentificacion.CEDULA_CIUDADANIA, identificacion, nombre, apellido, fechaNacimiento, direccion, profesion, especialidadDesarrollo, tipoTrabajador);
+	}
+
+	public Trabajador(TipoIdentificacion tipoIdentificacion, String identificacion, String nombre, String apellido, LocalDate fechaNacimiento,
+			String direccion, String profesion, String especialidadDesarrollo, TipoTrabajador tipoTrabajador) {
+		this.tipoIdentificacion = tipoIdentificacion != null ? tipoIdentificacion : TipoIdentificacion.CEDULA_CIUDADANIA;
 		this.identificacion = identificacion;
 		this.nombre = nombre;
 		this.apellido = apellido;
@@ -94,6 +108,13 @@ public class Trabajador {
 		this.estado = EstadoHabilitacion.INHABILITADO;
 	}
 
+	/**
+	 * Reactiva un trabajador inhabilitado para que pueda operar nuevamente (RF-007).
+	 */
+	public void habilitar() {
+		this.estado = EstadoHabilitacion.HABILITADO;
+	}
+
 	/** RN-03: condicion para iniciar sesion y para recibir nuevas asignaciones. */
 	public boolean estaHabilitado() {
 		return estado.esHabilitado();
@@ -105,6 +126,14 @@ public class Trabajador {
 
 	public Long getId() {
 		return id;
+	}
+
+	public TipoIdentificacion getTipoIdentificacion() {
+		return tipoIdentificacion;
+	}
+
+	public void setTipoIdentificacion(TipoIdentificacion tipoIdentificacion) {
+		this.tipoIdentificacion = tipoIdentificacion;
 	}
 
 	public String getIdentificacion() {
@@ -133,6 +162,10 @@ public class Trabajador {
 
 	public String getProfesion() {
 		return profesion;
+	}
+
+	public void setProfesion(String profesion) {
+		this.profesion = profesion;
 	}
 
 	public String getEspecialidadDesarrollo() {

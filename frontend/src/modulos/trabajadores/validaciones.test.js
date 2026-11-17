@@ -30,16 +30,30 @@ test('rechaza caracteres y textos sin una estructura de direccion reconocida', (
 });
 
 test('valida campos requeridos y los limites actuales del backend', () => {
+  assert.equal(validarCampoTrabajador('tipoIdentificacion', ''), 'Debe indicar el tipo de identificacion.');
+  assert.equal(validarCampoTrabajador('tipoIdentificacion', 'CEDULA_CIUDADANIA'), null);
   assert.equal(validarCampoTrabajador('nombre', '   '), 'Debe indicar el nombre.');
-  assert.equal(validarCampoTrabajador('identificacion', 'AB-123'), 'La identificacion solo puede contener digitos.');
-  assert.equal(validarCampoTrabajador('identificacion', '123456789012'), 'La identificacion admite maximo 10 digitos.');
-  assert.equal(validarCampoTrabajador('identificacion', '123456789'), 'Faltan 1 digitos para completar la identificacion.');
-  assert.equal(validarCampoTrabajador('identificacion', '1234567890'), null);
+  assert.equal(validarCampoTrabajador('identificacion', 'AB-123'), 'La identificacion solo puede contener numeros.');
+  assert.equal(validarCampoTrabajador('identificacion', '123456789012', 'CEDULA_CIUDADANIA'), 'La cédula de ciudadanía debe tener entre 8 y 10 dígitos.');
+  assert.equal(validarCampoTrabajador('identificacion', '9', 'CEDULA_CIUDADANIA'), 'La cédula de ciudadanía debe tener entre 8 y 10 dígitos.');
+  assert.equal(validarCampoTrabajador('identificacion', '1234567', 'CEDULA_CIUDADANIA'), 'La cédula de ciudadanía debe tener entre 8 y 10 dígitos.');
+  assert.equal(validarCampoTrabajador('identificacion', '12345678', 'CEDULA_CIUDADANIA'), null);
+  assert.equal(validarCampoTrabajador('identificacion', '123456789', 'CEDULA_CIUDADANIA'), null);
+  assert.equal(validarCampoTrabajador('identificacion', '1234567890', 'CEDULA_CIUDADANIA'), null);
+  assert.equal(validarCampoTrabajador('identificacion', '1', 'CEDULA_EXTRANJERIA'), 'La cédula de extranjería debe tener entre 4 y 7 dígitos.');
+  assert.equal(validarCampoTrabajador('identificacion', '12', 'CEDULA_EXTRANJERIA'), 'La cédula de extranjería debe tener entre 4 y 7 dígitos.');
+  assert.equal(validarCampoTrabajador('identificacion', '123', 'CEDULA_EXTRANJERIA'), 'La cédula de extranjería debe tener entre 4 y 7 dígitos.');
+  assert.equal(validarCampoTrabajador('identificacion', '12345678', 'CEDULA_EXTRANJERIA'), 'La cédula de extranjería debe tener entre 4 y 7 dígitos.');
+  assert.equal(validarCampoTrabajador('identificacion', '1234', 'CEDULA_EXTRANJERIA'), null);
+  assert.equal(validarCampoTrabajador('identificacion', '12345', 'CEDULA_EXTRANJERIA'), null);
+  assert.equal(validarCampoTrabajador('identificacion', '1234567', 'CEDULA_EXTRANJERIA'), null);
 });
 
 test('valida fecha de nacimiento y tipo de trabajador', () => {
   assert.equal(validarCampoTrabajador('fechaNacimiento', '2008-01-01'), 'La fecha de nacimiento no es válida. Debe ser del 31/12/2007 o anterior');
   assert.equal(validarCampoTrabajador('fechaNacimiento', '2026-05-01'), 'La fecha de nacimiento no es válida. Debe ser del 31/12/2007 o anterior');
+  assert.equal(validarCampoTrabajador('fechaNacimiento', '1940-01-01'), 'Ingrese una fecha de nacimiento válida (edad máxima permitida: 80 años)');
+  assert.equal(validarCampoTrabajador('fechaNacimiento', '1985-06-15'), null);
   assert.equal(validarCampoTrabajador('fechaNacimiento', '2007-12-31'), null);
   assert.equal(validarCampoTrabajador('tipoTrabajador', ''), 'Debe indicar el tipo de trabajador.');
   assert.equal(validarCampoTrabajador('tipoTrabajador', 'DESARROLLADOR'), null);

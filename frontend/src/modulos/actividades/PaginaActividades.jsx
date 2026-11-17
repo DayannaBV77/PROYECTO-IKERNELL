@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, ClipboardList, Plus, RotateCcw, Search } from 'lucide-react';
+import { ClipboardList, Plus, RotateCcw, Search } from 'lucide-react';
 
 import { ETIQUETA_PRIORIDAD, buscarActividades } from '../../api/actividades.js';
 import EstadoCarga from '../../componentes/estados/EstadoCarga.jsx';
@@ -190,7 +190,6 @@ export default function PaginaActividades() {
                     <td>
                       <Link className={estilos.abrir} to={`/app/actividades/${actividad.id}`}>
                         <span>Ver detalle</span>
-                        <ArrowRight size={13} aria-hidden="true" />
                         <span className="solo-lectores"> la actividad {actividad.id}</span>
                       </Link>
                     </td>

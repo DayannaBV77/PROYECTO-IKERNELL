@@ -74,22 +74,7 @@ export default function Encabezado({ enlaces, acciones }) {
           </div>
 
           <div className={estilos.franjaDerecha}>
-            {sesion ? (
-              <div className={estilos.badgeRolSuperior}>
-                <span className={estilos.indicadorPunto} aria-hidden="true" />
-                <span className={estilos.franjaRolTexto}>
-                  {ETIQUETA_TIPO[sesion.tipoTrabajador] || sesion.tipoTrabajador}
-                </span>
-                {sesion.nombreCompleto && (
-                  <>
-                    <span className={estilos.franjaSeparador} aria-hidden="true">•</span>
-                    <span className={estilos.franjaNombre}>{sesion.nombreCompleto}</span>
-                  </>
-                )}
-              </div>
-            ) : (
-              <span className={estilos.franjaPublico}>Portal Corporativo</span>
-            )}
+            <span className={estilos.franjaPublico}>Portal Corporativo</span>
           </div>
         </div>
       </div>

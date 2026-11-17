@@ -9,14 +9,13 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.PROYECTO.IKERNELL.backend.asignaciones.domain.Asignacion;
-import com.PROYECTO.IKERNELL.backend.asignaciones.domain.RolEnProyecto;
 
 /*
  * Las consultas de lectura traen cargados el trabajador y el proyecto con
  * @EntityGraph, y no es una optimizacion: Asignacion los referencia en LAZY y
  * spring.jpa.open-in-view esta desactivado, de modo que la sesion se cierra al
  * salir del servicio. AsignacionResponse lee el nombre del trabajador y el del
- * proyecto ya en el controlador, fuera de esa sesion, asi que un proxy sin
+ * proyecto y rol ya en el controlador, fuera de esa sesion, asi que un proxy sin
  * inicializar hace fallar la peticion entera con LazyInitializationException.
  * Traerlas en la misma consulta lo evita, y de paso ahorra una consulta por fila.
  */
@@ -28,15 +27,15 @@ public interface AsignacionRepository extends JpaRepository<Asignacion, Long> {
 	 * <p>PROPUESTA D-08: se considera equivalente la que coincide en trabajador,
 	 * proyecto y rol, y sigue activa. Ningun documento define el criterio.
 	 */
-	boolean existsByTrabajadorIdAndProyectoIdAndRolEnProyectoAndActivaTrue(
-			Long trabajadorId, Long proyectoId, RolEnProyecto rolEnProyecto);
+	boolean existsByTrabajadorIdAndProyectoIdAndRolIdAndActivaTrue(
+			Long trabajadorId, Long proyectoId, Long rolId);
 
-	@EntityGraph(attributePaths = { "trabajador", "proyecto" })
-	Optional<Asignacion> findFirstByTrabajadorIdAndProyectoIdAndRolEnProyectoAndActivaTrue(
-			Long trabajadorId, Long proyectoId, RolEnProyecto rolEnProyecto);
+	@EntityGraph(attributePaths = { "trabajador", "proyecto", "rol" })
+	Optional<Asignacion> findFirstByTrabajadorIdAndProyectoIdAndRolIdAndActivaTrue(
+			Long trabajadorId, Long proyectoId, Long rolId);
 
 	/** HU-06 C05: consultar las asignaciones de un trabajador. */
-	@EntityGraph(attributePaths = { "trabajador", "proyecto" })
+	@EntityGraph(attributePaths = { "trabajador", "proyecto", "rol" })
 	List<Asignacion> findByTrabajadorIdOrderByFechaAsignacionDesc(Long trabajadorId);
 
 	/**
@@ -47,19 +46,22 @@ public interface AsignacionRepository extends JpaRepository<Asignacion, Long> {
 	 * <p>Ordenadas por nombre de proyecto para que un selector sea estable, y no
 	 * por fecha de asignacion como la consulta del coordinador.
 	 */
-	@EntityGraph(attributePaths = { "trabajador", "proyecto" })
+	@EntityGraph(attributePaths = { "trabajador", "proyecto", "rol" })
 	List<Asignacion> findByTrabajadorIdAndActivaTrueOrderByProyectoNombreAsc(Long trabajadorId);
 
 	/** HU-06 C05: consultar las asignaciones de un proyecto. */
-	@EntityGraph(attributePaths = { "trabajador", "proyecto" })
+	@EntityGraph(attributePaths = { "trabajador", "proyecto", "rol" })
 	List<Asignacion> findByProyectoIdOrderByFechaAsignacionDesc(Long proyectoId);
 
 	/** HU-10 C05: equipo activo del proyecto, filtrado por rol. */
-	@EntityGraph(attributePaths = { "trabajador", "proyecto" })
-	List<Asignacion> findByProyectoIdAndRolEnProyectoAndActivaTrue(Long proyectoId, RolEnProyecto rolEnProyecto);
+	@EntityGraph(attributePaths = { "trabajador", "proyecto", "rol" })
+	List<Asignacion> findByProyectoIdAndRolIdAndActivaTrue(Long proyectoId, Long rolId);
+
+	@EntityGraph(attributePaths = { "trabajador", "proyecto", "rol" })
+	Optional<Asignacion> findFirstByProyectoIdAndRolIdAndActivaTrue(Long proyectoId, Long rolId);
 
 	/** Todas las asignaciones activas para mostrar el equipo con cada rol. */
-	@EntityGraph(attributePaths = { "trabajador", "proyecto" })
+	@EntityGraph(attributePaths = { "trabajador", "proyecto", "rol" })
 	List<Asignacion> findByProyectoIdAndActivaTrueOrderByFechaAsignacionDesc(Long proyectoId);
 
 	/** Conteos distintos para las tarjetas; evita contar roles duplicados de una persona. */
@@ -83,12 +85,12 @@ public interface AsignacionRepository extends JpaRepository<Asignacion, Long> {
 			select count(a) > 0 from Asignacion a
 			where a.trabajador.id = :trabajadorId
 			  and a.proyecto.id = :proyectoId
-			  and a.rolEnProyecto = :rol
+			  and a.rol.id = :rolId
 			  and a.activa = true
 			  and a.trabajador.estado = com.PROYECTO.IKERNELL.backend.shared.domain.EstadoHabilitacion.HABILITADO
 			""")
 	boolean tieneAsignacionActivaConRol(@Param("trabajadorId") Long trabajadorId,
-			@Param("proyectoId") Long proyectoId, @Param("rol") RolEnProyecto rol);
+			@Param("proyectoId") Long proyectoId, @Param("rolId") Long rolId);
 
 	/**
 	 * Nivel 2 de LECTURA: el trabajador participa en el proyecto, con cualquier

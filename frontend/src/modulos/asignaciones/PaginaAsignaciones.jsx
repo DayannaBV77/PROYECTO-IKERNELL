@@ -1,11 +1,11 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  ArrowRight,
   CalendarDays,
   ChevronLeft,
   ChevronRight,
   FolderKanban,
   Info,
+  Play,
   Plus,
   RotateCcw,
   Search,
@@ -16,6 +16,9 @@ import {
   buscarProyectosParaAsignaciones,
   obtenerEquipoCompleto,
   obtenerProyectoParaAsignaciones,
+  pausarLider,
+  quitarDesarrollador,
+  reactivarLider,
 } from '../../api/asignaciones.js';
 import { buscarActividades } from '../../api/actividades.js';
 import {
@@ -28,11 +31,14 @@ import EstadoError from '../../componentes/estados/EstadoError.jsx';
 import EstadoVacio from '../../componentes/estados/EstadoVacio.jsx';
 import Boton from '../../componentes/ui/Boton.jsx';
 import Campo from '../../componentes/ui/Campo.jsx';
+import Confirmacion from '../../componentes/ui/Confirmacion.jsx';
 import EtiquetaEstado from '../../componentes/ui/EtiquetaEstado.jsx';
 import Seccion from '../../componentes/ui/Seccion.jsx';
+import { useNotificador } from '../../componentes/ui/Notificador.jsx';
 import { usePeticion } from '../../hooks/usePeticion.js';
 import { formatearFecha } from '../../utilidades/formato.js';
 import ModalAsignarTrabajadores from './ModalAsignarTrabajadores.jsx';
+import ModalCambiarLider from './ModalCambiarLider.jsx';
 import estilos from './PaginaAsignaciones.module.css';
 
 const FILTROS_VACIOS = { q: '', estado: '', orden: 'recientes' };
@@ -53,6 +59,8 @@ export default function PaginaAsignaciones() {
   const [pestana, setPestana] = useState('general');
   const [modalAbierto, setModalAbierto] = useState(false);
   const [recarga, setRecarga] = useState(0);
+
+  const temporizador = useRef(null);
 
   const cargarProyectos = useCallback(
     ({ senal }) =>
@@ -77,24 +85,39 @@ export default function PaginaAsignaciones() {
   );
   const detalle = usePeticion(cargarDetalle, [idActivo, recarga]);
 
-  function alCambiarFiltro(evento) {
-    const { name, value } = evento.target;
-    setBorrador((actual) => ({ ...actual, [name]: value }));
+  function aplicarFiltrosConRetardo(nuevosFiltros) {
+    clearTimeout(temporizador.current);
+    temporizador.current = setTimeout(() => {
+      setFiltros(nuevosFiltros);
+      setPagina(0);
+      setProyectoIdSeleccionado('');
+    }, 300);
   }
 
-  function buscar(evento) {
-    evento.preventDefault();
-    setFiltros({ ...borrador });
-    setPagina(0);
-    setProyectoIdSeleccionado('');
+  function alCambiarFiltro(evento) {
+    const { name, value } = evento.target;
+    const nuevos = { ...borrador, [name]: value };
+    setBorrador(nuevos);
+
+    if (name === 'q') {
+      aplicarFiltrosConRetardo(nuevos);
+    } else {
+      clearTimeout(temporizador.current);
+      setFiltros(nuevos);
+      setPagina(0);
+      setProyectoIdSeleccionado('');
+    }
   }
 
   function limpiarFiltros() {
+    clearTimeout(temporizador.current);
     setBorrador(FILTROS_VACIOS);
     setFiltros(FILTROS_VACIOS);
     setPagina(0);
     setProyectoIdSeleccionado('');
   }
+
+  useEffect(() => () => clearTimeout(temporizador.current), []);
 
   function seleccionarProyecto(proyecto) {
     setProyectoIdSeleccionado(String(proyecto.id));
@@ -113,7 +136,7 @@ export default function PaginaAsignaciones() {
       id="asignaciones"
     >
       <div className={estilos.pagina}>
-        <form className={estilos.busquedaProyectos} onSubmit={buscar}>
+        <form className={estilos.busquedaProyectos} onSubmit={(evento) => evento.preventDefault()}>
           <div className={estilos.tituloBuscador}>
             <span className={estilos.iconoBuscador}><Search size={22} aria-hidden="true" /></span>
             <div>
@@ -152,9 +175,6 @@ export default function PaginaAsignaciones() {
               value={borrador.orden}
               onChange={alCambiarFiltro}
             />
-            <Boton type="submit" icono={Search} disabled={proyectos.cargando}>
-              Buscar
-            </Boton>
             <Boton type="button" variante="secundario" icono={RotateCcw} onClick={limpiarFiltros}>
               Limpiar filtros
             </Boton>
@@ -238,7 +258,7 @@ export default function PaginaAsignaciones() {
                 disabled={proyectoSeleccionado.estadoHabilitacion === 'INHABILITADO'}
                 onClick={() => setModalAbierto(true)}
               >
-                Asignar trabajadores
+                Asignar desarrolladores
               </Boton>
             </header>
 
@@ -274,6 +294,8 @@ export default function PaginaAsignaciones() {
                 <ContenidoPestana
                   pestana={pestana}
                   proyecto={detalle.datos}
+                  alActualizar={() => setRecarga((n) => n + 1)}
+                  alAbrirAsignar={() => setModalAbierto(true)}
                 />
               )}
             </div>
@@ -313,15 +335,21 @@ function TarjetaProyecto({ proyecto, seleccionada, onSelect }) {
         <span><CalendarDays size={15} aria-hidden="true" /> Creado: {fechaCreacion}</span>
       </div>
       <button className={estilos.verDetalle} type="button" onClick={onSelect}>
-        Ver detalles <ArrowRight size={15} aria-hidden="true" />
+        Ver detalles
       </button>
     </article>
   );
 }
 
-function ContenidoPestana({ pestana, proyecto }) {
+function ContenidoPestana({ pestana, proyecto, alActualizar, alAbrirAsignar }) {
   if (pestana === 'equipo') {
-    return <EquipoProyectoTab proyecto={proyecto} />;
+    return (
+      <EquipoProyectoTab
+        proyecto={proyecto}
+        alActualizar={alActualizar}
+        alAbrirAsignar={alAbrirAsignar}
+      />
+    );
   }
   if (pestana === 'etapas') {
     return <EtapasTab proyecto={proyecto} />;
@@ -358,19 +386,220 @@ function GeneralTab({ proyecto }) {
   );
 }
 
-function EquipoProyectoTab({ proyecto }) {
+function EquipoProyectoTab({ proyecto, alActualizar, alAbrirAsignar }) {
+  const notificador = useNotificador();
+  const equipo = useEquipo(proyecto.id);
+  const [modalLiderAbierto, setModalLiderAbierto] = useState(false);
+  const [liderOperando, setLiderOperando] = useState(false);
+  const [desarrolladorAQuitar, setDesarrolladorAQuitar] = useState(null);
+  const [quitando, setQuitando] = useState(false);
+
+  const liderAsignacion = (equipo.datos || []).find((a) => a.rolEnProyecto === 'LIDER');
+  const desarrolladores = (equipo.datos || []).filter(
+    (a) => a.rolEnProyecto === 'DESARROLLADOR',
+  );
+
+  const nombreLider =
+    liderAsignacion?.trabajadorNombreCompleto ||
+    proyecto.liderResponsableNombre ||
+    'Sin líder asignado';
+  const documentoLider =
+    liderAsignacion?.trabajadorIdentificacion ||
+    proyecto.liderResponsableIdentificacion ||
+    '---';
+  const estadoLider =
+    liderAsignacion?.estadoLiderazgo || proyecto.liderEstado || 'ACTIVO';
+  const estaPausado = estadoLider === 'PAUSADO';
+
+  async function alPausarLider() {
+    setLiderOperando(true);
+    try {
+      await pausarLider(proyecto.id);
+      notificador.exito('El líder del proyecto ha sido pausado.', 'Liderazgo pausado');
+      equipo.reintentar();
+      alActualizar?.();
+    } catch (error) {
+      notificador.error(error.message || 'No se pudo pausar al líder.', 'Error');
+    } finally {
+      setLiderOperando(false);
+    }
+  }
+
+  async function alReactivarLider() {
+    setLiderOperando(true);
+    try {
+      await reactivarLider(proyecto.id);
+      notificador.exito('El líder del proyecto ha sido reactivado.', 'Liderazgo reactivado');
+      equipo.reintentar();
+      alActualizar?.();
+    } catch (error) {
+      notificador.error(error.message || 'No se pudo reactivar al líder.', 'Error');
+    } finally {
+      setLiderOperando(false);
+    }
+  }
+
+  async function alConfirmarQuitar() {
+    if (!desarrolladorAQuitar) return;
+    setQuitando(true);
+    try {
+      await quitarDesarrollador(proyecto.id, desarrolladorAQuitar.id);
+      notificador.exito(
+        `${desarrolladorAQuitar.trabajadorNombreCompleto} ha sido desvinculado del proyecto.`,
+        'Desarrollador desvinculado',
+      );
+      equipo.reintentar();
+      alActualizar?.();
+    } catch (error) {
+      notificador.error(error.message || 'No se pudo quitar al desarrollador.', 'Error');
+    } finally {
+      setQuitando(false);
+      setDesarrolladorAQuitar(null);
+    }
+  }
+
   return (
     <div className={estilos.contenidoListado}>
-      <div className={estilos.encabezadoListado}>
-        <div>
-          <h3>Equipo de trabajo actual</h3>
-          <p>{proyecto.numeroIntegrantes} integrantes en el proyecto.</p>
+      {proyecto.estadoHabilitacion === 'INHABILITADO' && (
+        <p className={estilos.avisoInhabilitado}>
+          No se pueden registrar ni modificar asignaciones en un proyecto inhabilitado.
+        </p>
+      )}
+
+      {/* BLOQUE SUPERIOR: LÍDER DEL PROYECTO */}
+      <section className={estilos.bloqueSeccion} aria-labelledby="seccion-lider">
+        <div className={estilos.encabezadoBloque}>
+          <h3 id="seccion-lider">Líder del proyecto</h3>
+          <span className={estaPausado ? estilos.badgePausado : estilos.badgeActivo}>
+            {estaPausado ? 'Pausado' : 'Activo'}
+          </span>
         </div>
-        {proyecto.estadoHabilitacion === 'INHABILITADO' && (
-          <p className={estilos.avisoInhabilitado}>No se pueden registrar nuevas asignaciones en un proyecto inhabilitado.</p>
+
+        <div className={estilos.tarjetaLider}>
+          <div className={estilos.infoLider}>
+            <span className={estilos.avatarInicial}>{nombreLider[0] || 'L'}</span>
+            <div className={estilos.detallesLider}>
+              <strong>{nombreLider}</strong>
+              <span>{documentoLider} · Líder de proyecto</span>
+            </div>
+          </div>
+
+          <div className={estilos.accionesLider}>
+            <Boton
+              type="button"
+              variante="secundario"
+              disabled={liderOperando || proyecto.estadoHabilitacion === 'INHABILITADO'}
+              onClick={() => setModalLiderAbierto(true)}
+            >
+              Cambiar líder
+            </Boton>
+
+            {estaPausado ? (
+              <Boton
+                type="button"
+                variante="primario"
+                disabled={liderOperando || proyecto.estadoHabilitacion === 'INHABILITADO'}
+                onClick={alReactivarLider}
+              >
+                Reactivar
+              </Boton>
+            ) : (
+              <Boton
+                type="button"
+                variante="secundario"
+                disabled={liderOperando || proyecto.estadoHabilitacion === 'INHABILITADO'}
+                onClick={alPausarLider}
+              >
+                Pausar
+              </Boton>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* BLOQUE INFERIOR: DESARROLLADORES ASIGNADOS */}
+      <section className={estilos.bloqueSeccion} aria-labelledby="seccion-desarrolladores">
+        <div className={estilos.encabezadoBloque}>
+          <div>
+            <h3 id="seccion-desarrolladores">
+              Desarrolladores asignados ({desarrolladores.length})
+            </h3>
+            <p style={{ margin: 0, fontSize: 'var(--t-xs)', color: 'var(--c-texto-tenue)' }}>
+              Integrantes del equipo que desarrollan tareas y actividades en el proyecto.
+            </p>
+          </div>
+        </div>
+
+        {equipo.cargando && <EstadoCarga mensaje="Cargando desarrolladores..." />}
+        {!equipo.cargando && equipo.error && (
+          <EstadoError error={equipo.error} alReintentar={equipo.reintentar} />
         )}
-      </div>
-      <EquipoLista proyectoId={proyecto.id} />
+        {!equipo.cargando && !equipo.error && desarrolladores.length === 0 && (
+          <EstadoVacio
+            mensaje="Todavía no hay desarrolladores asignados a este proyecto."
+            icono={Users}
+          />
+        )}
+        {!equipo.cargando && !equipo.error && desarrolladores.length > 0 && (
+          <ul className={estilos.listaEquipo}>
+            {desarrolladores.map((asignacion) => (
+              <li key={asignacion.id}>
+                <span className={estilos.avatarInicial}>
+                  {asignacion.trabajadorNombreCompleto?.[0] || 'D'}
+                </span>
+                <div className={estilos.datosIntegrante}>
+                  <strong>{asignacion.trabajadorNombreCompleto}</strong>
+                  <span>{asignacion.trabajadorIdentificacion}</span>
+                </div>
+                <span className={estilos.badgeRol}>Desarrollador</span>
+                {asignacion.dedicacionPorcentaje && (
+                  <span className={estilos.dedicacion}>{asignacion.dedicacionPorcentaje}%</span>
+                )}
+                <button
+                  type="button"
+                  className={estilos.botonQuitar}
+                  disabled={proyecto.estadoHabilitacion === 'INHABILITADO'}
+                  onClick={() => setDesarrolladorAQuitar(asignacion)}
+                >
+                  Quitar del proyecto
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {/* MODAL CAMBIAR LÍDER */}
+      {modalLiderAbierto && (
+        <ModalCambiarLider
+          abierto={modalLiderAbierto}
+          proyecto={proyecto}
+          alCerrar={() => setModalLiderAbierto(false)}
+          alLiderCambiado={() => {
+            setModalLiderAbierto(false);
+            equipo.reintentar();
+            alActualizar?.();
+          }}
+        />
+      )}
+
+      {/* CONFIRMACIÓN QUITAR DESARROLLADOR */}
+      <Confirmacion
+        abierto={Boolean(desarrolladorAQuitar)}
+        titulo="Quitar desarrollador del proyecto"
+        textoConfirmar="Quitar del proyecto"
+        ocupado={quitando}
+        alConfirmar={alConfirmarQuitar}
+        alCancelar={() => setDesarrolladorAQuitar(null)}
+      >
+        <p>
+          ¿Desea desvincular a <strong>{desarrolladorAQuitar?.trabajadorNombreCompleto}</strong> de{' '}
+          {proyecto.nombre}?
+        </p>
+        <p className={estilos.notaDialogo}>
+          No se borra su historial de actividades: la asignación quedará inactiva conforme a las reglas del sistema.
+        </p>
+      </Confirmacion>
     </div>
   );
 }
@@ -487,6 +716,7 @@ function useEquipo(proyectoId) {
 
 function nombreRol(rol) {
   return {
+    COORDINADOR: 'Coordinador',
     LIDER: 'Líder de proyecto',
     DESARROLLADOR: 'Desarrollador',
   }[rol] || rol;

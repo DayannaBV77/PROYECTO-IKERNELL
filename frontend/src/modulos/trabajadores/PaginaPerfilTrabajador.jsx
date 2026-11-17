@@ -1,9 +1,10 @@
 import { useCallback, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
-import { ArrowLeft, CircleCheck, Save, TriangleAlert, UserX } from 'lucide-react';
+import { CircleCheck, Save, TriangleAlert } from 'lucide-react';
 
 import {
   TIPOS_TRABAJADOR,
+  habilitarTrabajador,
   inhabilitarTrabajador,
   modificarTrabajador,
   obtenerTrabajador,
@@ -22,6 +23,7 @@ import { formatearFecha } from '../../utilidades/formato.js';
 import SelectorEspecialidades from './componentes/SelectorEspecialidades.jsx';
 import SelectorProfesiones from './componentes/SelectorProfesiones.jsx';
 import SubidaFotografia from './componentes/SubidaFotografia.jsx';
+import { esFormatoDireccionColombiana, validarCampoTrabajador } from './validaciones.js';
 
 /** Los tres campos que RF-005 autoriza a modificar. */
 function editablesDe(trabajador) {
@@ -77,7 +79,7 @@ export default function PaginaPerfilTrabajador() {
 function VolverALaBusqueda() {
   return (
     <div className={estilos.barraSuperior}>
-      <Boton a="/app/trabajadores" variante="texto" icono={ArrowLeft}>
+      <Boton a="/app/trabajadores" variante="texto">
         Volver a la busqueda
       </Boton>
     </div>
@@ -110,6 +112,8 @@ function PerfilCargado({ inicial }) {
   const [guardando, setGuardando] = useState(false);
   const [confirmando, setConfirmando] = useState(false);
   const [inhabilitando, setInhabilitando] = useState(false);
+  const [confirmandoHabilitacion, setConfirmandoHabilitacion] = useState(false);
+  const [habilitando, setHabilitando] = useState(false);
 
   // Avisos del registro recien hecho, que llegan en el estado de la navegacion
   // (HU-04 C01 y C05).
@@ -129,16 +133,45 @@ function PerfilCargado({ inicial }) {
   function alCambiar(evento) {
     const { name, value } = evento.target;
     setEditables((previos) => ({ ...previos, [name]: value }));
-    setErrores((previos) => (previos[name] ? { ...previos, [name]: undefined } : previos));
+    if (name === 'direccion') {
+      const err = validarCampoTrabajador('direccion', value);
+      setErrores((previos) => ({ ...previos, direccion: err || undefined }));
+    } else {
+      setErrores((previos) => (previos[name] ? { ...previos, [name]: undefined } : previos));
+    }
     setConfirmado(null);
   }
 
   async function alGuardar(evento) {
     evento.preventDefault();
-    setGuardando(true);
     setFallo(null);
-    setErrores({});
     setConfirmado(null);
+
+    const erroresValidacion = {};
+    if (!editables.profesion || !editables.profesion.trim()) {
+      erroresValidacion.profesion = 'Debe indicar la profesión.';
+    }
+    if (!editables.direccion || !editables.direccion.trim()) {
+      erroresValidacion.direccion = 'La dirección es obligatoria.';
+    } else if (!esFormatoDireccionColombiana(editables.direccion)) {
+      erroresValidacion.direccion =
+        'Use nomenclatura urbana (ej.: Calle 45 # 12-30) o una referencia rural (vereda, finca, corregimiento o km).';
+    }
+    if (!editables.especialidadDesarrollo) {
+      erroresValidacion.especialidadDesarrollo = 'Debe indicar la especialidad de desarrollo.';
+    }
+    if (!editables.tipoTrabajador) {
+      erroresValidacion.tipoTrabajador = 'Debe seleccionar un tipo de trabajador.';
+    }
+
+    if (Object.keys(erroresValidacion).length > 0) {
+      setErrores(erroresValidacion);
+      setFallo('Corrija los campos señalados antes de guardar los cambios.');
+      return;
+    }
+
+    setGuardando(true);
+    setErrores({});
 
     try {
       aplicar(
@@ -172,6 +205,24 @@ function PerfilCargado({ inicial }) {
     } finally {
       setInhabilitando(false);
       setConfirmando(false);
+    }
+  }
+
+  async function alHabilitar() {
+    setHabilitando(true);
+    setFallo(null);
+
+    try {
+      aplicar(
+        await habilitarTrabajador(trabajador.id),
+        'El trabajador quedó habilitado exitosamente y puede volver a recibir asignaciones.',
+      );
+    } catch (error) {
+      setFallo(error.message);
+      notificador.error(error.message || 'No se pudo habilitar al trabajador.', 'Error');
+    } finally {
+      setHabilitando(false);
+      setConfirmandoHabilitacion(false);
     }
   }
 
@@ -214,6 +265,14 @@ function PerfilCargado({ inicial }) {
           <p className={estilos.rotulo}>Datos no modificables</p>
           <dl className={estilos.datos}>
             <div>
+              <dt>Tipo de identificación</dt>
+              <dd>
+                {trabajador.tipoIdentificacion === 'CEDULA_EXTRANJERIA'
+                  ? 'Cédula de extranjería'
+                  : 'Cédula de ciudadanía'}
+              </dd>
+            </div>
+            <div>
               <dt>Identificacion</dt>
               <dd>{trabajador.identificacion}</dd>
             </div>
@@ -233,10 +292,6 @@ function PerfilCargado({ inicial }) {
                 <dd>{trabajador.correoCorporativo}</dd>
               </div>
             )}
-            <div>
-              <dt>Profesion</dt>
-              <dd>{trabajador.profesion}</dd>
-            </div>
             <div>
               <dt>Estado</dt>
               <dd>
@@ -313,14 +368,21 @@ function PerfilCargado({ inicial }) {
               {guardando ? 'Guardando...' : 'Guardar cambios'}
             </Boton>
 
-            {habilitado && (
+            {habilitado ? (
               <Boton
                 type="button"
                 variante="peligro"
-                icono={UserX}
                 onClick={() => setConfirmando(true)}
               >
                 Inhabilitar
+              </Boton>
+            ) : (
+              <Boton
+                type="button"
+                variante="exito"
+                onClick={() => setConfirmandoHabilitacion(true)}
+              >
+                Habilitar
               </Boton>
             )}
           </div>
@@ -341,6 +403,23 @@ function PerfilCargado({ inicial }) {
         </p>
         <p className={estilos.notaDialogo}>
           No se borra nada: su historial se conserva y el perfil queda marcado como inhabilitado.
+        </p>
+      </Confirmacion>
+
+      <Confirmacion
+        abierto={confirmandoHabilitacion}
+        titulo="Habilitar al trabajador"
+        textoConfirmar="Habilitar"
+        varianteConfirmar="exito"
+        ocupado={habilitando}
+        alConfirmar={alHabilitar}
+        alCancelar={() => setConfirmandoHabilitacion(false)}
+      >
+        <p>
+          ¿Desea reactivar a {trabajador.nombre} {trabajador.apellido}?
+        </p>
+        <p className={estilos.notaDialogo}>
+          El trabajador volverá al estado habilitado y podrá operar y recibir asignaciones a proyectos nuevamente.
         </p>
       </Confirmacion>
     </Seccion>

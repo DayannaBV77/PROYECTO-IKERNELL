@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import com.PROYECTO.IKERNELL.backend.shared.domain.EstadoHabilitacion;
+import com.PROYECTO.IKERNELL.backend.trabajadores.domain.TipoIdentificacion;
 import com.PROYECTO.IKERNELL.backend.trabajadores.domain.TipoTrabajador;
 import com.PROYECTO.IKERNELL.backend.trabajadores.domain.Trabajador;
 
@@ -22,7 +23,12 @@ public interface TrabajadorRepository
 	/** Soporta la validacion de unicidad de RN-01 (RF-001, HU-04 C03). */
 	boolean existsByIdentificacion(String identificacion);
 
+	boolean existsByTipoIdentificacionAndIdentificacion(TipoIdentificacion tipoIdentificacion, String identificacion);
+
 	Optional<Trabajador> findByIdentificacion(String identificacion);
+
+	Optional<Trabajador> findByTipoIdentificacionAndIdentificacion(TipoIdentificacion tipoIdentificacion,
+			String identificacion);
 
 	boolean existsByTipoTrabajador(TipoTrabajador tipoTrabajador);
 

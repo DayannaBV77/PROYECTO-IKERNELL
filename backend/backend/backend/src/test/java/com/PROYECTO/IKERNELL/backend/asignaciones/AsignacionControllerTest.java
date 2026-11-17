@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
 
 import com.PROYECTO.IKERNELL.backend.auth.CuentaAccesoRepository;
+import com.PROYECTO.IKERNELL.backend.asignaciones.domain.Rol;
 import com.PROYECTO.IKERNELL.backend.proyectos.ProyectoRepository;
 import com.PROYECTO.IKERNELL.backend.proyectos.domain.Proyecto;
 import com.PROYECTO.IKERNELL.backend.support.AutenticacionDePrueba;
@@ -51,6 +52,9 @@ class AsignacionControllerTest {
 
 	@Autowired
 	private ProyectoRepository proyectos;
+
+	@Autowired
+	private RolRepository roles;
 
 	private MockMvc mockMvc;
 	private Authentication coordinador;
@@ -89,6 +93,30 @@ class AsignacionControllerTest {
 				.andExpect(jsonPath("$.proyectoId").value(proyecto.getId()))
 				.andExpect(jsonPath("$.rolEnProyecto").value("DESARROLLADOR"))
 				.andExpect(jsonPath("$.activa").value(true));
+	}
+
+	@Test
+	@DisplayName("El rol del catálogo se asigna por proyecto usando rolId")
+	void permiteRolesDistintosPorProyectoConRolId() throws Exception {
+		Rol lider = roles.findByNombreRol("Líder").orElseThrow();
+		Rol rolDesarrollador = roles.findByNombreRol("Desarrollador").orElseThrow();
+		Proyecto otroProyecto = proyectos.saveAndFlush(new Proyecto("Proyecto alterno", "d", null));
+
+		mockMvc.perform(post("/api/asignaciones").with(csrf()).with(authentication(coordinador))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"trabajadorId\":%d,\"proyectoId\":%d,\"rolId\":%d}"
+						.formatted(desarrollador.getId(), proyecto.getId(), lider.getId())))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.rolId").value(lider.getId()))
+				.andExpect(jsonPath("$.nombreRol").value("Líder"));
+
+		mockMvc.perform(post("/api/asignaciones").with(csrf()).with(authentication(coordinador))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"trabajadorId\":%d,\"proyectoId\":%d,\"rolId\":%d}"
+						.formatted(desarrollador.getId(), otroProyecto.getId(), rolDesarrollador.getId())))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.rolId").value(rolDesarrollador.getId()))
+				.andExpect(jsonPath("$.rolEnProyecto").value("DESARROLLADOR"));
 	}
 
 	@Test

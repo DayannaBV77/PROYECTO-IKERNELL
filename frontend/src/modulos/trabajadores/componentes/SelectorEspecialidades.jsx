@@ -91,8 +91,8 @@ export default function SelectorEspecialidades({
         <div className={estilos.chips}>
           {seleccionadas.length ? (
             seleccionadas.map((nombre) => (
-              <span key={nombre} className={estilos.chip}>
-                {nombre}
+              <span key={nombre} className={estilos.chip} title={nombre}>
+                <span className={estilos.textoChip}>{nombre}</span>
                 <button
                   type="button"
                   className={estilos.quitarChip}

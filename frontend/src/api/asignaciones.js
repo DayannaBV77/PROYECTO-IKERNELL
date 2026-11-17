@@ -10,14 +10,20 @@ import { api, construirConsulta } from './cliente.js';
 
 /** Roles con que un trabajador puede participar en un proyecto. */
 export const ROLES_EN_PROYECTO = [
-  { valor: 'LIDER', texto: 'Lider' },
+  { valor: 'COORDINADOR', texto: 'Coordinador' },
+  { valor: 'LIDER', texto: 'Líder' },
   { valor: 'DESARROLLADOR', texto: 'Desarrollador' },
 ];
 
 export const ETIQUETA_ROL = {
-  LIDER: 'Lider',
+  COORDINADOR: 'Coordinador',
+  LIDER: 'Líder',
   DESARROLLADOR: 'Desarrollador',
 };
+
+export function obtenerRoles(opciones) {
+  return api.obtener('/api/asignaciones/roles', opciones);
+}
 
 /**
  * RF-003, HU-06 C01: proyectos a los que se puede asignar.
@@ -88,4 +94,34 @@ export function asignacionesDeTrabajador(trabajadorId, opciones) {
 /** HU-06 C05: asignaciones registradas de un proyecto. */
 export function asignacionesDeProyecto(proyectoId, opciones) {
   return api.obtener(`/api/asignaciones/proyecto/${proyectoId}`, opciones);
+}
+
+/** Obtiene la lista de trabajadores habilitados con rol DESARROLLADOR disponibles para asignar al proyecto. */
+export function obtenerDesarrolladoresDisponibles(proyectoId, opciones) {
+  return api.obtener(`/api/asignaciones/proyectos/${proyectoId}/desarrolladores-disponibles`, opciones);
+}
+
+/** Obtiene la lista de líderes habilitados disponibles para asumir el liderazgo del proyecto. */
+export function obtenerLideresDisponibles(proyectoId, opciones) {
+  return api.obtener(`/api/asignaciones/proyectos/${proyectoId}/lideres-disponibles`, opciones);
+}
+
+/** Pausa el liderazgo del líder asignado al proyecto. */
+export function pausarLider(proyectoId) {
+  return api.crear(`/api/asignaciones/proyectos/${proyectoId}/lider/pausar`, {});
+}
+
+/** Reactiva el liderazgo del líder asignado al proyecto. */
+export function reactivarLider(proyectoId) {
+  return api.crear(`/api/asignaciones/proyectos/${proyectoId}/lider/reactivar`, {});
+}
+
+/** Cambia atómicamente el líder del proyecto por un nuevo líder. */
+export function cambiarLider(proyectoId, nuevoLiderId) {
+  return api.crear(`/api/asignaciones/proyectos/${proyectoId}/lider/cambiar`, { nuevoLiderId });
+}
+
+/** Desvincula a un desarrollador del proyecto (desactiva la asignación). */
+export function quitarDesarrollador(proyectoId, asignacionId) {
+  return api.eliminar(`/api/asignaciones/proyectos/${proyectoId}/equipo/${asignacionId}`);
 }

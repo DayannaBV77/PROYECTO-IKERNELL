@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ArrowRight,
   ChevronDown,
   ChevronUp,
   RotateCcw,
@@ -18,6 +17,7 @@ import {
   buscarTrabajadores,
 } from '../../api/trabajadores.js';
 import { PROFESIONES } from './catalogoProfesiones.js';
+import { ESPECIALIDADES_DESARROLLO } from './catalogoEspecialidades.js';
 import EstadoCarga from '../../componentes/estados/EstadoCarga.jsx';
 import EstadoError from '../../componentes/estados/EstadoError.jsx';
 import EstadoVacio from '../../componentes/estados/EstadoVacio.jsx';
@@ -32,6 +32,11 @@ import { usePeticion } from '../../hooks/usePeticion.js';
 const OPCIONES_PROFESIONES = [
   { valor: '', texto: 'Todas las profesiones' },
   ...PROFESIONES.map((profesion) => ({ valor: profesion, texto: profesion })),
+];
+
+const OPCIONES_ESPECIALIDADES = [
+  { valor: '', texto: 'Todas las especialidades' },
+  ...ESPECIALIDADES_DESARROLLO.map((esp) => ({ valor: esp, texto: esp })),
 ];
 
 const SIN_CRITERIOS = {
@@ -187,7 +192,8 @@ export default function PaginaTrabajadores() {
             <Campo
               etiqueta="Especialidad de desarrollo"
               nombre="especialidadDesarrollo"
-              placeholder="Ej. Backend, React"
+              opciones={OPCIONES_ESPECIALIDADES}
+              textoVacio="Todas las especialidades"
               value={borrador.especialidadDesarrollo}
               onChange={alCambiar}
             />
@@ -268,7 +274,6 @@ export default function PaginaTrabajadores() {
                     <td>
                       <Link className={estilos.abrir} to={`/app/trabajadores/${trabajador.id}`}>
                         <span>Ver perfil</span>
-                        <ArrowRight size={13} aria-hidden="true" />
                         <span className="solo-lectores"> de {trabajador.nombreCompleto}</span>
                       </Link>
                     </td>

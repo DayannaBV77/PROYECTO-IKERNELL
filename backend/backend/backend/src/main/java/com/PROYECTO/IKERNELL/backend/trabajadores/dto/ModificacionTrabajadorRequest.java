@@ -3,6 +3,7 @@ package com.PROYECTO.IKERNELL.backend.trabajadores.dto;
 import java.util.List;
 
 import com.PROYECTO.IKERNELL.backend.trabajadores.domain.TipoTrabajador;
+import com.PROYECTO.IKERNELL.backend.trabajadores.validacion.DireccionColombiana;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -26,7 +27,12 @@ public record ModificacionTrabajadorRequest(
 
 		@NotBlank(message = "Debe indicar la direccion.")
 		@Size(max = 200, message = "La direccion admite hasta 200 caracteres.")
+		@DireccionColombiana
 		String direccion,
+
+		@NotBlank(message = "Debe indicar la profesion.")
+		@Size(max = 100, message = "La profesion admite hasta 100 caracteres.")
+		String profesion,
 
 		@NotBlank(message = "Debe indicar la especialidad de desarrollo.")
 		@Size(max = 100, message = "La especialidad admite hasta 100 caracteres.")
@@ -37,4 +43,8 @@ public record ModificacionTrabajadorRequest(
 
 		@Size(max = 23, message = "Se admiten hasta 23 habilidades.")
 		List<@NotNull @Valid HabilidadTrabajadorRequest> habilidades) {
+
+	public ModificacionTrabajadorRequest(String direccion, String especialidadDesarrollo, TipoTrabajador tipoTrabajador, List<HabilidadTrabajadorRequest> habilidades) {
+		this(direccion, "Profesional en desarrollo", especialidadDesarrollo, tipoTrabajador, habilidades);
+	}
 }

@@ -1,5 +1,13 @@
-import { useCallback, useEffect, useState } from 'react';
-import { ClipboardList, Search, TriangleAlert } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  ChevronDown,
+  ChevronUp,
+  ClipboardList,
+  RotateCcw,
+  Search,
+  SlidersHorizontal,
+  TriangleAlert,
+} from 'lucide-react';
 
 import { asignacionesDeTrabajador } from '../../api/asignaciones.js';
 import { reporteDeDesempeno } from '../../api/reportes.js';
@@ -82,27 +90,78 @@ function filtrarDesarrolladores(trabajadores, filtros = FILTROS_DESARROLLADOR_VA
 export default function PaginaReporteDesempeno() {
   const [borrador, setBorrador] = useState(SIN_CRITERIOS);
   const [criterios, setCriterios] = useState(null);
-  const [filtrosDesarrollador, setFiltrosDesarrollador] = useState(FILTROS_DESARROLLADOR_VACIOS);
-  const [filtrosAplicados, setFiltrosAplicados] = useState(FILTROS_DESARROLLADOR_VACIOS);
-  const [desarrolladoresBuscados, setDesarrolladoresBuscados] = useState(null);
+  const [busquedaGeneral, setBusquedaGeneral] = useState('');
+  const [filtrosAdicionales, setFiltrosAdicionales] = useState({
+    profesion: '',
+    especialidadDesarrollo: '',
+  });
+  const [mostrarMasFiltros, setMostrarMasFiltros] = useState(false);
   const [proyectosDelDesarrollador, setProyectosDelDesarrollador] = useState([]);
-  const [buscandoDesarrolladores, setBuscandoDesarrolladores] = useState(false);
   const [mensajeProyecto, setMensajeProyecto] = useState('');
 
   const cargarTrabajadores = useCallback(
     ({ senal }) =>
-      buscarTrabajadores({ tipoTrabajador: 'DESARROLLADOR', estado: 'HABILITADO', tamano: 100 }, { senal }),
+      buscarTrabajadores({ estado: 'HABILITADO', tamano: 100 }, { senal }),
     [],
   );
   const trabajadores = usePeticion(cargarTrabajadores, []);
 
-  const desarrolladoresDisponibles = desarrolladoresBuscados ?? (trabajadores.datos?.contenido || []);
+  // Trabajadores elegibles: Desarrolladores y Líderes que pueden participar en proyectos (RN-05)
+  const desarrolladoresElegibles = useMemo(() => {
+    return (trabajadores.datos?.contenido || []).filter(
+      (t) => t.tipoTrabajador === 'DESARROLLADOR' || t.tipoTrabajador === 'LIDER',
+    );
+  }, [trabajadores.datos]);
+
+  // Filtrado unificado en tiempo real
+  const desarrolladoresFiltrados = useMemo(() => {
+    const qNorm = normalizarTexto(busquedaGeneral);
+    return desarrolladoresElegibles.filter((t) => {
+      if (qNorm) {
+        const textoCompleto = normalizarTexto(
+          `${t.nombre || ''} ${t.apellido || ''} ${t.identificacion || ''}`,
+        );
+        if (!textoCompleto.includes(qNorm)) {
+          return false;
+        }
+      }
+      if (
+        filtrosAdicionales.profesion &&
+        normalizarTexto(t.profesion) !== normalizarTexto(filtrosAdicionales.profesion)
+      ) {
+        return false;
+      }
+      if (
+        filtrosAdicionales.especialidadDesarrollo &&
+        normalizarTexto(t.especialidadDesarrollo) !==
+          normalizarTexto(filtrosAdicionales.especialidadDesarrollo)
+      ) {
+        return false;
+      }
+      return true;
+    });
+  }, [desarrolladoresElegibles, busquedaGeneral, filtrosAdicionales]);
 
   const cargar = useCallback(
     ({ senal }) => (criterios ? reporteDeDesempeno(criterios, { senal }) : Promise.resolve(null)),
     [criterios],
   );
   const { datos, error, cargando, reintentar } = usePeticion(cargar, [criterios]);
+
+  // Sincronizar selección de desarrollador si deja de estar en la lista filtrada
+  useEffect(() => {
+    if (
+      borrador.desarrolladorId &&
+      !desarrolladoresFiltrados.some(
+        (t) => String(t.id) === String(borrador.desarrolladorId),
+      )
+    ) {
+      setBorrador((prev) => ({ ...prev, desarrolladorId: '', proyectoId: '' }));
+      setProyectosDelDesarrollador([]);
+      setMensajeProyecto('');
+      setCriterios(null);
+    }
+  }, [desarrolladoresFiltrados, borrador.desarrolladorId]);
 
   useEffect(() => {
     if (!borrador.desarrolladorId) {
@@ -179,57 +238,12 @@ export default function PaginaReporteDesempeno() {
     setCriterios(null);
   }
 
-  function alCambiarFiltro(evento) {
-    const { name, value } = evento.target;
-    setFiltrosDesarrollador((previos) => ({ ...previos, [name]: value }));
-  }
-
-  async function buscarDesarrolladoresConFiltros() {
-    const criteriosBusqueda = Object.fromEntries(
-      Object.entries(filtrosDesarrollador).filter(([, valor]) => String(valor ?? '').trim() !== ''),
-    );
-
-    setBuscandoDesarrolladores(true);
-
-    try {
-      const respuesta = await buscarTrabajadores({
-        tipoTrabajador: 'DESARROLLADOR',
-        estado: 'HABILITADO',
-        ...criteriosBusqueda,
-        tamano: 100,
-      });
-      const lista = respuesta?.contenido || [];
-      setDesarrolladoresBuscados(lista);
-      setFiltrosAplicados({ ...filtrosDesarrollador });
-
-      if (borrador.desarrolladorId && !lista.some((trabajador) => String(trabajador.id) === String(borrador.desarrolladorId))) {
-        setBorrador((previos) => ({ ...previos, desarrolladorId: '', proyectoId: '' }));
-        setProyectosDelDesarrollador([]);
-        setMensajeProyecto('');
-      }
-    } catch (errorBusqueda) {
-      setDesarrolladoresBuscados([]);
-      setFiltrosAplicados({ ...filtrosDesarrollador });
-      setMensajeProyecto(errorBusqueda?.message || 'No se pudieron cargar los desarrolladores con los filtros indicados.');
-    } finally {
-      setBuscandoDesarrolladores(false);
-    }
-  }
-
   function limpiarFiltrosDesarrollador() {
-    setFiltrosDesarrollador(FILTROS_DESARROLLADOR_VACIOS);
-    setFiltrosAplicados(FILTROS_DESARROLLADOR_VACIOS);
-    setDesarrolladoresBuscados(null);
-    const listaBase = trabajadores.datos?.contenido || [];
-    if (borrador.desarrolladorId && !listaBase.some((trabajador) => String(trabajador.id) === String(borrador.desarrolladorId))) {
-      setBorrador((previos) => ({ ...previos, desarrolladorId: '', proyectoId: '' }));
-      setProyectosDelDesarrollador([]);
-      setMensajeProyecto('');
-    }
+    setBusquedaGeneral('');
+    setFiltrosAdicionales({ profesion: '', especialidadDesarrollo: '' });
   }
 
   const listo = borrador.desarrolladorId && borrador.proyectoId && proyectosDelDesarrollador.length > 0;
-  const desarrolladoresFiltrados = filtrarDesarrolladores(desarrolladoresDisponibles, filtrosAplicados);
 
   return (
     <Seccion
@@ -244,55 +258,83 @@ export default function PaginaReporteDesempeno() {
           setCriterios(borrador);
         }}
       >
-        <div className={estilos.filtrosBarra}>
-          <div className={estilos.filtrosCabecera}>
-            <span className={estilos.rotulo}>Filtrar desarrollador</span>
+        {/* Componente de búsqueda unificada en tiempo real (mismo patrón que Trabajadores) */}
+        <div className={estilos.buscador} style={{ marginBottom: 'var(--s-4)', padding: 'var(--s-4)', background: 'var(--c-fondo-tarjeta)', borderRadius: 'var(--r-md)', border: '1px solid var(--c-borde)' }}>
+          <div className={estilos.filtroCampoGeneral}>
+            <label className={estilos.filtroEtiqueta} htmlFor="busquedaGeneralDesempeno">
+              Buscar por nombre, apellido o identificación
+            </label>
+            <div className={estilos.filtroInputIcono}>
+              <Search size={16} className={estilos.filtroIconoBusqueda} aria-hidden="true" />
+              <input
+                id="busquedaGeneralDesempeno"
+                className={estilos.filtroInput}
+                type="text"
+                placeholder="Escriba un nombre, apellido o número de documento..."
+                value={busquedaGeneral}
+                onChange={(e) => setBusquedaGeneral(e.target.value)}
+                autoComplete="off"
+              />
+            </div>
           </div>
-          <div className={estilos.filtrosGrid}>
-            <Campo
-              etiqueta="Identificacion"
-              nombre="identificacion"
-              value={filtrosDesarrollador.identificacion}
-              onChange={alCambiarFiltro}
-            />
-            <Campo
-              etiqueta="Nombre"
-              nombre="nombre"
-              value={filtrosDesarrollador.nombre}
-              onChange={alCambiarFiltro}
-            />
-            <Campo
-              etiqueta="Apellido"
-              nombre="apellido"
-              value={filtrosDesarrollador.apellido}
-              onChange={alCambiarFiltro}
-            />
-            <Campo
-              etiqueta="Especialidad"
-              nombre="especialidadDesarrollo"
-              opciones={OPCIONES_ESPECIALIDADES}
-              value={filtrosDesarrollador.especialidadDesarrollo}
-              onChange={alCambiarFiltro}
-            />
-            <Campo
-              etiqueta="Profesion"
-              nombre="profesion"
-              opciones={OPCIONES_PROFESIONES}
-              value={filtrosDesarrollador.profesion}
-              onChange={alCambiarFiltro}
-            />
-          </div>
-          <div className={estilos.filtrosAcciones}>
-            <Boton type="button" icono={Search} onClick={buscarDesarrolladoresConFiltros} disabled={buscandoDesarrolladores}>
-              {buscandoDesarrolladores ? 'Buscando...' : 'Buscar'}
-            </Boton>
-            <Boton type="button" variante="texto" onClick={limpiarFiltrosDesarrollador} disabled={buscandoDesarrolladores}>
+
+          <button
+            type="button"
+            className={estilos.filtroToggle}
+            onClick={() => setMostrarMasFiltros((v) => !v)}
+            aria-expanded={mostrarMasFiltros}
+          >
+            <SlidersHorizontal size={15} aria-hidden="true" />
+            <span>{mostrarMasFiltros ? 'Ocultar filtros adicionales' : 'Más filtros'}</span>
+            {mostrarMasFiltros ? (
+              <ChevronUp size={15} aria-hidden="true" />
+            ) : (
+              <ChevronDown size={15} aria-hidden="true" />
+            )}
+          </button>
+
+          {mostrarMasFiltros && (
+            <div className={estilos.filtroFilaDoble}>
+              <Campo
+                etiqueta="Profesión"
+                nombre="profesion"
+                opciones={OPCIONES_PROFESIONES}
+                textoVacio="Todas las profesiones"
+                value={filtrosAdicionales.profesion}
+                onChange={(e) =>
+                  setFiltrosAdicionales((prev) => ({ ...prev, profesion: e.target.value }))
+                }
+              />
+              <Campo
+                etiqueta="Especialidad de desarrollo"
+                nombre="especialidadDesarrollo"
+                opciones={OPCIONES_ESPECIALIDADES}
+                textoVacio="Todas las especialidades"
+                value={filtrosAdicionales.especialidadDesarrollo}
+                onChange={(e) =>
+                  setFiltrosAdicionales((prev) => ({
+                    ...prev,
+                    especialidadDesarrollo: e.target.value,
+                  }))
+                }
+              />
+            </div>
+          )}
+
+          <div className={estilos.filtroAcciones}>
+            <button
+              type="button"
+              className={estilos.filtroBtnLimpiar}
+              onClick={limpiarFiltrosDesarrollador}
+              disabled={trabajadores.cargando}
+            >
+              <RotateCcw size={15} aria-hidden="true" />
               Limpiar filtros
-            </Boton>
+            </button>
           </div>
         </div>
 
-        {filtrosAplicados && Object.values(filtrosAplicados).some((valor) => String(valor).trim() !== '') && desarrolladoresFiltrados.length === 0 && (
+        {desarrolladoresFiltrados.length === 0 && (
           <div style={{ marginBottom: 'var(--s-5)' }}>
             <EstadoVacio mensaje="No hay desarrolladores que coincidan con los filtros indicados." icono={Search} />
           </div>
@@ -302,10 +344,15 @@ export default function PaginaReporteDesempeno() {
           <Campo
             etiqueta="Desarrollador"
             nombre="desarrolladorId"
-            opciones={desarrolladoresDisponibles.map((t) => ({
+            opciones={desarrolladoresFiltrados.map((t) => ({
               valor: String(t.id),
-              texto: t.nombreCompleto,
+              texto: `${t.nombreCompleto || `${t.nombre} ${t.apellido}`} (${t.tipoTrabajador === 'LIDER' ? 'Líder' : 'Desarrollador'})`,
             }))}
+            textoVacio={
+              desarrolladoresFiltrados.length === 0
+                ? 'No hay desarrolladores disponibles'
+                : 'Seleccione un desarrollador'
+            }
             obligatorio
             value={borrador.desarrolladorId}
             onChange={alCambiar}

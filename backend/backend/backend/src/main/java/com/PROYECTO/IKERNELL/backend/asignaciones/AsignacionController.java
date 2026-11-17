@@ -9,6 +9,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,7 +25,9 @@ import com.PROYECTO.IKERNELL.backend.asignaciones.dto.AsignacionLoteRequest;
 import com.PROYECTO.IKERNELL.backend.asignaciones.dto.AsignacionLoteResponse;
 import com.PROYECTO.IKERNELL.backend.asignaciones.dto.AsignacionRequest;
 import com.PROYECTO.IKERNELL.backend.asignaciones.dto.AsignacionResponse;
+import com.PROYECTO.IKERNELL.backend.asignaciones.dto.CambioLiderRequest;
 import com.PROYECTO.IKERNELL.backend.asignaciones.dto.ProyectoAsignacionResponse;
+import com.PROYECTO.IKERNELL.backend.asignaciones.dto.RolResponse;
 import com.PROYECTO.IKERNELL.backend.auth.TrabajadorAutenticado;
 import com.PROYECTO.IKERNELL.backend.proyectos.dto.CriteriosBusquedaProyecto;
 import com.PROYECTO.IKERNELL.backend.proyectos.domain.Proyecto;
@@ -35,6 +38,7 @@ import com.PROYECTO.IKERNELL.backend.shared.dto.ListaResponse;
 import com.PROYECTO.IKERNELL.backend.shared.dto.PaginaResponse;
 import com.PROYECTO.IKERNELL.backend.trabajadores.ServicioTrabajadores;
 import com.PROYECTO.IKERNELL.backend.trabajadores.domain.Trabajador;
+import com.PROYECTO.IKERNELL.backend.trabajadores.dto.TrabajadorResumenResponse;
 
 import jakarta.validation.Valid;
 
@@ -81,6 +85,11 @@ public class AsignacionController {
 		List<ProyectoResumenResponse> lista = servicioProyectos.habilitados().stream()
 				.map(ProyectoResumenResponse::de).toList();
 		return ListaResponse.de(lista, "No hay proyectos habilitados a los que asignar trabajadores.");
+	}
+
+	@GetMapping("/roles")
+	public List<RolResponse> rolesDisponibles() {
+		return servicio.rolesDisponibles();
 	}
 
 	/** Busqueda paginada de proyectos para la gestion de equipo del coordinador. */
@@ -136,6 +145,56 @@ public class AsignacionController {
 		return new AsignacionLoteResponse(
 				resultado.asignadas().stream().map(AsignacionResponse::de).toList(),
 				resultado.yaExistentes().stream().map(AsignacionResponse::de).toList());
+	}
+
+	/** Desarrolladores habilitados no asignados aún al proyecto. */
+	@GetMapping("/proyectos/{proyectoId}/desarrolladores-disponibles")
+	public ListaResponse<TrabajadorResumenResponse> desarrolladoresDisponibles(@PathVariable Long proyectoId) {
+		List<TrabajadorResumenResponse> lista = servicio.candidatosParaEquipo(proyectoId).stream()
+				.map(TrabajadorResumenResponse::de).toList();
+		return ListaResponse.de(lista, "No hay desarrolladores habilitados disponibles para asignar a este proyecto.");
+	}
+
+	/** Líderes habilitados para asignación o reemplazo. */
+	@GetMapping("/proyectos/{proyectoId}/lideres-disponibles")
+	public List<TrabajadorResumenResponse> lideresDisponibles(@PathVariable Long proyectoId) {
+		return servicio.lideresDisponibles(proyectoId).stream()
+				.map(TrabajadorResumenResponse::de).toList();
+	}
+
+	/** Pausa la actividad del líder en el proyecto. */
+	@PostMapping("/proyectos/{proyectoId}/lider/pausar")
+	public ProyectoAsignacionResponse pausarLider(@PathVariable Long proyectoId) {
+		Proyecto proyecto = servicio.pausarLider(proyectoId);
+		long integrantes = servicio.conteosActivosPorProyecto(List.of(proyectoId)).getOrDefault(proyectoId, 0L);
+		return ProyectoAsignacionResponse.de(proyecto, integrantes);
+	}
+
+	/** Reactiva al líder del proyecto. */
+	@PostMapping("/proyectos/{proyectoId}/lider/reactivar")
+	public ProyectoAsignacionResponse reactivarLider(@PathVariable Long proyectoId) {
+		Proyecto proyecto = servicio.reactivarLider(proyectoId);
+		long integrantes = servicio.conteosActivosPorProyecto(List.of(proyectoId)).getOrDefault(proyectoId, 0L);
+		return ProyectoAsignacionResponse.de(proyecto, integrantes);
+	}
+
+	/** Reemplaza al líder actual por uno nuevo de forma atómica. */
+	@PostMapping("/proyectos/{proyectoId}/lider/cambiar")
+	public ProyectoAsignacionResponse cambiarLider(
+			@PathVariable Long proyectoId,
+			@Valid @RequestBody CambioLiderRequest peticion,
+			@AuthenticationPrincipal TrabajadorAutenticado autenticado) {
+		Trabajador coordinador = servicioTrabajadores.obtener(autenticado.getTrabajadorId());
+		Proyecto proyecto = servicio.cambiarLider(proyectoId, peticion.nuevoLiderId(), coordinador);
+		long integrantes = servicio.conteosActivosPorProyecto(List.of(proyectoId)).getOrDefault(proyectoId, 0L);
+		return ProyectoAsignacionResponse.de(proyecto, integrantes);
+	}
+
+	/** Desvincula lógicamente a un desarrollador del proyecto. */
+	@DeleteMapping("/proyectos/{proyectoId}/equipo/{asignacionId}")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void quitarDesarrollador(@PathVariable Long proyectoId, @PathVariable Long asignacionId) {
+		servicio.quitarDesarrollador(proyectoId, asignacionId);
 	}
 
 	/**

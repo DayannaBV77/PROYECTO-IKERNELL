@@ -19,7 +19,7 @@ BEGIN;
 INSERT INTO trabajador (id, identificacion, nombre, apellido, fecha_nacimiento, direccion, profesion, especialidad_desarrollo, tipo_trabajador, estado)
 VALUES
   (1, '1000000001', 'Coordinador', 'Inicial', '1990-01-01', 'Sede principal IKernell', 'Ingeniería de Sistemas', 'Gestión de Proyectos', 'COORDINADOR', 'HABILITADO')
-ON CONFLICT (identificacion) DO UPDATE
+ON CONFLICT (tipo_identificacion, identificacion) DO UPDATE
 SET nombre = EXCLUDED.nombre,
     apellido = EXCLUDED.apellido,
     profesion = EXCLUDED.profesion,
@@ -38,7 +38,7 @@ VALUES
   ('1000000009', 'Camilo', 'Herrera', '1998-10-05', 'Diagonal 45 # 16-30, Bogotá', 'Tecnología en Informática', 'Bases de Datos Relacionales y Backend', 'DESARROLLADOR', 'HABILITADO'),
   ('1000000010', 'Mariana', 'Ortiz', '1996-12-01', 'Calle 134 # 19-45, Bogotá', 'Ingeniería de Software', 'Interfaces Web y Experiencia de Usuario (UI/UX)', 'DESARROLLADOR', 'HABILITADO'),
   ('1000000011', 'Felipe', 'Navarro', '1992-06-18', 'Carrera 30 # 45-00, Bogotá', 'Tecnología en Sistemas', 'Desarrollo Web en Python y Django', 'DESARROLLADOR', 'INHABILITADO')
-ON CONFLICT (identificacion) DO NOTHING;
+ON CONFLICT (tipo_identificacion, identificacion) DO NOTHING;
 
 -- -----------------------------------------------------------------------------
 -- 2. CUENTAS DE ACCESO (RF-007, RNF-001)

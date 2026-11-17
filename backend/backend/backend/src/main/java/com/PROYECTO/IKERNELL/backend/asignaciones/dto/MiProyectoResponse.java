@@ -33,7 +33,17 @@ public record MiProyectoResponse(
 		Long proyectoId,
 		String proyectoNombre,
 		EstadoHabilitacion estadoHabilitacion,
-		List<RolEnProyecto> roles) {
+		List<RolEnProyecto> roles,
+		String descripcion,
+		String estadoOperativo) {
+
+	public MiProyectoResponse(
+			Long proyectoId,
+			String proyectoNombre,
+			EstadoHabilitacion estadoHabilitacion,
+			List<RolEnProyecto> roles) {
+		this(proyectoId, proyectoNombre, estadoHabilitacion, roles, null, null);
+	}
 
 	/**
 	 * Agrupa las asignaciones activas por proyecto, conservando el orden en que
@@ -61,7 +71,9 @@ public record MiProyectoResponse(
 							asignacion.getProyecto().getId(),
 							asignacion.getProyecto().getNombre(),
 							asignacion.getProyecto().getEstadoHabilitacion(),
-							List.copyOf(roles));
+							List.copyOf(roles),
+							asignacion.getProyecto().getDescripcion(),
+							asignacion.getProyecto().getEstadoOperativo());
 				})
 				.toList();
 	}

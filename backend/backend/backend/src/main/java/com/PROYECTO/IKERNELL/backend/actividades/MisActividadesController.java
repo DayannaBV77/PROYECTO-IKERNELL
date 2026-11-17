@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.PROYECTO.IKERNELL.backend.actividades.domain.EjecucionActividad;
 import com.PROYECTO.IKERNELL.backend.actividades.dto.ActividadResponse;
 import com.PROYECTO.IKERNELL.backend.actividades.dto.EjecucionResponse;
 import com.PROYECTO.IKERNELL.backend.actividades.dto.RegistroEjecucionRequest;
@@ -51,8 +52,7 @@ public class MisActividadesController {
 	@GetMapping
 	public ListaResponse<ActividadResponse> misActividades(
 			@AuthenticationPrincipal TrabajadorAutenticado autenticado) {
-		List<ActividadResponse> actividades = servicio.misActividades(autenticado.getTrabajadorId())
-				.stream().map(ActividadResponse::de).toList();
+		List<ActividadResponse> actividades = servicio.misActividadesDetalladas(autenticado.getTrabajadorId());
 		return ListaResponse.de(actividades, "No tiene actividades asignadas.");
 	}
 

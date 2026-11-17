@@ -9,13 +9,23 @@ import jakarta.validation.constraints.Size;
  * registrar el desarrollador al ejecutarla". Por eso ambos campos son
  * opcionales: lo unico que el criterio exige es que la ejecucion quede guardada.
  *
- * @param observaciones texto libre sobre el trabajo realizado
- * @param finalizada    true si con este registro la ejecucion queda cerrada
+ * @param observaciones    texto libre sobre el trabajo realizado
+ * @param finalizada       true si con este registro la ejecucion queda cerrada
+ * @param estado           nuevo estado operativo (ej. EN_PROGRESO, FINALIZADA)
+ * @param porcentajeAvance avance porcentual indicado
  */
 public record RegistroEjecucionRequest(
 
 		@Size(max = 2000, message = "Las observaciones admiten hasta 2000 caracteres.")
 		String observaciones,
 
-		Boolean finalizada) {
+		Boolean finalizada,
+
+		String estado,
+
+		Integer porcentajeAvance) {
+
+	public RegistroEjecucionRequest(String observaciones, Boolean finalizada) {
+		this(observaciones, finalizada, null, null);
+	}
 }

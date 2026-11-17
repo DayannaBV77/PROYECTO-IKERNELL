@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, LogOut } from 'lucide-react';
+import { LayoutDashboard } from 'lucide-react';
 
 import { ETIQUETA_TIPO } from '../../api/autenticacion.js';
 import Boton from '../ui/Boton.jsx';
@@ -73,7 +73,6 @@ export default function AccionesSesion() {
           onClick={() => setModalSalir(true)}
           title="Cerrar sesión"
         >
-          <LogOut size={15} aria-hidden="true" />
           <span>Salir</span>
         </button>
       </div>

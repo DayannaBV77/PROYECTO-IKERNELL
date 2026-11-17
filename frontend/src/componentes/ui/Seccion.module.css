@@ -1,5 +1,6 @@
 .seccion {
   padding-block: var(--s-7);
+  scroll-margin-top: 110px;
 }
 
 .clara {

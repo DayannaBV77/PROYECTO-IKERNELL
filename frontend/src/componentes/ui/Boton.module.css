@@ -82,6 +82,16 @@
   background: var(--c-error-fondo);
 }
 
+.exito {
+  background: var(--c-superficie);
+  border-color: var(--c-exito);
+  color: var(--c-exito);
+}
+
+.exito:hover:not(:disabled) {
+  background: var(--c-exito-fondo);
+}
+
 .completo {
   width: 100%;
 }

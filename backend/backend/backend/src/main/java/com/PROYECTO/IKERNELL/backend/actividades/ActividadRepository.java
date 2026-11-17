@@ -15,28 +15,28 @@ import com.PROYECTO.IKERNELL.backend.actividades.domain.Actividad;
 
 /*
  * Las consultas que devuelven actividades traen cargadas la etapa, el proyecto
- * de esa etapa y el desarrollador. No es una optimizacion: las tres son LAZY y
- * spring.jpa.open-in-view esta desactivado, de modo que la sesion se cierra al
- * salir del servicio. ActividadResponse lee el nombre del proyecto -que alcanza
- * a traves de la etapa-, el de la etapa y el del desarrollador ya en el
- * controlador, asi que sin estas cargas la peticion falla entera con
- * LazyInitializationException.
+ * de esa etapa, el lider responsable y el desarrollador. No es una optimizacion:
+ * son LAZY y spring.jpa.open-in-view esta desactivado, de modo que la sesion se
+ * cierra al salir del servicio. ActividadResponse lee el nombre del proyecto,
+ * el del lider, el de la etapa y el del desarrollador, asi que sin estas cargas
+ * la peticion falla entera con LazyInitializationException.
  */
 public interface ActividadRepository
 		extends JpaRepository<Actividad, Long>, JpaSpecificationExecutor<Actividad> {
 
 	@Override
-	@EntityGraph(attributePaths = { "etapa", "etapa.proyecto", "desarrollador" })
+	@EntityGraph(attributePaths = { "etapa", "etapa.proyecto", "etapa.proyecto.liderResponsable", "desarrollador" })
 	Optional<Actividad> findById(Long id);
 
 	@Override
-	@EntityGraph(attributePaths = { "etapa", "etapa.proyecto", "desarrollador" })
+	@EntityGraph(attributePaths = { "etapa", "etapa.proyecto", "etapa.proyecto.liderResponsable", "desarrollador" })
 	Page<Actividad> findAll(Specification<Actividad> especificacion, Pageable paginacion);
 
 	/** HU-16 C01 y C04: actividades asignadas al desarrollador que consulta. */
-	@EntityGraph(attributePaths = { "etapa", "etapa.proyecto", "desarrollador" })
+	@EntityGraph(attributePaths = { "etapa", "etapa.proyecto", "etapa.proyecto.liderResponsable", "desarrollador" })
 	List<Actividad> findByDesarrolladorIdOrderByIdDesc(Long desarrolladorId);
 
+	@EntityGraph(attributePaths = { "etapa", "etapa.proyecto", "etapa.proyecto.liderResponsable", "desarrollador" })
 	Optional<Actividad> findByIdAndDesarrolladorId(Long id, Long desarrolladorId);
 
 	/**
@@ -50,7 +50,7 @@ public interface ActividadRepository
 	 * {@code ServicioMiDia} a partir de las ejecuciones (D-31), porque
 	 * {@code actividad.estado} sigue sin dominio definido (D-04).
 	 */
-	@EntityGraph(attributePaths = { "etapa", "etapa.proyecto", "desarrollador" })
+	@EntityGraph(attributePaths = { "etapa", "etapa.proyecto", "etapa.proyecto.liderResponsable", "desarrollador" })
 	List<Actividad> findByDesarrolladorIdAndFechaPlanificadaLessThanEqual(
 			Long desarrolladorId, LocalDate hasta);
 
@@ -61,11 +61,11 @@ public interface ActividadRepository
 	 * en lugar de ocultarlas sin decirlo. RF-019 no exige la fecha, de modo que
 	 * una actividad sin ella es legitima y no un dato que falte por error.
 	 */
-	@EntityGraph(attributePaths = { "etapa", "etapa.proyecto", "desarrollador" })
+	@EntityGraph(attributePaths = { "etapa", "etapa.proyecto", "etapa.proyecto.liderResponsable", "desarrollador" })
 	List<Actividad> findByDesarrolladorIdAndFechaPlanificadaIsNull(Long desarrolladorId);
 
 	/** RF-006: actividades de un desarrollador dentro de un proyecto (HU-07 C01). */
-	@EntityGraph(attributePaths = { "etapa", "etapa.proyecto", "desarrollador" })
+	@EntityGraph(attributePaths = { "etapa", "etapa.proyecto", "etapa.proyecto.liderResponsable", "desarrollador" })
 	List<Actividad> findByDesarrolladorIdAndEtapaProyectoIdOrderByIdDesc(Long desarrolladorId, Long proyectoId);
 
 	/** Hace efectiva RN-08 al eliminar una etapa (RF-012, HU-11 C05). */

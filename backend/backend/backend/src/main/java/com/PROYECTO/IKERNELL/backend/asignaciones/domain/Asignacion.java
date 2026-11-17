@@ -31,7 +31,7 @@ import jakarta.persistence.Table;
  * tipo global del trabajador.
  */
 @Entity
-@Table(name = "asignacion")
+@Table(name = "rol_trabajador")
 public class Asignacion {
 
 	@Id
@@ -46,12 +46,16 @@ public class Asignacion {
 	@JoinColumn(name = "proyecto_id", nullable = false)
 	private Proyecto proyecto;
 
-	@Enumerated(EnumType.STRING)
-	@Column(name = "rol_en_proyecto", nullable = false, length = 15)
-	private RolEnProyecto rolEnProyecto;
+	@ManyToOne(fetch = FetchType.LAZY, optional = false)
+	@JoinColumn(name = "rol_id", nullable = false)
+	private Rol rol;
 
 	@Column(nullable = false)
 	private boolean activa = true;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "estado_liderazgo", length = 20)
+	private EstadoLiderazgo estadoLiderazgo = EstadoLiderazgo.ACTIVO;
 
 	/** Quien registro la asignacion: distingue el flujo de RF-003 del de RF-009. */
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -68,16 +72,16 @@ public class Asignacion {
 		// requerido por JPA
 	}
 
-	public Asignacion(Trabajador trabajador, Proyecto proyecto, RolEnProyecto rolEnProyecto,
+	public Asignacion(Trabajador trabajador, Proyecto proyecto, Rol rol,
 			Trabajador asignadaPor) {
-		this(trabajador, proyecto, rolEnProyecto, asignadaPor, null);
+		this(trabajador, proyecto, rol, asignadaPor, null);
 	}
 
-	public Asignacion(Trabajador trabajador, Proyecto proyecto, RolEnProyecto rolEnProyecto,
+	public Asignacion(Trabajador trabajador, Proyecto proyecto, Rol rol,
 			Trabajador asignadaPor, BigDecimal dedicacionPorcentaje) {
 		this.trabajador = trabajador;
 		this.proyecto = proyecto;
-		this.rolEnProyecto = rolEnProyecto;
+		this.rol = rol;
 		this.asignadaPor = asignadaPor;
 		this.activa = true;
 		this.fechaAsignacion = LocalDate.now();
@@ -97,11 +101,27 @@ public class Asignacion {
 	}
 
 	public RolEnProyecto getRolEnProyecto() {
-		return rolEnProyecto;
+		return rol.comoRolEnProyecto();
+	}
+
+	public Rol getRol() {
+		return rol;
 	}
 
 	public boolean estaActiva() {
 		return activa;
+	}
+
+	public void desactivar() {
+		this.activa = false;
+	}
+
+	public EstadoLiderazgo getEstadoLiderazgo() {
+		return estadoLiderazgo != null ? estadoLiderazgo : EstadoLiderazgo.ACTIVO;
+	}
+
+	public void setEstadoLiderazgo(EstadoLiderazgo estadoLiderazgo) {
+		this.estadoLiderazgo = estadoLiderazgo != null ? estadoLiderazgo : EstadoLiderazgo.ACTIVO;
 	}
 
 	public Trabajador getAsignadaPor() {

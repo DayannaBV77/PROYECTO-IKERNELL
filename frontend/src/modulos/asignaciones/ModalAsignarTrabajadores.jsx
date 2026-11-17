@@ -1,131 +1,106 @@
-import { useCallback, useState } from 'react';
-import { Check, Search, UserRoundPlus, X } from 'lucide-react';
+import { useCallback, useMemo, useState } from 'react';
+import { Check, Search, Users } from 'lucide-react';
 
-import { asignarEquipoCoordinador, ROLES_EN_PROYECTO } from '../../api/asignaciones.js';
-import { buscarTrabajadores, TIPOS_TRABAJADOR_ASIGNABLES } from '../../api/trabajadores.js';
+import {
+  asignarEquipoCoordinador,
+  obtenerDesarrolladoresDisponibles,
+  obtenerRoles,
+} from '../../api/asignaciones.js';
 import EstadoCarga from '../../componentes/estados/EstadoCarga.jsx';
 import EstadoError from '../../componentes/estados/EstadoError.jsx';
 import EstadoVacio from '../../componentes/estados/EstadoVacio.jsx';
 import Boton from '../../componentes/ui/Boton.jsx';
-import Campo from '../../componentes/ui/Campo.jsx';
 import Dialogo from '../../componentes/ui/Dialogo.jsx';
-import { useDebounce } from '../../hooks/useDebounce.js';
-import { usePeticion } from '../../hooks/usePeticion.js';
 import { useNotificador } from '../../componentes/ui/Notificador.jsx';
+import { usePeticion } from '../../hooks/usePeticion.js';
 import estilos from './ModalAsignarTrabajadores.module.css';
-
-const TAMANO_PAGINA = 20;
-const DEDICACIONES = [
-  { valor: '', texto: 'Sin especificar' },
-  { valor: '100', texto: '100% (Tiempo completo)' },
-  { valor: '50', texto: '50% (Medio tiempo)' },
-  { valor: '25', texto: '25% (Disponibilidad parcial)' },
-];
 
 export default function ModalAsignarTrabajadores({ abierto, proyecto, alCerrar, alGuardar }) {
   const notificador = useNotificador();
   const [busqueda, setBusqueda] = useState('');
-  const [tipo, setTipo] = useState('');
-  const [pagina, setPagina] = useState(0);
   const [seleccionados, setSeleccionados] = useState({});
   const [advertencias, setAdvertencias] = useState(null);
   const [fallo, setFallo] = useState(null);
   const [guardando, setGuardando] = useState(false);
-  const consulta = useDebounce(busqueda, 250);
 
-  const cargarTrabajadores = useCallback(
-    async ({ senal }) => {
-      const respuesta = await buscarTrabajadores(
-        {
-          q: consulta,
-          tipoTrabajador: tipo,
-          estado: 'HABILITADO',
-          pagina,
-          tamano: TAMANO_PAGINA,
-        },
-        { senal },
-      );
+  // Carga de catálogo de roles para obtener el id del rol Desarrollador
+  const cargarRoles = useCallback(({ senal }) => obtenerRoles({ senal }), []);
+  const roles = usePeticion(cargarRoles, []);
+  const rolDesarrolladorId = useMemo(() => {
+    const listaRoles = Array.isArray(roles.datos) ? roles.datos : (roles.datos?.contenido || []);
+    const rol = listaRoles.find((r) => r.nombreRol === 'Desarrollador');
+    return rol?.id;
+  }, [roles.datos]);
 
-      // Si no se filtró por un tipo específico, nos aseguramos en cliente
-      // de excluir trabajadores con tipo COORDINADOR
-      const contenidoFiltrado = (respuesta.contenido || []).filter(
-        (t) => t.estado === 'HABILITADO' && t.tipoTrabajador !== 'COORDINADOR',
-      );
-
-      return {
-        ...respuesta,
-        contenido: contenidoFiltrado,
-      };
-    },
-    [consulta, tipo, pagina],
+  // Carga de desarrolladores disponibles habilitados para este proyecto
+  const cargarDesarrolladores = useCallback(
+    ({ senal }) => (proyecto?.id ? obtenerDesarrolladoresDisponibles(proyecto.id, { senal }) : Promise.resolve([])),
+    [proyecto?.id],
   );
-  const trabajadores = usePeticion(cargarTrabajadores, [consulta, tipo, pagina]);
-  const listaTrabajadores = trabajadores.datos?.contenido || [];
-  const listaSeleccionados = Object.values(seleccionados);
-
-  function cambiarFiltro(setter, valor) {
-    setter(valor);
-    setPagina(0);
-    setAdvertencias(null);
-  }
-
-  function alternar(trabajador) {
-    const id = String(trabajador.id);
-    if (trabajador.estado !== 'HABILITADO') {
-      return;
+  const desarrolladores = usePeticion(cargarDesarrolladores, [proyecto?.id]);
+  const listaDesarrolladores = useMemo(() => {
+    if (Array.isArray(desarrolladores.datos)) {
+      return desarrolladores.datos;
     }
+    if (Array.isArray(desarrolladores.datos?.contenido)) {
+      return desarrolladores.datos.contenido;
+    }
+    return [];
+  }, [desarrolladores.datos]);
 
-    setSeleccionados((actuales) => {
-      if (actuales[id]) {
-        const siguientes = { ...actuales };
+  // Filtrado por buscador (nombre completo o identificación)
+  const filtrados = useMemo(() => {
+    const q = busqueda.trim().toLowerCase();
+    if (!q) {
+      return listaDesarrolladores;
+    }
+    return listaDesarrolladores.filter(
+      (d) =>
+        String(d?.nombreCompleto || '').toLowerCase().includes(q) ||
+        String(d?.identificacion || '').toLowerCase().includes(q) ||
+        String(d?.profesion || '').toLowerCase().includes(q) ||
+        String(d?.especialidadDesarrollo || '').toLowerCase().includes(q),
+    );
+  }, [listaDesarrolladores, busqueda]);
+
+  const totalSeleccionados = Object.keys(seleccionados).length;
+
+  function alternar(id) {
+    setSeleccionados((previos) => {
+      const siguientes = { ...previos };
+      if (siguientes[id]) {
         delete siguientes[id];
-        return siguientes;
+      } else {
+        siguientes[id] = true;
       }
-      return {
-        ...actuales,
-        [id]: {
-          trabajador,
-          rolEnProyecto: 'DESARROLLADOR',
-          dedicacionPorcentaje: '',
-        },
-      };
+      return siguientes;
     });
     setAdvertencias(null);
     setFallo(null);
   }
 
-  function actualizarSeleccion(id, nombre, valor) {
-    setSeleccionados((actuales) => ({
-      ...actuales,
-      [id]: {
-        ...actuales[id],
-        [nombre]: nombre === 'dedicacionPorcentaje' && valor ? Number(valor) : valor || null,
-      },
-    }));
-    setAdvertencias(null);
-  }
-
   async function guardar(confirmado = false) {
+    if (totalSeleccionados === 0 || !rolDesarrolladorId || !proyecto?.id) {
+      return;
+    }
+
     setGuardando(true);
     setFallo(null);
+
+    const asignaciones = Object.keys(seleccionados).map((id) => ({
+      trabajadorId: Number(id),
+      rolId: Number(rolDesarrolladorId),
+      dedicacionPorcentaje: 100,
+    }));
+
     try {
-      const resultado = await asignarEquipoCoordinador(
-        proyecto.id,
-        listaSeleccionados.map(({ trabajador, ...asignacion }) => ({
-          trabajadorId: trabajador.id,
-          rolEnProyecto: asignacion.rolEnProyecto,
-          dedicacionPorcentaje: asignacion.dedicacionPorcentaje || null,
-        })),
-        confirmado,
-      );
-      const totalNuevas = resultado.asignadas.length;
-      const totalExistentes = resultado.yaExistentes.length;
+      const resultado = await asignarEquipoCoordinador(proyecto.id, asignaciones, confirmado);
+      const totalNuevas = resultado.asignadas?.length || 0;
+      const totalExistentes = resultado.yaExistentes?.length || 0;
       const mensaje =
         totalNuevas > 0
-          ? `${totalNuevas} asignación${totalNuevas === 1 ? '' : 'es'} registrada${totalNuevas === 1 ? '' : 's'}.${
-              totalExistentes ? ` ${totalExistentes} ya existían y no se duplicaron.` : ''
-            }`
-          : 'Las asignaciones ya existían; no se crearon duplicados.';
+          ? `${totalNuevas} desarrollador${totalNuevas === 1 ? '' : 'es'} asignado${totalNuevas === 1 ? '' : 's'} al proyecto.`
+          : 'Las asignaciones ya existían en el proyecto.';
       notificador.exito(mensaje, 'Equipo actualizado');
       alGuardar(resultado);
     } catch (error) {
@@ -143,133 +118,97 @@ export default function ModalAsignarTrabajadores({ abierto, proyecto, alCerrar, 
   return (
     <Dialogo
       abierto={abierto}
-      titulo="Asignar trabajadores"
-      descripcion={`Selecciona trabajadores y define su rol en ${proyecto.nombre}.`}
+      titulo="Asignar desarrolladores"
+      descripcion={`Selecciona los desarrolladores habilitados para asignar a ${proyecto?.nombre || 'el proyecto'}.`}
       alCerrar={guardando ? undefined : alCerrar}
       className={estilos.dialogoAsignacion}
     >
       <div className={estilos.contenidoModal}>
-        <section className={estilos.filtros} aria-label="Filtros de búsqueda">
+        <section className={estilos.filtros} aria-label="Búsqueda de desarrolladores">
           <div className={estilos.busqueda}>
-            <label htmlFor="buscar-trabajador">
+            <label htmlFor="buscar-desarrollador">
               <Search size={16} aria-hidden="true" />
               <input
-                id="buscar-trabajador"
+                id="buscar-desarrollador"
                 type="search"
                 value={busqueda}
-                onChange={(evento) => cambiarFiltro(setBusqueda, evento.target.value)}
-                placeholder="Buscar por nombre o identificación..."
+                onChange={(evento) => {
+                  setBusqueda(evento.target.value);
+                  setAdvertencias(null);
+                }}
+                placeholder="Buscar trabajador por nombre o identificación..."
               />
             </label>
           </div>
-          <Campo
-            etiqueta="Tipo de trabajador"
-            nombre="tipoTrabajadorModal"
-            opciones={TIPOS_TRABAJADOR_ASIGNABLES}
-            textoVacio="Todos los tipos"
-            value={tipo}
-            onChange={(evento) => cambiarFiltro(setTipo, evento.target.value)}
-          />
         </section>
 
-        {fallo && <p className={estilos.error} role="alert">{fallo}</p>}
+        {fallo && (
+          <p className={estilos.error} role="alert">
+            {fallo}
+          </p>
+        )}
 
-        <div className={estilos.paneles}>
-          <section className={estilos.panel} aria-labelledby="trabajadores-disponibles">
-            <h3 id="trabajadores-disponibles">
-              Trabajadores ({trabajadores.datos?.totalElementos ?? 0})
+        {roles.error && (
+          <p className={estilos.error} role="alert">
+            No se pudo cargar el catálogo de roles: {roles.error.message}
+          </p>
+        )}
+
+        <div className={estilos.panelUnico}>
+          <section className={estilos.panel} aria-labelledby="desarrolladores-disponibles">
+            <h3 id="desarrolladores-disponibles">
+              Desarrolladores disponibles ({filtrados.length})
             </h3>
-            {trabajadores.cargando && <EstadoCarga mensaje="Buscando trabajadores..." />}
-            {!trabajadores.cargando && trabajadores.error && (
-              <EstadoError error={trabajadores.error} alReintentar={trabajadores.reintentar} />
+
+            {desarrolladores.cargando && (
+              <EstadoCarga mensaje="Cargando desarrolladores disponibles..." />
             )}
-            {!trabajadores.cargando &&
-              !trabajadores.error &&
-              listaTrabajadores.length === 0 && (
-                <EstadoVacio mensaje={trabajadores.datos?.mensaje || 'No hay trabajadores para mostrar.'} />
+
+            {!desarrolladores.cargando && desarrolladores.error && (
+              <EstadoError
+                error={desarrolladores.error}
+                alReintentar={desarrolladores.reintentar}
+              />
+            )}
+
+            {!desarrolladores.cargando &&
+              !desarrolladores.error &&
+              filtrados.length === 0 && (
+                <EstadoVacio
+                  mensaje={
+                    busqueda
+                      ? 'No hay desarrolladores disponibles que coincidan con la búsqueda.'
+                      : 'No hay desarrolladores disponibles para asignar en este proyecto.'
+                  }
+                  icono={Users}
+                />
               )}
-            {!trabajadores.cargando && !trabajadores.error && listaTrabajadores.length > 0 && (
+
+            {!desarrolladores.cargando && !desarrolladores.error && filtrados.length > 0 && (
               <ul className={estilos.listaTrabajadores}>
-                {listaTrabajadores.map((trabajador) => {
+                {filtrados.map((trabajador) => {
                   const id = String(trabajador.id);
-                  const deshabilitado = trabajador.estado !== 'HABILITADO';
+                  const estaMarcado = Boolean(seleccionados[id]);
+
                   return (
                     <li key={trabajador.id}>
-                      <label className={`${estilos.trabajador} ${deshabilitado ? estilos.noDisponible : ''}`}>
-                        <input
-                          type="checkbox"
-                          checked={Boolean(seleccionados[id])}
-                          disabled={deshabilitado || guardando}
-                          onChange={() => alternar(trabajador)}
-                        />
+                      <label className={estilos.trabajador}>
                         <span className={estilos.nombreTrabajador}>
                           <strong>{trabajador.nombreCompleto}</strong>
-                          <small>{trabajador.identificacion} · {trabajador.tipoTrabajador}</small>
+                          <small>
+                            {trabajador.identificacion} · {trabajador.profesion || 'Desarrollador'}
+                          </small>
                         </span>
-                        <span className={`${estilos.estadoTrabajador} ${deshabilitado ? estilos.inhabilitado : ''}`}>
-                          {deshabilitado ? 'Inhabilitado' : 'Habilitado'}
-                        </span>
+                        <div className={estilos.accionesFila}>
+                          <span className={estilos.estadoTrabajador}>Habilitado</span>
+                          <input
+                            type="checkbox"
+                            checked={estaMarcado}
+                            disabled={guardando || !rolDesarrolladorId}
+                            onChange={() => alternar(id)}
+                          />
+                        </div>
                       </label>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-            {trabajadores.datos?.totalPaginas > 1 && (
-              <div className={estilos.paginacion}>
-                <button type="button" disabled={pagina === 0 || trabajadores.cargando} onClick={() => setPagina((actual) => actual - 1)}>
-                  Anterior
-                </button>
-                <span>Página {pagina + 1} de {trabajadores.datos.totalPaginas}</span>
-                <button
-                  type="button"
-                  disabled={pagina + 1 >= trabajadores.datos.totalPaginas || trabajadores.cargando}
-                  onClick={() => setPagina((actual) => actual + 1)}
-                >
-                  Siguiente
-                </button>
-              </div>
-            )}
-          </section>
-
-          <section className={estilos.panel} aria-labelledby="trabajadores-seleccionados">
-            <h3 id="trabajadores-seleccionados">
-              Trabajadores seleccionados ({listaSeleccionados.length})
-            </h3>
-            {listaSeleccionados.length === 0 ? (
-              <EstadoVacio mensaje="Selecciona uno o varios trabajadores habilitados." icono={UserRoundPlus} />
-            ) : (
-              <ul className={estilos.listaSeleccionados}>
-                {listaSeleccionados.map(({ trabajador, rolEnProyecto, dedicacionPorcentaje }) => {
-                  const id = String(trabajador.id);
-                  return (
-                    <li key={id} className={estilos.seleccionado}>
-                      <span className={estilos.nombreSeleccionado}>{trabajador.nombreCompleto}</span>
-                      <Campo
-                        etiqueta={`Rol de ${trabajador.nombreCompleto}`}
-                        nombre={`rol-${id}`}
-                        opciones={ROLES_EN_PROYECTO}
-                        textoVacio={null}
-                        value={rolEnProyecto}
-                        onChange={(evento) => actualizarSeleccion(id, 'rolEnProyecto', evento.target.value)}
-                      />
-                      <Campo
-                        etiqueta={`Dedicación de ${trabajador.nombreCompleto}`}
-                        nombre={`dedicacion-${id}`}
-                        opciones={DEDICACIONES}
-                        textoVacio={null}
-                        value={dedicacionPorcentaje ? String(dedicacionPorcentaje) : ''}
-                        onChange={(evento) => actualizarSeleccion(id, 'dedicacionPorcentaje', evento.target.value)}
-                      />
-                      <button
-                        className={estilos.quitar}
-                        type="button"
-                        aria-label={`Quitar a ${trabajador.nombreCompleto}`}
-                        disabled={guardando}
-                        onClick={() => alternar(trabajador)}
-                      >
-                        <X size={18} aria-hidden="true" />
-                      </button>
                     </li>
                   );
                 })}
@@ -282,7 +221,9 @@ export default function ModalAsignarTrabajadores({ abierto, proyecto, alCerrar, 
           <div className={estilos.advertencia} role="alert">
             <strong>Hay asignaciones equivalentes activas:</strong>
             <ul>
-              {advertencias.map((advertencia) => <li key={advertencia}>{advertencia}</li>)}
+              {advertencias.map((advertencia) => (
+                <li key={advertencia}>{advertencia}</li>
+              ))}
             </ul>
             <p>Al confirmar, se mantendrán las existentes y no se crearán duplicados.</p>
           </div>
@@ -295,14 +236,21 @@ export default function ModalAsignarTrabajadores({ abierto, proyecto, alCerrar, 
           <Boton
             type="button"
             icono={advertencias ? Check : undefined}
-            disabled={guardando || listaSeleccionados.length === 0 || trabajadores.cargando}
+            disabled={
+              guardando ||
+              totalSeleccionados === 0 ||
+              desarrolladores.cargando ||
+              roles.cargando ||
+              Boolean(roles.error) ||
+              !rolDesarrolladorId
+            }
             onClick={() => guardar(Boolean(advertencias))}
           >
             {guardando
               ? 'Guardando...'
               : advertencias
                 ? 'Confirmar y guardar'
-                : 'Guardar asignación'}
+                : `Guardar asignación${totalSeleccionados > 0 ? ` (${totalSeleccionados})` : ''}`}
           </Boton>
         </footer>
       </div>

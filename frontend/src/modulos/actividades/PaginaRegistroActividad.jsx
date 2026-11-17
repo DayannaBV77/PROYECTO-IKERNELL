@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, TriangleAlert } from 'lucide-react';
+import { Save, TriangleAlert } from 'lucide-react';
 
 import { PRIORIDADES_ACTIVIDAD, registrarActividad } from '../../api/actividades.js';
 import Boton from '../../componentes/ui/Boton.jsx';
@@ -141,7 +141,7 @@ export default function PaginaRegistroActividad() {
       id="registro-actividad"
     >
       <div className={estilos.barraSuperior}>
-        <Boton type="button" onClick={alIntentarVolver} variante="texto" icono={ArrowLeft}>
+        <Boton type="button" onClick={alIntentarVolver} variante="texto">
           Volver a la busqueda
         </Boton>
       </div>

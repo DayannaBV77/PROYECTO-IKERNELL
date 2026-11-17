@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 
+import com.PROYECTO.IKERNELL.backend.asignaciones.domain.EstadoLiderazgo;
 import com.PROYECTO.IKERNELL.backend.shared.domain.EstadoHabilitacion;
 import com.PROYECTO.IKERNELL.backend.trabajadores.domain.Trabajador;
 
@@ -50,6 +51,10 @@ public class Proyecto {
 	@Enumerated(EnumType.STRING)
 	@Column(name = "estado_habilitacion", nullable = false, length = 15)
 	private EstadoHabilitacion estadoHabilitacion = EstadoHabilitacion.HABILITADO;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "estado_liderazgo", nullable = false, length = 20)
+	private EstadoLiderazgo estadoLiderazgo = EstadoLiderazgo.ACTIVO;
 
 	@Column(name = "estado_operativo", length = 30)
 	private String estadoOperativo;
@@ -168,6 +173,26 @@ public class Proyecto {
 
 	public Trabajador getLiderResponsable() {
 		return liderResponsable;
+	}
+
+	public void setLiderResponsable(Trabajador liderResponsable) {
+		this.liderResponsable = liderResponsable;
+	}
+
+	public EstadoLiderazgo getEstadoLiderazgo() {
+		return estadoLiderazgo != null ? estadoLiderazgo : EstadoLiderazgo.ACTIVO;
+	}
+
+	public void setEstadoLiderazgo(EstadoLiderazgo estadoLiderazgo) {
+		this.estadoLiderazgo = estadoLiderazgo != null ? estadoLiderazgo : EstadoLiderazgo.ACTIVO;
+	}
+
+	public void pausarLiderazgo() {
+		this.estadoLiderazgo = EstadoLiderazgo.PAUSADO;
+	}
+
+	public void reactivarLiderazgo() {
+		this.estadoLiderazgo = EstadoLiderazgo.ACTIVO;
 	}
 
 	/** RF-025: el proyecto puede salir en el reporte externo. */

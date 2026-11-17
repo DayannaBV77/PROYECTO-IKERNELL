@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { ArrowLeft, ExternalLink } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 
 import { obtenerPrograma, obtenerTutorial } from '../../api/corporativo.js';
 import Boton from '../../componentes/ui/Boton.jsx';
@@ -48,7 +48,7 @@ export default function PaginaRecursoInterno({ tipo }) {
   return (
     <Seccion titulo={datos?.titulo || seccion} id="recurso-interno">
       <div className={estilos.volver}>
-        <Boton a={volverA} variante="texto" icono={ArrowLeft}>
+        <Boton a={volverA} variante="texto">
           {volverTexto}
         </Boton>
       </div>

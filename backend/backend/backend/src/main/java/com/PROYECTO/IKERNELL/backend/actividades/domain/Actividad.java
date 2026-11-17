@@ -126,6 +126,10 @@ public class Actividad {
 		return estado;
 	}
 
+	public void setEstado(String estado) {
+		this.estado = estado;
+	}
+
 	public PrioridadActividad getPrioridad() {
 		return prioridad;
 	}

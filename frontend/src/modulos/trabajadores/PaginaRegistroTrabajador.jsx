@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, TriangleAlert } from 'lucide-react';
+import { Save, TriangleAlert } from 'lucide-react';
 
 import {
+  TIPOS_IDENTIFICACION,
   TIPOS_TRABAJADOR,
   adjuntarFotografia,
   consultarDisponibilidadIdentificacion,
@@ -24,6 +25,7 @@ import {
 } from './validaciones.js';
 
 const VACIO = {
+  tipoIdentificacion: 'CEDULA_CIUDADANIA',
   identificacion: '',
   nombre: '',
   apellido: '',
@@ -113,18 +115,51 @@ export default function PaginaRegistroTrabajador() {
 
   function alCambiar(evento) {
     const { name, value } = evento.target;
-    const siguienteValor = name === 'identificacion' ? value.replace(/\D/g, '').slice(0, 10) : value;
-    setValores((previos) => ({ ...previos, [name]: siguienteValor }));
     setFallo(null);
 
-    const error = validarCampoTrabajador(name, siguienteValor);
+    if (name === 'tipoIdentificacion') {
+      const nuevoTipo = value;
+      const maxDigitos = nuevoTipo === 'CEDULA_EXTRANJERIA' ? 7 : 10;
+      const idAjustada = valores.identificacion.slice(0, maxDigitos);
+
+      setValores((previos) => ({
+        ...previos,
+        tipoIdentificacion: nuevoTipo,
+        identificacion: idAjustada,
+      }));
+
+      const errorTipo = validarCampoTrabajador('tipoIdentificacion', nuevoTipo);
+      actualizarErroresCampo('tipoIdentificacion', errorTipo);
+
+      const errorIdent = validarCampoTrabajador('identificacion', idAjustada, nuevoTipo);
+      actualizarErroresCampo('identificacion', errorIdent);
+
+      if (!idAjustada) {
+        setIdentificacionEstado({ tipo: 'inicio', mensaje: '' });
+      } else if (errorIdent) {
+        setIdentificacionEstado({ tipo: 'error', mensaje: errorIdent });
+      } else {
+        setIdentificacionEstado({ tipo: 'validando', mensaje: 'Validando identificación...' });
+      }
+      return;
+    }
+
+    const maxDigitos = valores.tipoIdentificacion === 'CEDULA_EXTRANJERIA' ? 7 : 10;
+    const siguienteValor =
+      name === 'identificacion'
+        ? value.replace(/\D/g, '').slice(0, maxDigitos)
+        : value;
+
+    setValores((previos) => ({ ...previos, [name]: siguienteValor }));
+
+    const error = validarCampoTrabajador(name, siguienteValor, valores.tipoIdentificacion);
     if (name === 'identificacion') {
       if (!siguienteValor) {
         setIdentificacionEstado({ tipo: 'inicio', mensaje: '' });
-      } else if (!/^\d{10}$/.test(siguienteValor)) {
-        setIdentificacionEstado({ tipo: 'error', mensaje: error || 'La identificacion debe tener 10 digitos.' });
+      } else if (error) {
+        setIdentificacionEstado({ tipo: 'error', mensaje: error });
       } else {
-        setIdentificacionEstado({ tipo: 'validando', mensaje: 'Validando identificacion...' });
+        setIdentificacionEstado({ tipo: 'validando', mensaje: 'Validando identificación...' });
       }
     }
     actualizarErroresCampo(name, error);
@@ -132,19 +167,35 @@ export default function PaginaRegistroTrabajador() {
 
   useEffect(() => {
     const texto = valores.identificacion.trim();
-    if (!/^\d{10}$/.test(texto)) {
+    const tipo = valores.tipoIdentificacion || 'CEDULA_CIUDADANIA';
+    const errorFormato = validarCampoTrabajador('identificacion', texto, tipo);
+    if (errorFormato || !texto || !/^\d+$/.test(texto)) {
+      if (!texto) {
+        setIdentificacionEstado({ tipo: 'inicio', mensaje: '' });
+      }
+      return undefined;
+    }
+
+    const esExtranjeria = tipo === 'CEDULA_EXTRANJERIA' || tipo === 'CE';
+    if (esExtranjeria && (texto.length < 4 || texto.length > 7)) {
+      return undefined;
+    }
+    if (!esExtranjeria && (texto.length < 8 || texto.length > 10)) {
       return undefined;
     }
 
     const controlador = new AbortController();
     controladorIdentificacion.current?.abort();
     controladorIdentificacion.current = controlador;
-    ultimaIdentificacionValidada.current = texto;
+    const claveValidacion = `${tipo}:${texto}`;
+    ultimaIdentificacionValidada.current = claveValidacion;
 
     const temporizador = setTimeout(async () => {
       try {
-        const respuesta = await consultarDisponibilidadIdentificacion(texto, { senal: controlador.signal });
-        if (controlador.signal.aborted || ultimaIdentificacionValidada.current !== texto) {
+        const respuesta = await consultarDisponibilidadIdentificacion(texto, tipo, {
+          senal: controlador.signal,
+        });
+        if (controlador.signal.aborted || ultimaIdentificacionValidada.current !== claveValidacion) {
           return;
         }
 
@@ -167,7 +218,7 @@ export default function PaginaRegistroTrabajador() {
         }
         setIdentificacionEstado({
           tipo: 'error',
-          mensaje: 'No se pudo validar la identificacion. Intentalo de nuevo.',
+          mensaje: 'No se pudo validar la identificación. Inténtalo de nuevo.',
         });
       }
     }, 400);
@@ -176,7 +227,7 @@ export default function PaginaRegistroTrabajador() {
       clearTimeout(temporizador);
       controlador.abort();
     };
-  }, [valores.identificacion]);
+  }, [valores.identificacion, valores.tipoIdentificacion]);
 
   async function alEnviar(evento) {
     evento.preventDefault();
@@ -229,7 +280,7 @@ export default function PaginaRegistroTrabajador() {
       id="registro-trabajador"
     >
       <div className={estilos.barraSuperior}>
-        <Boton type="button" onClick={alIntentarVolver} variante="texto" icono={ArrowLeft}>
+        <Boton type="button" onClick={alIntentarVolver} variante="texto">
           Volver a la busqueda
         </Boton>
       </div>
@@ -260,17 +311,37 @@ export default function PaginaRegistroTrabajador() {
       <form className={estilos.formulario} onSubmit={alEnviar} noValidate>
         <div className={estilos.criterios}>
           <Campo
-            etiqueta="Identificacion"
+            etiqueta="Tipo de identificación"
+            nombre="tipoIdentificacion"
+            opciones={TIPOS_IDENTIFICACION}
+            obligatorio
+            value={valores.tipoIdentificacion}
+            onChange={alCambiar}
+            error={errores.tipoIdentificacion}
+          />
+          <Campo
+            etiqueta="Identificación"
             nombre="identificacion"
             obligatorio
             value={valores.identificacion}
             onChange={alCambiar}
+            onKeyDown={(e) => {
+              // Impedir caracteres no numéricos
+              if (
+                !/[\d]/.test(e.key) &&
+                !['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'Enter', 'Home', 'End'].includes(e.key) &&
+                !e.ctrlKey &&
+                !e.metaKey
+              ) {
+                e.preventDefault();
+              }
+            }}
             error={errores.identificacion}
             exito={identificacionEstado.tipo === 'exito' ? identificacionEstado.mensaje : undefined}
             validando={identificacionEstado.tipo === 'validando'}
-            pista="Solo digitos; maximo 10. No se podra modificar despues."
-            maxLength={10}
+            maxLength={valores.tipoIdentificacion === 'CEDULA_EXTRANJERIA' ? 7 : 10}
             inputMode="numeric"
+            pattern="[0-9]*"
           />
           <Campo
             etiqueta="Nombre"
@@ -307,7 +378,6 @@ export default function PaginaRegistroTrabajador() {
             value={valores.direccion}
             onChange={alCambiar}
             error={errores.direccion}
-            pista="Se valida el formato, no se comprueba que la direccion exista."
             maxLength={200}
           />
           <SelectorProfesiones

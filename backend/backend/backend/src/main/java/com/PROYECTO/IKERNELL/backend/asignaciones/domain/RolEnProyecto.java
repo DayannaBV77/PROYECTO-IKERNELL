@@ -9,12 +9,32 @@ package com.PROYECTO.IKERNELL.backend.asignaciones.domain;
  * trabajador, porque la misma persona puede ser LIDER en su proyecto y
  * DESARROLLADOR en otro al mismo tiempo (HU-10 C04, HU-16 C05).
  *
- * <p>No se incluye COORDINADOR: ningun documento describe a un coordinador
- * asignado a un proyecto. El coordinador asigna, no se asigna.
+ * <p>Los nombres se resuelven desde el catálogo {@code rol}; no se persisten
+ * como un valor enum dentro de cada asignación.
  */
 public enum RolEnProyecto {
 
-	LIDER,
-	DESARROLLADOR
+	COORDINADOR("Coordinador"),
+	LIDER("Líder"),
+	DESARROLLADOR("Desarrollador");
+
+	private final String nombreCatalogo;
+
+	RolEnProyecto(String nombreCatalogo) {
+		this.nombreCatalogo = nombreCatalogo;
+	}
+
+	public String nombreCatalogo() {
+		return nombreCatalogo;
+	}
+
+	public static RolEnProyecto desdeNombreCatalogo(String nombre) {
+		for (RolEnProyecto rol : values()) {
+			if (rol.nombreCatalogo.equals(nombre)) {
+				return rol;
+			}
+		}
+		throw new IllegalStateException("El catálogo contiene un rol desconocido: " + nombre);
+	}
 
 }

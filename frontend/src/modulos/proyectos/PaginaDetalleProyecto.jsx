@@ -1,7 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import {
-  ArrowLeft,
   CircleCheck,
   Flag,
   FolderX,
@@ -83,7 +82,7 @@ export default function PaginaDetalleProyecto() {
 function VolverALaBusqueda() {
   return (
     <div className={estilos.barraSuperior}>
-      <Boton a="/app/proyectos" variante="texto" icono={ArrowLeft}>
+      <Boton a="/app/proyectos" variante="texto">
         Volver a la busqueda
       </Boton>
     </div>

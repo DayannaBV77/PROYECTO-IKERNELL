@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, FolderKanban, FolderPlus, RotateCcw, Search } from 'lucide-react';
+import { FolderKanban, FolderPlus, RotateCcw, Search } from 'lucide-react';
 
 import {
   ESTADOS_HABILITACION,
@@ -155,7 +155,6 @@ export default function PaginaProyectos() {
                     <td>
                       <Link className={estilos.abrir} to={`/app/proyectos/${proyecto.id}`}>
                         <span>Abrir detalle</span>
-                        <ArrowRight size={14} aria-hidden="true" />
                         <span className="solo-lectores"> del proyecto {proyecto.nombre}</span>
                       </Link>
                     </td>

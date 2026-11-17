@@ -24,10 +24,10 @@ export function esFormatoDireccionColombiana(direccion) {
   return NOMENCLATURA_URBANA.test(candidata) || REFERENCIA_RURAL.test(candidata);
 }
 
-function fechaNacimientoInvalida(valor) {
+function validarFechaNacimiento(valor) {
   const iso = aFechaIso(valor);
   if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) {
-    return true;
+    return 'Debe indicar la fecha de nacimiento.';
   }
 
   const [anio, mes, dia] = iso.split('-').map(Number);
@@ -37,15 +37,41 @@ function fechaNacimientoInvalida(valor) {
     fecha.getUTCMonth() !== mes - 1 ||
     fecha.getUTCDate() !== dia
   ) {
-    return true;
+    return 'La fecha de nacimiento no es válida.';
   }
 
-  const limite = new Date(Date.UTC(2007, 11, 31));
-  return fecha > limite;
+  const limiteMenoria = new Date(Date.UTC(2007, 11, 31));
+  const hoy = new Date();
+  const fechaHoyUtc = new Date(Date.UTC(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()));
+
+  if (fecha > fechaHoyUtc || fecha > limiteMenoria) {
+    return 'La fecha de nacimiento no es válida. Debe ser del 31/12/2007 o anterior';
+  }
+
+  let edad = hoy.getFullYear() - anio;
+  const mesActual = hoy.getMonth();
+  const diaActual = hoy.getDate();
+  if (mesActual < mes - 1 || (mesActual === mes - 1 && diaActual < dia)) {
+    edad--;
+  }
+
+  if (edad > 80) {
+    return 'Ingrese una fecha de nacimiento válida (edad máxima permitida: 80 años)';
+  }
+
+  return null;
 }
 
-export function validarCampoTrabajador(nombre, valor) {
+export function validarCampoTrabajador(nombre, valor, contexto = {}) {
   const texto = typeof valor === 'string' ? valor : '';
+  const tipoIdentificacion =
+    typeof contexto === 'string'
+      ? contexto
+      : contexto?.tipoIdentificacion || 'CEDULA_CIUDADANIA';
+
+  if (nombre === 'tipoIdentificacion') {
+    return texto.trim() ? null : 'Debe indicar el tipo de identificacion.';
+  }
 
   if (nombre === 'tipoTrabajador') {
     return TIPOS_TRABAJADOR_VALIDOS.has(texto)
@@ -55,6 +81,7 @@ export function validarCampoTrabajador(nombre, valor) {
 
   if (!texto.trim()) {
     const etiquetas = {
+      tipoIdentificacion: 'Debe indicar el tipo de identificacion.',
       identificacion: 'Debe indicar la identificacion.',
       nombre: 'Debe indicar el nombre.',
       apellido: 'Debe indicar el apellido.',
@@ -68,14 +95,24 @@ export function validarCampoTrabajador(nombre, valor) {
 
   if (nombre === 'identificacion') {
     if (!/^[0-9]+$/.test(texto)) {
-      return 'La identificacion solo puede contener digitos.';
+      return 'La identificacion solo puede contener numeros.';
     }
-    if (texto.length > 10) {
-      return 'La identificacion admite maximo 10 digitos.';
+    const esExtranjeria =
+      tipoIdentificacion === 'CEDULA_EXTRANJERIA' ||
+      tipoIdentificacion === 'CE' ||
+      (typeof tipoIdentificacion === 'string' && tipoIdentificacion.toUpperCase().includes('EXTRANJER'));
+
+    if (esExtranjeria) {
+      if (texto.length < 4 || texto.length > 7) {
+        return 'La cédula de extranjería debe tener entre 4 y 7 dígitos.';
+      }
+      return null;
     }
-    if (texto.length < 10) {
-      return `Faltan ${10 - texto.length} digitos para completar la identificacion.`;
+
+    if (texto.length < 8 || texto.length > 10) {
+      return 'La cédula de ciudadanía debe tener entre 8 y 10 dígitos.';
     }
+    return null;
   }
 
   const limites = {
@@ -90,8 +127,8 @@ export function validarCampoTrabajador(nombre, valor) {
     return limite[0];
   }
 
-  if (nombre === 'fechaNacimiento' && fechaNacimientoInvalida(texto)) {
-    return 'La fecha de nacimiento no es válida. Debe ser del 31/12/2007 o anterior';
+  if (nombre === 'fechaNacimiento') {
+    return validarFechaNacimiento(texto);
   }
 
   if (nombre === 'direccion' && !esFormatoDireccionColombiana(texto)) {
@@ -104,7 +141,7 @@ export function validarCampoTrabajador(nombre, valor) {
 export function validarTrabajador(valores) {
   return Object.fromEntries(
     Object.entries(valores)
-      .map(([nombre, valor]) => [nombre, validarCampoTrabajador(nombre, valor)])
+      .map(([nombre, valor]) => [nombre, validarCampoTrabajador(nombre, valor, valores)])
       .filter(([, error]) => error),
   );
 }

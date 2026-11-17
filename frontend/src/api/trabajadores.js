@@ -8,6 +8,12 @@ import { api, construirConsulta, peticion } from './cliente.js';
  * aplica @PreAuthorize.
  */
 
+/** Tipos de documento de identificacion. */
+export const TIPOS_IDENTIFICACION = [
+  { valor: 'CEDULA_CIUDADANIA', texto: 'Cédula de ciudadanía' },
+  { valor: 'CEDULA_EXTRANJERIA', texto: 'Cédula de extranjería' },
+];
+
 /** Tipos de trabajador, para las listas desplegables. */
 export const TIPOS_TRABAJADOR = [
   { valor: 'COORDINADOR', texto: 'Coordinador de proyectos' },
@@ -47,10 +53,14 @@ export function obtenerTrabajador(id, opciones) {
   return api.obtener(`/api/trabajadores/${id}`, opciones);
 }
 
-/** Valida si la identificacion ya existe en la base de datos. */
-export function consultarDisponibilidadIdentificacion(identificacion, opciones) {
+/** Valida si la identificacion ya existe en la base de datos para el tipo de documento indicado. */
+export function consultarDisponibilidadIdentificacion(identificacion, tipoIdentificacion, opciones) {
   const texto = encodeURIComponent(identificacion ?? '');
-  return api.obtener(`/api/trabajadores/validacion/identificacion?identificacion=${texto}`, opciones);
+  const tipo = encodeURIComponent(tipoIdentificacion ?? 'CEDULA_CIUDADANIA');
+  return api.obtener(
+    `/api/trabajadores/validacion/identificacion?identificacion=${texto}&tipoIdentificacion=${tipo}`,
+    opciones,
+  );
 }
 
 /** RF-001, HU-04 C01: registra el perfil. Responde 201 con el perfil creado. */
@@ -76,6 +86,13 @@ export function modificarTrabajador(id, datos) {
  */
 export function inhabilitarTrabajador(id) {
   return api.crear(`/api/trabajadores/${id}/inhabilitacion`);
+}
+
+/**
+ * RF-007: reactiva al trabajador inhabilitado.
+ */
+export function habilitarTrabajador(id) {
+  return api.crear(`/api/trabajadores/${id}/habilitacion`);
 }
 
 /**

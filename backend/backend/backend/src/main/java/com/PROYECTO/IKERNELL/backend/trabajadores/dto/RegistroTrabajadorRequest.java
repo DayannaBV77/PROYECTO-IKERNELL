@@ -3,28 +3,26 @@ package com.PROYECTO.IKERNELL.backend.trabajadores.dto;
 import java.time.LocalDate;
 import java.util.List;
 
+import com.PROYECTO.IKERNELL.backend.trabajadores.domain.TipoIdentificacion;
 import com.PROYECTO.IKERNELL.backend.trabajadores.domain.TipoTrabajador;
 import com.PROYECTO.IKERNELL.backend.trabajadores.validacion.DireccionColombiana;
+import com.PROYECTO.IKERNELL.backend.trabajadores.validacion.IdentificacionValida;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Past;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import jakarta.validation.Valid;
 
 /**
  * Datos para registrar el perfil de un trabajador (RF-001, HU-04 C01).
- *
- * <p>Los ocho campos son obligatorios: el Caso de Estudio p.2 y HU-04 C01 los
- * enumeran como los datos que el coordinador llena. El mensaje de cada
- * restriccion es el texto que el cliente muestra junto al campo, de modo que
- * HU-04 C02 pueda indicar que falta sin descartar lo ya escrito (RN-13).
  */
+@IdentificacionValida
 public record RegistroTrabajadorRequest(
 
+		TipoIdentificacion tipoIdentificacion,
+
 		@NotBlank(message = "Debe indicar la identificacion.")
-		@Pattern(regexp = "[0-9]{10}", message = "La identificacion debe tener exactamente 10 digitos.")
 		String identificacion,
 
 		@NotBlank(message = "Debe indicar el nombre.")
@@ -57,4 +55,22 @@ public record RegistroTrabajadorRequest(
 
 		@Size(max = 23, message = "Se admiten hasta 23 habilidades.")
 		List<@NotNull @Valid HabilidadTrabajadorRequest> habilidades) {
+
+	public RegistroTrabajadorRequest(
+			String identificacion,
+			String nombre,
+			String apellido,
+			LocalDate fechaNacimiento,
+			String direccion,
+			String profesion,
+			String especialidadDesarrollo,
+			TipoTrabajador tipoTrabajador,
+			List<HabilidadTrabajadorRequest> habilidades) {
+		this(TipoIdentificacion.CEDULA_CIUDADANIA, identificacion, nombre, apellido, fechaNacimiento,
+				direccion, profesion, especialidadDesarrollo, tipoTrabajador, habilidades);
+	}
+
+	public TipoIdentificacion tipoIdentificacionResuelto() {
+		return tipoIdentificacion != null ? tipoIdentificacion : TipoIdentificacion.CEDULA_CIUDADANIA;
+	}
 }

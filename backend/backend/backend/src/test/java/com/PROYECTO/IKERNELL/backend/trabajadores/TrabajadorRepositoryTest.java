@@ -35,12 +35,28 @@ class TrabajadorRepositoryTest {
 	}
 
 	@Test
-	@DisplayName("RN-01: la base de datos rechaza dos trabajadores con la misma identificacion")
+	@DisplayName("RN-01: la base de datos rechaza dos trabajadores con la misma identificacion del mismo tipo")
 	void identificacionDuplicadaEsRechazada() {
 		trabajadores.saveAndFlush(nuevoTrabajador("3000000001"));
 
 		assertThatThrownBy(() -> trabajadores.saveAndFlush(nuevoTrabajador("3000000001")))
 				.isInstanceOf(DataIntegrityViolationException.class);
+	}
+
+	@Test
+	@DisplayName("RN-01: permite la misma identificacion si los tipos de documento son distintos")
+	void permiteMismaIdentificacionConDistintoTipo() {
+		trabajadores.saveAndFlush(new Trabajador(
+				com.PROYECTO.IKERNELL.backend.trabajadores.domain.TipoIdentificacion.CEDULA_CIUDADANIA,
+				"5555555", "Carlos", "Gomez", LocalDate.of(1992, 3, 15),
+				"Carrera 10 # 20-30", "Ingenieria de software", "Frontend", TipoTrabajador.DESARROLLADOR));
+
+		Trabajador ce = trabajadores.saveAndFlush(new Trabajador(
+				com.PROYECTO.IKERNELL.backend.trabajadores.domain.TipoIdentificacion.CEDULA_EXTRANJERIA,
+				"5555555", "Hans", "Muller", LocalDate.of(1991, 5, 20),
+				"Calle 100 # 15-20", "Diseno", "Frontend", TipoTrabajador.DESARROLLADOR));
+
+		assertThat(ce.getId()).isNotNull();
 	}
 
 	@Test

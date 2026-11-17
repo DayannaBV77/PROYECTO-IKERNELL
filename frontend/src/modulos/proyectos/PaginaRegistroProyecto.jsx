@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, TriangleAlert } from 'lucide-react';
+import { Save, TriangleAlert } from 'lucide-react';
 
 import { registrarProyecto } from '../../api/proyectos.js';
 import Boton from '../../componentes/ui/Boton.jsx';
@@ -86,7 +86,7 @@ export default function PaginaRegistroProyecto() {
       id="registro-proyecto"
     >
       <div className={estilos.barraSuperior}>
-        <Boton type="button" onClick={alIntentarVolver} variante="texto" icono={ArrowLeft}>
+        <Boton type="button" onClick={alIntentarVolver} variante="texto">
           Volver a la busqueda
         </Boton>
       </div>

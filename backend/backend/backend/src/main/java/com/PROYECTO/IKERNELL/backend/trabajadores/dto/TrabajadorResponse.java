@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import com.PROYECTO.IKERNELL.backend.shared.domain.EstadoHabilitacion;
+import com.PROYECTO.IKERNELL.backend.trabajadores.domain.TipoIdentificacion;
 import com.PROYECTO.IKERNELL.backend.trabajadores.domain.TipoTrabajador;
 import com.PROYECTO.IKERNELL.backend.trabajadores.domain.Trabajador;
 
@@ -13,6 +14,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record TrabajadorResponse(
 		Long id,
+		TipoIdentificacion tipoIdentificacion,
+		String tipoIdentificacionDescripcion,
 		String identificacion,
 		String nombre,
 		String apellido,
@@ -30,6 +33,8 @@ public record TrabajadorResponse(
 			String correoCorporativo) {
 		return new TrabajadorResponse(
 				trabajador.getId(),
+				trabajador.getTipoIdentificacion(),
+				trabajador.getTipoIdentificacion() != null ? trabajador.getTipoIdentificacion().getDescripcion() : null,
 				trabajador.getIdentificacion(),
 				trabajador.getNombre(),
 				trabajador.getApellido(),

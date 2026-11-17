@@ -1,5 +1,7 @@
 package com.PROYECTO.IKERNELL.backend.actividades;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
@@ -9,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.PROYECTO.IKERNELL.backend.actividades.domain.Actividad;
 import com.PROYECTO.IKERNELL.backend.actividades.domain.EjecucionActividad;
+import com.PROYECTO.IKERNELL.backend.actividades.dto.ActividadResponse;
 import com.PROYECTO.IKERNELL.backend.actividades.dto.CriteriosBusquedaActividad;
 import com.PROYECTO.IKERNELL.backend.actividades.dto.ModificacionActividadRequest;
 import com.PROYECTO.IKERNELL.backend.actividades.dto.RegistroActividadRequest;
@@ -113,10 +116,42 @@ public class ServicioActividades {
 		return actividades.save(actividad);
 	}
 
+	public static final DateTimeFormatter FORMATO_FECHA_HORA = DateTimeFormatter.ofPattern("dd/MM/yyyy - hh:mm a");
+
 	/** HU-16 C01 y C04: actividades asignadas al desarrollador que consulta. */
 	@Transactional(readOnly = true)
 	public List<Actividad> misActividades(Long desarrolladorId) {
 		return actividades.findByDesarrolladorIdOrderByIdDesc(desarrolladorId);
+	}
+
+	/**
+	 * HU-16 C01 y C04: actividades asignadas al desarrollador autenticado con su
+	 * detalle completo de ejecucion y proyecto, ejecutado dentro de una unica
+	 * transaccion de solo lectura para evitar LazyInitializationException.
+	 */
+	@Transactional(readOnly = true)
+	public List<ActividadResponse> misActividadesDetalladas(Long desarrolladorId) {
+		List<Actividad> lista = actividades.findByDesarrolladorIdOrderByIdDesc(desarrolladorId);
+		return lista.stream().map(actividad -> {
+			ActividadResponse base = ActividadResponse.de(actividad);
+			List<EjecucionActividad> historial = ejecuciones.findByActividadIdOrderByIniciadaEnDesc(actividad.getId());
+			String ultimaActualizacion = null;
+			String observaciones = null;
+			if (!historial.isEmpty()) {
+				EjecucionActividad ult = historial.get(0);
+				LocalDateTime fecha = ult.getFinalizadaEn() != null ? ult.getFinalizadaEn() : ult.getIniciadaEn();
+				if (fecha != null) {
+					ultimaActualizacion = fecha.format(FORMATO_FECHA_HORA);
+				}
+				observaciones = ult.getObservaciones();
+			}
+			return new ActividadResponse(
+					base.id(), base.proyectoId(), base.proyectoNombre(), base.proyectoDescripcion(),
+					base.proyectoEstado(), base.proyectoAvance(), base.etapaId(), base.etapaNombre(),
+					base.etapaOrden(), base.desarrolladorId(), base.desarrolladorNombreCompleto(),
+					base.descripcion(), base.estado(), base.prioridad(), base.fechaPlanificada(),
+					base.porcentajeAvance(), base.liderNombre(), ultimaActualizacion, observaciones);
+		}).toList();
 	}
 
 	/**
@@ -140,9 +175,15 @@ public class ServicioActividades {
 
 		Trabajador desarrollador = servicioTrabajadores.obtener(desarrolladorId);
 		EjecucionActividad ejecucion = new EjecucionActividad(actividad, desarrollador, peticion.observaciones());
-		if (Boolean.TRUE.equals(peticion.finalizada())) {
+		if (Boolean.TRUE.equals(peticion.finalizada()) || "FINALIZADA".equalsIgnoreCase(peticion.estado())) {
 			ejecucion.finalizar();
+			actividad.setEstado("FINALIZADA");
+		} else {
+			actividad.setEstado(peticion.estado() != null && !peticion.estado().isBlank()
+					? peticion.estado()
+					: "EN_PROGRESO");
 		}
+		actividades.save(actividad);
 		return ejecuciones.save(ejecucion);
 	}
 

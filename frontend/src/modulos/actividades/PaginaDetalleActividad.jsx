@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
-import { ArrowLeft, CircleCheck, Save, TriangleAlert } from 'lucide-react';
+import { CircleCheck, Save, TriangleAlert } from 'lucide-react';
 
 import {
   PRIORIDADES_ACTIVIDAD,
@@ -56,7 +56,7 @@ export default function PaginaDetalleActividad() {
 function Volver() {
   return (
     <div className={estilos.barraSuperior}>
-      <Boton a="/app/actividades" variante="texto" icono={ArrowLeft}>
+      <Boton a="/app/actividades" variante="texto">
         Volver a la busqueda
       </Boton>
     </div>

@@ -107,10 +107,70 @@ class TrabajadorControllerTest {
 	void validaDisponibilidadIdentificacionDuplicada() throws Exception {
 		registrarDirecto("4000000033", "Ana", "Ramos", "Ingenieria de sistemas", TipoTrabajador.DESARROLLADOR);
 
-		mockMvc.perform(get("/api/trabajadores/validacion/identificacion").param("identificacion", "4000000033"))
+		mockMvc.perform(get("/api/trabajadores/validacion/identificacion")
+				.param("tipoIdentificacion", "CEDULA_CIUDADANIA")
+				.param("identificacion", "4000000033"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.disponible").value(false))
 				.andExpect(jsonPath("$.mensaje").value("Este número de documento ya existe en el sistema"));
+
+		// El mismo número para CE está disponible porque no existe en ese tipo
+		mockMvc.perform(get("/api/trabajadores/validacion/identificacion")
+				.param("tipoIdentificacion", "CEDULA_EXTRANJERIA")
+				.param("identificacion", "4000033"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.disponible").value(true));
+	}
+
+	@Test
+	@WithMockUser(roles = "COORDINADOR")
+	@DisplayName("Valida longitud de digitos segun el tipo de documento")
+	void validaLimiteMaximoDigitosPorTipo() throws Exception {
+		// CE rechaza menos de 4 dígitos
+		mockMvc.perform(get("/api/trabajadores/validacion/identificacion")
+				.param("tipoIdentificacion", "CEDULA_EXTRANJERIA")
+				.param("identificacion", "123"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.disponible").value(false))
+				.andExpect(jsonPath("$.mensaje").value("La cédula de extranjería debe tener entre 4 y 7 dígitos."));
+
+		// CE rechaza más de 7 dígitos
+		mockMvc.perform(get("/api/trabajadores/validacion/identificacion")
+				.param("tipoIdentificacion", "CEDULA_EXTRANJERIA")
+				.param("identificacion", "12345678"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.disponible").value(false))
+				.andExpect(jsonPath("$.mensaje").value("La cédula de extranjería debe tener entre 4 y 7 dígitos."));
+
+		// CE acepta entre 4 y 7 dígitos
+		mockMvc.perform(get("/api/trabajadores/validacion/identificacion")
+				.param("tipoIdentificacion", "CEDULA_EXTRANJERIA")
+				.param("identificacion", "1234"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.disponible").value(true));
+
+		// CC rechaza menos de 8 dígitos
+		mockMvc.perform(get("/api/trabajadores/validacion/identificacion")
+				.param("tipoIdentificacion", "CEDULA_CIUDADANIA")
+				.param("identificacion", "1234567"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.disponible").value(false))
+				.andExpect(jsonPath("$.mensaje").value("La cédula de ciudadanía debe tener entre 8 y 10 dígitos."));
+
+		// CC rechaza más de 10 dígitos
+		mockMvc.perform(get("/api/trabajadores/validacion/identificacion")
+				.param("tipoIdentificacion", "CEDULA_CIUDADANIA")
+				.param("identificacion", "12345678901"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.disponible").value(false))
+				.andExpect(jsonPath("$.mensaje").value("La cédula de ciudadanía debe tener entre 8 y 10 dígitos."));
+
+		// CC acepta entre 8 y 10 dígitos
+		mockMvc.perform(get("/api/trabajadores/validacion/identificacion")
+				.param("tipoIdentificacion", "CEDULA_CIUDADANIA")
+				.param("identificacion", "12345678"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.disponible").value(true));
 	}
 
 	@Test
@@ -288,22 +348,122 @@ class TrabajadorControllerTest {
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(perfilCompleto("AB-123", "DESARROLLADOR")))
 				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.campos.identificacion").value("La identificacion debe tener exactamente 10 digitos."));
+				.andExpect(jsonPath("$.campos.identificacion").value("La identificación solo puede contener números."));
 
 		org.assertj.core.api.Assertions.assertThat(trabajadores.existsByIdentificacion("AB-123")).isFalse();
 	}
 
 	@Test
 	@WithMockUser(roles = "COORDINADOR")
-	@DisplayName("Rechaza identificaciones de mas de diez digitos")
+	@DisplayName("Rechaza cedula de ciudadania con menos de ocho digitos")
+	void rechazaCedulaCiudadaniaMenosDeOchoDigitos() throws Exception {
+		mockMvc.perform(post("/api/trabajadores").with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(perfilCompleto("1234567", "DESARROLLADOR")))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.campos.identificacion").value("La cédula de ciudadanía debe tener entre 8 y 10 dígitos."));
+
+		org.assertj.core.api.Assertions.assertThat(trabajadores.existsByIdentificacion("1234567")).isFalse();
+	}
+
+	@Test
+	@WithMockUser(roles = "COORDINADOR")
+	@DisplayName("Rechaza identificaciones de cedula de ciudadania con mas de diez digitos")
 	void rechazaIdentificacionDeMasDeDiezDigitos() throws Exception {
 		mockMvc.perform(post("/api/trabajadores").with(csrf())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(perfilCompleto("12345678901", "DESARROLLADOR")))
 				.andExpect(status().isBadRequest())
-				.andExpect(jsonPath("$.campos.identificacion").value("La identificacion debe tener exactamente 10 digitos."));
+				.andExpect(jsonPath("$.campos.identificacion").value("La cédula de ciudadanía debe tener entre 8 y 10 dígitos."));
 
 		org.assertj.core.api.Assertions.assertThat(trabajadores.existsByIdentificacion("12345678901")).isFalse();
+	}
+
+	@Test
+	@WithMockUser(roles = "COORDINADOR")
+	@DisplayName("Acepta cedula de ciudadania con ocho digitos")
+	void aceptaCedulaCiudadaniaMenorADiezDigitos() throws Exception {
+		mockMvc.perform(post("/api/trabajadores").with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(perfilCompleto("12345678", "DESARROLLADOR")))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.identificacion").value("12345678"));
+	}
+
+	@Test
+	@WithMockUser(roles = "COORDINADOR")
+	@DisplayName("Rechaza cedula de extranjeria con menos de cuatro digitos")
+	void rechazaCedulaExtranjeriaMenosDeCuatroDigitos() throws Exception {
+		String ceCorta = """
+				{
+				  "tipoIdentificacion": "CEDULA_EXTRANJERIA",
+				  "identificacion": "123",
+				  "nombre": "Hans",
+				  "apellido": "Muller",
+				  "fechaNacimiento": "1990-05-10",
+				  "direccion": "Calle 45 # 12-30",
+				  "profesion": "Ingenieria",
+				  "especialidadDesarrollo": "Backend",
+				  "tipoTrabajador": "DESARROLLADOR"
+				}
+				""";
+
+		mockMvc.perform(post("/api/trabajadores").with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(ceCorta))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.campos.identificacion").value("La cédula de extranjería debe tener entre 4 y 7 dígitos."));
+	}
+
+	@Test
+	@WithMockUser(roles = "COORDINADOR")
+	@DisplayName("Rechaza cedula de extranjeria con mas de siete digitos")
+	void rechazaCedulaExtranjeriaMasDeSieteDigitos() throws Exception {
+		String ceInvalida = """
+				{
+				  "tipoIdentificacion": "CEDULA_EXTRANJERIA",
+				  "identificacion": "12345678",
+				  "nombre": "Hans",
+				  "apellido": "Muller",
+				  "fechaNacimiento": "1990-05-10",
+				  "direccion": "Calle 45 # 12-30",
+				  "profesion": "Ingenieria",
+				  "especialidadDesarrollo": "Backend",
+				  "tipoTrabajador": "DESARROLLADOR"
+				}
+				""";
+
+		mockMvc.perform(post("/api/trabajadores").with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(ceInvalida))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.campos.identificacion").value("La cédula de extranjería debe tener entre 4 y 7 dígitos."));
+	}
+
+	@Test
+	@WithMockUser(roles = "COORDINADOR")
+	@DisplayName("Acepta cedula de extranjeria con cuatro a siete digitos")
+	void aceptaCedulaExtranjeriaConSieteDigitosOMenos() throws Exception {
+		String ceValida = """
+				{
+				  "tipoIdentificacion": "CEDULA_EXTRANJERIA",
+				  "identificacion": "1234",
+				  "nombre": "Hans",
+				  "apellido": "Muller",
+				  "fechaNacimiento": "1990-05-10",
+				  "direccion": "Calle 45 # 12-30",
+				  "profesion": "Ingenieria",
+				  "especialidadDesarrollo": "Backend",
+				  "tipoTrabajador": "DESARROLLADOR"
+				}
+				""";
+
+		mockMvc.perform(post("/api/trabajadores").with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(ceValida))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.identificacion").value("1234"))
+				.andExpect(jsonPath("$.tipoIdentificacion").value("Cédula de extranjería"));
 	}
 
 	@Test

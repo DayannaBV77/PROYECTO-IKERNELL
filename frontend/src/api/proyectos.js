@@ -121,7 +121,8 @@ export function asignarDesarrolladores(proyectoId, desarrolladorIds) {
 
 /** Rol con que un trabajador participa en un proyecto. */
 export const ETIQUETA_ROL = {
-  LIDER: 'Lider',
+  COORDINADOR: 'Coordinador',
+  LIDER: 'Líder',
   DESARROLLADOR: 'Desarrollador',
 };
 

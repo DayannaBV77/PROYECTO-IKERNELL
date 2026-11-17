@@ -24,6 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.PROYECTO.IKERNELL.backend.shared.domain.EstadoHabilitacion;
 import com.PROYECTO.IKERNELL.backend.trabajadores.ServicioTrabajadores.FotografiaGuardada;
 import com.PROYECTO.IKERNELL.backend.shared.dto.PaginaResponse;
+import com.PROYECTO.IKERNELL.backend.trabajadores.domain.TipoIdentificacion;
 import com.PROYECTO.IKERNELL.backend.trabajadores.domain.TipoTrabajador;
 import com.PROYECTO.IKERNELL.backend.trabajadores.domain.Trabajador;
 import com.PROYECTO.IKERNELL.backend.trabajadores.dto.CriteriosBusquedaTrabajador;
@@ -70,15 +71,39 @@ public class TrabajadorController {
 	}
 
 	@GetMapping("/validacion/identificacion")
-	public DisponibilidadIdentificacionResponse validarIdentificacion(@RequestParam String identificacion) {
+	public DisponibilidadIdentificacionResponse validarIdentificacion(
+			@RequestParam(required = false) String tipoIdentificacion,
+			@RequestParam String identificacion) {
 		String texto = identificacion == null ? "" : identificacion.trim();
-		if (!texto.matches("\\d{10}")) {
-			return new DisponibilidadIdentificacionResponse(false,
-					"La identificacion debe tener exactamente 10 digitos.");
+		TipoIdentificacion tipo;
+		try {
+			tipo = tipoIdentificacion != null && !tipoIdentificacion.isBlank()
+					? TipoIdentificacion.de(tipoIdentificacion)
+					: TipoIdentificacion.CEDULA_CIUDADANIA;
+		} catch (IllegalArgumentException e) {
+			return new DisponibilidadIdentificacionResponse(false, e.getMessage());
 		}
-		boolean disponible = !servicio.existeIdentificacion(texto);
+		if (texto.isEmpty()) {
+			return new DisponibilidadIdentificacionResponse(false, "Debe indicar la identificación.");
+		}
+		if (!texto.matches("\\d+")) {
+			return new DisponibilidadIdentificacionResponse(false,
+					"La identificación solo puede contener números.");
+		}
+		if (tipo == TipoIdentificacion.CEDULA_EXTRANJERIA) {
+			if (texto.length() < 4 || texto.length() > 7) {
+				return new DisponibilidadIdentificacionResponse(false,
+						"La cédula de extranjería debe tener entre 4 y 7 dígitos.");
+			}
+		} else {
+			if (texto.length() < 8 || texto.length() > 10) {
+				return new DisponibilidadIdentificacionResponse(false,
+						"La cédula de ciudadanía debe tener entre 8 y 10 dígitos.");
+			}
+		}
+		boolean disponible = !servicio.existeIdentificacion(tipo, texto);
 		return new DisponibilidadIdentificacionResponse(disponible,
-				disponible ? "Identificacion disponible y valida." : "Este número de documento ya existe en el sistema");
+				disponible ? "Identificación disponible y válida." : "Este número de documento ya existe en el sistema");
 	}
 
 	/**
@@ -140,6 +165,14 @@ public class TrabajadorController {
 	@PostMapping("/{id}/inhabilitacion")
 	public TrabajadorResponse inhabilitar(@PathVariable Long id) {
 		return respuesta(servicio.inhabilitar(id));
+	}
+
+	/**
+	 * Reactiva un trabajador inhabilitado conservando su perfil e historial (RF-007).
+	 */
+	@PostMapping("/{id}/habilitacion")
+	public TrabajadorResponse habilitar(@PathVariable Long id) {
+		return respuesta(servicio.habilitar(id));
 	}
 
 	/**

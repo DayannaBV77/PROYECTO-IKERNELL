@@ -20,6 +20,7 @@ import com.PROYECTO.IKERNELL.backend.shared.error.RecursoNoEncontradoException;
 import com.PROYECTO.IKERNELL.backend.shared.error.ReglaNegocioException;
 import com.PROYECTO.IKERNELL.backend.trabajadores.domain.CategoriaHabilidad;
 import com.PROYECTO.IKERNELL.backend.trabajadores.domain.HabilidadTrabajador;
+import com.PROYECTO.IKERNELL.backend.trabajadores.domain.TipoIdentificacion;
 import com.PROYECTO.IKERNELL.backend.trabajadores.domain.TipoTrabajador;
 import com.PROYECTO.IKERNELL.backend.trabajadores.domain.Trabajador;
 import com.PROYECTO.IKERNELL.backend.trabajadores.dto.CriteriosBusquedaTrabajador;
@@ -77,18 +78,34 @@ public class ServicioTrabajadores {
 	 */
 	@Transactional
 	public Trabajador registrar(RegistroTrabajadorRequest peticion) {
-		String identificacion = peticion.identificacion();
-		if (!identificacion.matches("\\d{10}")) {
-			throw new ReglaNegocioException("La identificacion debe tener exactamente 10 digitos.");
+		String identificacion = peticion.identificacion() != null ? peticion.identificacion().trim() : "";
+		TipoIdentificacion tipo = peticion.tipoIdentificacionResuelto();
+		if (!identificacion.matches("\\d+")) {
+			throw new ReglaNegocioException("La identificación solo puede contener números.");
 		}
-		if (trabajadores.existsByIdentificacion(identificacion)) {
+		if (tipo == TipoIdentificacion.CEDULA_EXTRANJERIA) {
+			if (identificacion.length() < 4 || identificacion.length() > 7) {
+				throw new ReglaNegocioException("La cédula de extranjería debe tener entre 4 y 7 dígitos.");
+			}
+		} else {
+			if (identificacion.length() < 8 || identificacion.length() > 10) {
+				throw new ReglaNegocioException("La cédula de ciudadanía debe tener entre 8 y 10 dígitos.");
+			}
+		}
+		if (trabajadores.existsByTipoIdentificacionAndIdentificacion(tipo, identificacion)) {
 			throw new ReglaNegocioException("Este número de documento ya existe en el sistema");
 		}
-		if (peticion.fechaNacimiento() == null || peticion.fechaNacimiento().isAfter(FECHA_MAXIMA_NACIMIENTO)) {
+		if (peticion.fechaNacimiento() == null || peticion.fechaNacimiento().isAfter(java.time.LocalDate.now())
+				|| peticion.fechaNacimiento().isAfter(FECHA_MAXIMA_NACIMIENTO)) {
 			throw new ReglaNegocioException("La fecha de nacimiento no es válida. Debe ser del 31/12/2007 o anterior");
+		}
+		int edad = java.time.Period.between(peticion.fechaNacimiento(), java.time.LocalDate.now()).getYears();
+		if (edad > 80) {
+			throw new ReglaNegocioException("Ingrese una fecha de nacimiento válida (edad máxima permitida: 80 años)");
 		}
 		validarHabilidades(peticion.habilidades());
 		Trabajador trabajador = new Trabajador(
+				tipo,
 				identificacion,
 				peticion.nombre(),
 				peticion.apellido(),
@@ -112,6 +129,15 @@ public class ServicioTrabajadores {
 			return false;
 		}
 		return trabajadores.existsByIdentificacion(identificacion.trim());
+	}
+
+	@Transactional(readOnly = true)
+	public boolean existeIdentificacion(TipoIdentificacion tipoIdentificacion, String identificacion) {
+		if (identificacion == null) {
+			return false;
+		}
+		TipoIdentificacion tipo = tipoIdentificacion != null ? tipoIdentificacion : TipoIdentificacion.CEDULA_CIUDADANIA;
+		return trabajadores.existsByTipoIdentificacionAndIdentificacion(tipo, identificacion.trim());
 	}
 
 	/** Busqueda por uno o varios criterios (RF-004, HU-05 C01 y C02). */
@@ -151,10 +177,14 @@ public class ServicioTrabajadores {
 	@Transactional
 	public Trabajador modificar(Long id, ModificacionTrabajadorRequest peticion) {
 		Trabajador trabajador = obtener(id);
+		if (peticion.profesion() == null || peticion.profesion().trim().isEmpty()) {
+			throw new ReglaNegocioException("Debe indicar la profesion.");
+		}
 		if (peticion.habilidades() != null) {
 			validarHabilidades(peticion.habilidades());
 		}
 		trabajador.setDireccion(peticion.direccion());
+		trabajador.setProfesion(peticion.profesion().trim());
 		trabajador.setEspecialidadDesarrollo(peticion.especialidadDesarrollo());
 		trabajador.setTipoTrabajador(peticion.tipoTrabajador());
 		if (peticion.habilidades() != null) {
@@ -204,6 +234,16 @@ public class ServicioTrabajadores {
 			throw new ReglaNegocioException("El trabajador ya se encuentra inhabilitado.");
 		}
 		trabajador.inhabilitar();
+		return trabajadores.save(trabajador);
+	}
+
+	@Transactional
+	public Trabajador habilitar(Long id) {
+		Trabajador trabajador = obtener(id);
+		if (trabajador.estaHabilitado()) {
+			throw new ReglaNegocioException("El trabajador ya se encuentra habilitado.");
+		}
+		trabajador.habilitar();
 		return trabajadores.save(trabajador);
 	}
 

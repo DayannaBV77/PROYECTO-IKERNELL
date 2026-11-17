@@ -2,6 +2,7 @@ package com.PROYECTO.IKERNELL.backend.asignaciones.dto;
 
 import java.time.OffsetDateTime;
 
+import com.PROYECTO.IKERNELL.backend.asignaciones.domain.EstadoLiderazgo;
 import com.PROYECTO.IKERNELL.backend.proyectos.domain.Proyecto;
 import com.PROYECTO.IKERNELL.backend.shared.domain.EstadoHabilitacion;
 
@@ -16,6 +17,8 @@ public record ProyectoAsignacionResponse(
 		OffsetDateTime fechaCreacion,
 		Long liderResponsableId,
 		String liderResponsableNombre,
+		String liderResponsableIdentificacion,
+		EstadoLiderazgo liderEstado,
 		long numeroIntegrantes) {
 
 	public static ProyectoAsignacionResponse de(Proyecto proyecto, long numeroIntegrantes) {
@@ -30,6 +33,8 @@ public record ProyectoAsignacionResponse(
 				proyecto.getFechaCreacion(),
 				lider != null ? lider.getId() : null,
 				lider != null ? lider.nombreCompleto() : null,
+				lider != null ? lider.getIdentificacion() : null,
+				proyecto.getEstadoLiderazgo() != null ? proyecto.getEstadoLiderazgo() : EstadoLiderazgo.ACTIVO,
 				numeroIntegrantes);
 	}
 
