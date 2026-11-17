@@ -2,6 +2,7 @@ package com.PROYECTO.IKERNELL.backend.auth.dto;
 
 import java.util.List;
 
+import com.PROYECTO.IKERNELL.backend.asignaciones.domain.RolEnProyecto;
 import com.PROYECTO.IKERNELL.backend.auth.TrabajadorAutenticado;
 import com.PROYECTO.IKERNELL.backend.trabajadores.domain.TipoTrabajador;
 
@@ -20,16 +21,18 @@ import com.PROYECTO.IKERNELL.backend.trabajadores.domain.TipoTrabajador;
  * individuales, grupos, disponibilidad- sigue sin implementar porque D-12 lo
  * deja sin definir.
  *
- * <p>El {@code tipoTrabajador} permite al cliente mostrar solo las funciones de
- * su tipo "y ninguna de las que corresponden a otro tipo" (HU-03 C02). La
- * restriccion real se aplica en el servidor, no en el menu.
+ * <p>El {@code tipoTrabajador} y {@code rolActivo} permiten al cliente mostrar
+ * las funciones autorizadas para el contexto seleccionado.
  */
 public record SesionResponse(
 		Long trabajadorId,
 		String nombreCompleto,
 		String correoCorporativo,
 		TipoTrabajador tipoTrabajador,
-		List<String> serviciosComunes) {
+		List<String> serviciosComunes,
+		Long proyectoActivoId,
+		String proyectoActivoNombre,
+		RolEnProyecto rolActivo) {
 
 	private static final List<String> SERVICIOS_COMUNES = List.of(
 			"CORREO_ELECTRONICO",
@@ -37,13 +40,25 @@ public record SesionResponse(
 			"BIBLIOTECA_DE_PROGRAMAS",
 			"TUTORIALES_DE_PROGRAMACION");
 
+	public SesionResponse(
+			Long trabajadorId,
+			String nombreCompleto,
+			String correoCorporativo,
+			TipoTrabajador tipoTrabajador,
+			List<String> serviciosComunes) {
+		this(trabajadorId, nombreCompleto, correoCorporativo, tipoTrabajador, serviciosComunes, null, null, null);
+	}
+
 	public static SesionResponse de(TrabajadorAutenticado trabajador) {
 		return new SesionResponse(
 				trabajador.getTrabajadorId(),
 				trabajador.getNombreCompleto(),
 				trabajador.getUsername(),
 				trabajador.getTipoTrabajador(),
-				SERVICIOS_COMUNES);
+				SERVICIOS_COMUNES,
+				trabajador.getProyectoActivoId(),
+				trabajador.getProyectoActivoNombre(),
+				trabajador.getRolActivo());
 	}
 
 }

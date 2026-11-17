@@ -1,21 +1,32 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { cerrarSesion, iniciarSesion, obtenerSesion } from '../api/autenticacion.js';
+import { cambiarContextoProyectoActivo, obtenerMisProyectos } from '../api/asignaciones.js';
 import { ContextoSesion } from './contexto.js';
 
 /**
- * Estado de la sesion para toda la aplicacion.
+ * Estado de la sesion y contexto de proyectos para toda la aplicacion.
  *
  * La sesion vive en la cookie JSESSIONID, no en el cliente: por eso al arrancar
  * no se lee ningun almacenamiento local, se le pregunta al servidor quien esta
- * dentro. Es tambien lo que hace que la sesion sobreviva a una recarga y que
- * cerrarla en otra pestana acabe notandose aqui.
- *
- * Guardar el trabajador en localStorage seria mas rapido de pintar, pero el
- * cliente mostraria una sesion que el servidor ya pudo haber invalidado.
+ * dentro.
  */
 export default function ProveedorSesion({ children }) {
   const [estado, setEstado] = useState({ sesion: null, fallo: null, comprobando: true });
+  const [misProyectos, setMisProyectos] = useState([]);
+  const [cargandoProyectos, setCargandoProyectos] = useState(false);
+
+  const cargarProyectosUsuario = useCallback(async () => {
+    setCargandoProyectos(true);
+    try {
+      const respuesta = await obtenerMisProyectos();
+      setMisProyectos(respuesta?.contenido || []);
+    } catch {
+      setMisProyectos([]);
+    } finally {
+      setCargandoProyectos(false);
+    }
+  }, []);
 
   useEffect(() => {
     const controlador = new AbortController();
@@ -25,14 +36,15 @@ export default function ProveedorSesion({ children }) {
       .then((sesion) => {
         if (vigente) {
           setEstado({ sesion, fallo: null, comprobando: false });
+          if (sesion) {
+            cargarProyectosUsuario();
+          }
         }
       })
       .catch((fallo) => {
         if (!vigente || fallo?.name === 'AbortError') {
           return;
         }
-        // El 401 es la respuesta normal cuando nadie ha entrado todavia; no es
-        // un error que haya que mostrar.
         setEstado({ sesion: null, fallo: fallo.esSinSesion ? null : fallo, comprobando: false });
       });
 
@@ -40,13 +52,35 @@ export default function ProveedorSesion({ children }) {
       vigente = false;
       controlador.abort();
     };
-  }, []);
+  }, [cargarProyectosUsuario]);
 
   /** Propaga el error del servidor para que el formulario marque los campos. */
   const entrar = useCallback(async (credenciales) => {
     const sesion = await iniciarSesion(credenciales);
     setEstado({ sesion, fallo: null, comprobando: false });
+    if (sesion) {
+      cargarProyectosUsuario();
+    }
     return sesion;
+  }, [cargarProyectosUsuario]);
+
+  /**
+   * Cambia el contexto de proyecto activo en el backend y actualiza la sesión local.
+   */
+  const cambiarProyecto = useCallback(async ({ proyectoId, rol }) => {
+    const respuesta = await cambiarContextoProyectoActivo({ proyectoId, rol });
+    setEstado((prev) => ({
+      ...prev,
+      sesion: prev.sesion
+        ? {
+            ...prev.sesion,
+            proyectoActivoId: respuesta.proyectoId,
+            proyectoActivoNombre: respuesta.proyectoNombre,
+            rolActivo: respuesta.rolActivo,
+          }
+        : null,
+    }));
+    return respuesta;
   }, []);
 
   /**
@@ -61,10 +95,22 @@ export default function ProveedorSesion({ children }) {
       // Intencionado: el estado local se limpia en cualquier caso.
     } finally {
       setEstado({ sesion: null, fallo: null, comprobando: false });
+      setMisProyectos([]);
     }
   }, []);
 
-  const valor = useMemo(() => ({ ...estado, entrar, salir }), [estado, entrar, salir]);
+  const valor = useMemo(
+    () => ({
+      ...estado,
+      entrar,
+      salir,
+      misProyectos,
+      cargandoProyectos,
+      cambiarProyecto,
+      recargarProyectos: cargarProyectosUsuario,
+    }),
+    [estado, entrar, salir, misProyectos, cargandoProyectos, cambiarProyecto, cargarProyectosUsuario],
+  );
 
   return <ContextoSesion.Provider value={valor}>{children}</ContextoSesion.Provider>;
 }

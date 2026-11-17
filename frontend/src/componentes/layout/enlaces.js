@@ -82,12 +82,13 @@ export const ENLACES_LIDER = ENLACES_PRIVADOS.filter(
 );
 
 /**
- * Menu que corresponde a la sesion.
+ * Menu que corresponde a la sesion segun el contexto de rol y proyecto activo.
  *
- * El rol de LIDER DE PROYECTOS y los demas roles autenticados muestran
- * exclusivamente las opciones internas de su espacio de trabajo, eliminando
- * las entradas del menu publico (Inicio, Nosotros, Portafolio, etc.) para
- * mantener la navegacion limpia y enfocada.
+ * El rol efectivo en el proyecto activo determina estrictamente las opciones
+ * autorizadas mostradas al usuario:
+ * - COORDINADOR: gestión de trabajadores, asignaciones, desempeño y portal.
+ * - LÍDER: gestión de su proyecto, actividades, reportes y archivo plano.
+ * - DESARROLLADOR: sus actividades asignadas e incidencias (errores e interrupciones).
  *
  * Sin sesion se retorna el catalogo publico.
  */
@@ -96,20 +97,29 @@ export function enlacesPara(sesion) {
     return ENLACES_PUBLICOS;
   }
 
-  // Líder de Proyectos: únicamente sus módulos y herramientas de gestión
-  if (sesion.tipoTrabajador === 'LIDER') {
-    return ENLACES_LIDER;
-  }
-
-  // Coordinador de Proyectos: únicamente sus herramientas de gestión
-  if (sesion.tipoTrabajador === 'COORDINADOR') {
+  // Si es coordinador y no está en un proyecto operativo específico con rol Líder/Desarrollador:
+  if (sesion.tipoTrabajador === 'COORDINADOR' && (!sesion.rolActivo || sesion.rolActivo === 'COORDINADOR')) {
     return ENLACES_PRIVADOS.filter(
-      ({ tipos }) => !tipos || tipos.includes(sesion.tipoTrabajador),
+      ({ tipos }) => !tipos || tipos.includes('COORDINADOR'),
     );
   }
 
-  // Otros trabajadores autenticados (Desarrollador, etc.): solo sus servicios autorizados
+  // Rol efectivo según el contexto del proyecto activo:
+  const rolEfectivo = sesion.rolActivo || sesion.tipoTrabajador;
+
+  if (rolEfectivo === 'LIDER') {
+    return ENLACES_PRIVADOS.filter(
+      ({ tipos }) => !tipos || tipos.includes('LIDER'),
+    );
+  }
+
+  if (rolEfectivo === 'DESARROLLADOR') {
+    return ENLACES_PRIVADOS.filter(
+      ({ tipos }) => !tipos || tipos.includes('DESARROLLADOR'),
+    );
+  }
+
   return ENLACES_PRIVADOS.filter(
-    ({ tipos }) => !tipos || tipos.includes(sesion.tipoTrabajador),
+    ({ tipos }) => !tipos || tipos.includes(rolEfectivo),
   );
 }

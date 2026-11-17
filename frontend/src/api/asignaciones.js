@@ -125,3 +125,23 @@ export function cambiarLider(proyectoId, nuevoLiderId) {
 export function quitarDesarrollador(proyectoId, asignacionId) {
   return api.eliminar(`/api/asignaciones/proyectos/${proyectoId}/equipo/${asignacionId}`);
 }
+
+/** Consulta el rol y los roles del trabajador autenticado en un proyecto específico. */
+export function obtenerRolEnProyecto(proyectoId, opciones) {
+  return api.obtener(`/api/mis-proyectos/${proyectoId}/rol`, opciones);
+}
+
+/** Obtiene el contexto de proyecto y rol activo de la sesión. */
+export function obtenerContextoProyectoActivo(opciones) {
+  return api.obtener('/api/contexto-proyecto/activo', opciones);
+}
+
+/** Cambia el contexto de proyecto y rol activo de la sesión. */
+export function cambiarContextoProyectoActivo({ proyectoId, rol }) {
+  return api.crear('/api/contexto-proyecto/activo', { proyectoId, rol });
+}
+
+/** Limpia el contexto de proyecto activo de la sesión. */
+export function limpiarContextoProyectoActivo() {
+  return api.eliminar('/api/contexto-proyecto/activo');
+}

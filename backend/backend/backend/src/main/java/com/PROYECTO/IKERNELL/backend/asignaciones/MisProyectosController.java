@@ -7,9 +7,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.PROYECTO.IKERNELL.backend.asignaciones.domain.RolEnProyecto;
 import com.PROYECTO.IKERNELL.backend.asignaciones.dto.MiProyectoResponse;
+import com.PROYECTO.IKERNELL.backend.asignaciones.dto.RolEnProyectoResponse;
 import com.PROYECTO.IKERNELL.backend.auth.TrabajadorAutenticado;
 import com.PROYECTO.IKERNELL.backend.shared.dto.ListaResponse;
+import org.springframework.web.bind.annotation.PathVariable;
 
 /**
  * Proyectos en los que participa el trabajador autenticado.
@@ -51,6 +54,23 @@ public class MisProyectosController {
 		List<MiProyectoResponse> proyectos = MiProyectoResponse
 				.agrupar(servicio.misAsignacionesActivas(autenticado.getTrabajadorId()));
 		return ListaResponse.de(proyectos, "No participa en ningun proyecto todavia.");
+	}
+
+	/** Consulta el rol y los roles del trabajador autenticado en un proyecto específico. */
+	@GetMapping("/{proyectoId}/rol")
+	public RolEnProyectoResponse rolEnProyecto(@PathVariable Long proyectoId,
+			@AuthenticationPrincipal TrabajadorAutenticado autenticado) {
+		List<RolEnProyecto> roles = servicio.rolesDeTrabajadorEnProyecto(
+				autenticado.getTrabajadorId(), proyectoId);
+		RolEnProyecto rolActivo = (autenticado.getProyectoActivoId() != null && autenticado.getProyectoActivoId().equals(proyectoId))
+				? autenticado.getRolActivo()
+				: (!roles.isEmpty() ? roles.get(0) : null);
+		String nombreProyecto = servicio.misAsignacionesActivas(autenticado.getTrabajadorId()).stream()
+				.filter(a -> a.getProyecto().getId().equals(proyectoId))
+				.map(a -> a.getProyecto().getNombre())
+				.findFirst()
+				.orElse("Proyecto " + proyectoId);
+		return new RolEnProyectoResponse(proyectoId, nombreProyecto, roles, rolActivo);
 	}
 
 }

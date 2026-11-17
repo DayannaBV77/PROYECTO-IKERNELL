@@ -1,5 +1,6 @@
 import { Outlet, useLocation } from 'react-router-dom';
 
+import ErrorBoundary from '../ErrorBoundary.jsx';
 import { useSesion } from '../../sesion/contexto.js';
 import AccionesSesion from './AccionesSesion.jsx';
 import Encabezado from './Encabezado.jsx';
@@ -32,7 +33,9 @@ export default function LayoutPrincipal() {
       <Encabezado enlaces={enlacesPara(sesion)} acciones={<AccionesSesion />} />
 
       <main className={estilos.contenido} id="contenido-principal">
-        <Outlet />
+        <ErrorBoundary>
+          <Outlet />
+        </ErrorBoundary>
       </main>
 
       {!esPantallaChat && (

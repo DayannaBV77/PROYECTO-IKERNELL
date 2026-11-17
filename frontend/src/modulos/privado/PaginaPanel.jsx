@@ -162,14 +162,19 @@ const SERVICIOS = {
 };
 
 export default function PaginaPanel() {
-  const { sesion } = useSesion();
+  const { sesion, misProyectos } = useSesion();
 
   const cargarCorreo = useCallback(({ senal }) => obtenerAccesoCorreo({ senal }), []);
   const correo = usePeticion(cargarCorreo, []);
 
+  const rolEfectivo = sesion.rolActivo || sesion.tipoTrabajador;
+  const esCoordinador = sesion.tipoTrabajador === 'COORDINADOR' && (!sesion.rolActivo || sesion.rolActivo === 'COORDINADOR');
   const servicios = sesion.serviciosComunes || [];
-  const gestion = GESTION.filter(({ tipos }) => tipos.includes(sesion.tipoTrabajador));
-  const esCoordinador = sesion.tipoTrabajador === 'COORDINADOR';
+  const gestion = GESTION.filter(
+    ({ tipos }) =>
+      tipos.includes(rolEfectivo) || (sesion.tipoTrabajador === 'COORDINADOR' && tipos.includes('COORDINADOR')),
+  );
+  const tieneProyectos = Array.isArray(misProyectos) && misProyectos.length > 0;
 
   if (esCoordinador) {
     return (
@@ -221,7 +226,23 @@ export default function PaginaPanel() {
 
   return (
     <>
-      {TIPOS_CON_PANEL_DEL_DIA.includes(sesion.tipoTrabajador) && <PaginaMiDia />}
+      {!tieneProyectos && !esCoordinador && (
+        <section className={estilos.bloqueSeccion} style={{ marginBottom: '1.5rem' }}>
+          <div style={{
+            padding: '1rem 1.25rem',
+            borderRadius: '8px',
+            backgroundColor: 'var(--color-superficie, #f8fafc)',
+            border: '1px solid var(--color-borde, #e2e8f0)',
+            color: '#64748b',
+            fontSize: '0.875rem'
+          }}>
+            <strong>Sin proyectos asignados:</strong> Actualmente no tiene asignaciones activas en ningún proyecto.
+            Cuando un coordinador o líder le asigne a un proyecto, aparecerá en el selector superior con su rol correspondiente.
+          </div>
+        </section>
+      )}
+
+      {TIPOS_CON_PANEL_DEL_DIA.includes(rolEfectivo) && <PaginaMiDia />}
 
       {gestion.length > 0 && (
         <Seccion

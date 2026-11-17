@@ -24,8 +24,14 @@ export function useEtapasDeProyecto(proyectoId) {
   );
   const { datos, error, cargando } = usePeticion(cargar, [proyectoId]);
 
+  const lista = Array.isArray(datos)
+    ? datos
+    : Array.isArray(datos?.contenido)
+      ? datos.contenido
+      : [];
+
   return {
-    opcionesDeEtapa: (datos || []).map((etapa) => ({
+    opcionesDeEtapa: lista.map((etapa) => ({
       valor: String(etapa.id),
       texto: etapa.orden ? `${etapa.orden}. ${etapa.nombre}` : etapa.nombre,
     })),

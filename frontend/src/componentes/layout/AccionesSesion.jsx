@@ -7,6 +7,7 @@ import Boton from '../ui/Boton.jsx';
 import Confirmacion from '../ui/Confirmacion.jsx';
 import { useNotificador } from '../ui/Notificador.jsx';
 import { useSesion } from '../../sesion/contexto.js';
+import SelectorProyecto from './SelectorProyecto.jsx';
 import estilos from './AccionesSesion.module.css';
 
 /**
@@ -54,6 +55,8 @@ export default function AccionesSesion() {
   return (
     <>
       <div className={estilos.sesion}>
+        <SelectorProyecto />
+
         <span className={estilos.identidad}>
           <span className={estilos.nombre}>{sesion.nombreCompleto}</span>
           <span className={estilos.tipo}>

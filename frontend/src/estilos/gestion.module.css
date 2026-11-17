@@ -596,6 +596,9 @@
 
 .accionesFila button {
   padding-block: var(--s-1);
+  text-transform: none !important;
+  letter-spacing: normal;
+  font-weight: var(--p-medio);
 }
 
 /* La descripcion es el unico texto largo de la tabla; se deja fluir. */

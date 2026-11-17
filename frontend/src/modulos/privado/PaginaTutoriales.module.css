@@ -1,0 +1,335 @@
+/* Contenedor principal de Tutoriales con layout moderno de documentación */
+.layoutTutoriales {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 2rem;
+  align-items: start;
+  width: 100%;
+  margin-top: 1rem;
+}
+
+@media (max-width: 960px) {
+  .layoutTutoriales {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ------------------------------------------------------------- */
+/* PANEL LATERAL IZQUIERDO: ÁRBOL DE NAVEGACIÓN Y BUSCADOR       */
+/* ------------------------------------------------------------- */
+.sidebar {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.875rem;
+  padding: 1.25rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  position: sticky;
+  top: 1.5rem;
+  max-height: calc(100vh - 3rem);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.buscadorSidebar {
+  position: relative;
+  width: 100%;
+}
+
+.iconoBuscador {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.inputBuscador {
+  width: 100%;
+  padding: 0.6rem 0.75rem 0.6rem 2.25rem;
+  font-size: 0.8125rem;
+  background-color: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+  color: #1e293b;
+  outline: none;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.inputBuscador:focus {
+  background-color: #ffffff;
+  border-color: #0284c7;
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15);
+}
+
+/* Árbol de Categorías */
+.arbolCategorias {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.grupoCategoria {
+  display: flex;
+  flex-direction: column;
+}
+
+.categoriaCabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.45rem 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #334155;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.15s ease;
+}
+
+.categoriaCabecera:hover {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
+.categoriaTitulo {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.categoriaIconoFlecha {
+  color: #64748b;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.listaItemsCategoria {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding-left: 1.25rem;
+  margin-top: 0.15rem;
+  border-left: 1px solid #e2e8f0;
+  margin-left: 0.75rem;
+}
+
+.itemTutorial {
+  display: block;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.775rem;
+  color: #475569;
+  border-radius: 0.375rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+}
+
+.itemTutorial:hover {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
+.itemTutorialActivo {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
+  font-weight: 600;
+}
+
+/* ------------------------------------------------------------- */
+/* CONTENEDOR PRINCIPAL: VISOR DEL TUTORIAL                      */
+/* ------------------------------------------------------------- */
+.panelContenido {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+.barraSuperiorVisor {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.btnVolver {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #0f172a;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem 0;
+}
+
+.btnVolver:hover {
+  color: #0284c7;
+}
+
+.tituloPrincipal {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #0f172a;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  margin: 0;
+  line-height: 1.2;
+}
+
+/* Tarjeta del visor */
+.tarjetaVisor {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  padding: 2.25rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.metaHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+}
+
+.descripcionTutorial {
+  font-size: 0.95rem;
+  color: #475569;
+  line-height: 1.6;
+  margin: 0 0 1.5rem 0;
+}
+
+.separador {
+  height: 1px;
+  background-color: #f1f5f9;
+  margin-bottom: 1.5rem;
+}
+
+/* Bloques de Código estilizados */
+.bloqueCodigoWrapper {
+  position: relative;
+  margin: 1.25rem 0;
+  background-color: #1e2230;
+  border-radius: 0.625rem;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  border: 1px solid #2d3348;
+}
+
+.bloqueCodigoHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 1rem;
+  background-color: #161922;
+  border-bottom: 1px solid #2d3348;
+}
+
+.lenguajeTag {
+  font-size: 0.6875rem;
+  font-family: ui-monospace, monospace;
+  color: #94a3b8;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.btnCopiar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: #cbd5e1;
+  background-color: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.375rem;
+  padding: 0.25rem 0.55rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btnCopiar:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+}
+
+.btnCopiado {
+  background-color: #065f46 !important;
+  color: #34d399 !important;
+  border-color: #059669 !important;
+}
+
+.preCodigo {
+  margin: 0;
+  padding: 1.15rem 1.25rem;
+  color: #e2e8f0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.84rem;
+  line-height: 1.6;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+/* Código inline */
+.codigoInline {
+  font-family: ui-monospace, monospace;
+  font-size: 0.8125rem;
+  background-color: #e2e8f0;
+  color: #0f172a;
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.25rem;
+  font-weight: 600;
+}
+
+/* Párrafos y listas del contenido */
+.cuerpoMarkdown {
+  font-size: 0.925rem;
+  color: #334155;
+  line-height: 1.7;
+}
+
+.cuerpoMarkdown h1,
+.cuerpoMarkdown h2,
+.cuerpoMarkdown h3 {
+  color: #0f172a;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  font-weight: 700;
+}
+
+.cuerpoMarkdown p {
+  margin-bottom: 1rem;
+}
+
+.cuerpoMarkdown ul,
+.cuerpoMarkdown ol {
+  padding-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.cuerpoMarkdown li {
+  margin-bottom: 0.35rem;
+}

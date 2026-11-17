@@ -301,7 +301,17 @@ public class ServicioAsignaciones {
 		return roles.findAllByOrderByIdAsc().stream().map(RolResponse::de).toList();
 	}
 
-	private Rol obtenerRol(Long rolId, RolEnProyecto rolAnterior) {
+	@Transactional(readOnly = true)
+	public List<RolEnProyecto> rolesDeTrabajadorEnProyecto(Long trabajadorId, Long proyectoId) {
+		servicioTrabajadores.obtener(trabajadorId);
+		servicioProyectos.obtener(proyectoId);
+		return asignaciones.findByTrabajadorIdAndProyectoIdAndActivaTrue(trabajadorId, proyectoId).stream()
+				.map(Asignacion::getRolEnProyecto)
+				.distinct()
+				.toList();
+	}
+
+	public Rol obtenerRol(Long rolId, RolEnProyecto rolAnterior) {
 		if (rolId != null) {
 			return roles.findById(rolId)
 					.orElseThrow(() -> new ReglaNegocioException("El rol indicado no existe."));

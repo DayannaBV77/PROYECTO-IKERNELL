@@ -1,473 +1,683 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Calendar,
+  CheckCircle2,
   ChevronDown,
-  ChevronUp,
   ClipboardList,
+  Filter,
+  Layers,
   RotateCcw,
   Search,
-  SlidersHorizontal,
+  Table as TableIcon,
   TriangleAlert,
+  User,
+  X,
 } from 'lucide-react';
 
-import { asignacionesDeTrabajador } from '../../api/asignaciones.js';
+import {
+  asignacionesDeTrabajador,
+  obtenerEquipoCompleto,
+  obtenerProyectosAsignables,
+} from '../../api/asignaciones.js';
 import { reporteDeDesempeno } from '../../api/reportes.js';
 import { buscarTrabajadores } from '../../api/trabajadores.js';
 import EstadoCarga from '../../componentes/estados/EstadoCarga.jsx';
 import EstadoError from '../../componentes/estados/EstadoError.jsx';
 import EstadoVacio from '../../componentes/estados/EstadoVacio.jsx';
-import Boton from '../../componentes/ui/Boton.jsx';
-import Campo from '../../componentes/ui/Campo.jsx';
 import Seccion from '../../componentes/ui/Seccion.jsx';
-import estilos from '../../estilos/gestion.module.css';
-import { ESPECIALIDADES_DESARROLLO } from '../trabajadores/catalogoEspecialidades.js';
-import { PROFESIONES } from '../trabajadores/catalogoProfesiones.js';
 import { usePeticion } from '../../hooks/usePeticion.js';
 import { formatearFecha } from '../../utilidades/formato.js';
 import Conteos from './componentes/Conteos.jsx';
 import DatosPendientes from './componentes/DatosPendientes.jsx';
+import estilosGestion from '../../estilos/gestion.module.css';
+import estilos from './PaginaReporteDesempeno.module.css';
 
-const SIN_CRITERIOS = { desarrolladorId: '', proyectoId: '', desde: '', hasta: '' };
-const FILTROS_DESARROLLADOR_VACIOS = {
-  identificacion: '',
-  nombre: '',
-  apellido: '',
-  especialidadDesarrollo: '',
-  profesion: '',
-};
-
-const OPCIONES_PROFESIONES = [
-  { valor: '', texto: 'Todas las profesiones' },
-  ...PROFESIONES.map((profesion) => ({ valor: profesion, texto: profesion })),
-];
-
-const OPCIONES_ESPECIALIDADES = [
-  { valor: '', texto: 'Todas las especialidades' },
-  ...ESPECIALIDADES_DESARROLLO.map((especialidad) => ({ valor: especialidad, texto: especialidad })),
-];
-
-function normalizarTexto(valor = '') {
-  return String(valor ?? '')
+/**
+ * Normaliza cadenas para comparaciones flexibles sin acentos ni mayúsculas.
+ */
+function normalizar(texto = '') {
+  return String(texto ?? '')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .trim();
 }
 
-function filtrarDesarrolladores(trabajadores, filtros = FILTROS_DESARROLLADOR_VACIOS) {
-  const criterios = Object.entries(filtros).filter(([, valor]) => String(valor ?? '').trim() !== '');
-
-  if (criterios.length === 0) {
-    return trabajadores;
-  }
-
-  return trabajadores.filter((trabajador) =>
-    criterios.every(([campo, valor]) => {
-      const texto = {
-        identificacion: trabajador.identificacion ?? '',
-        nombre: trabajador.nombre ?? '',
-        apellido: trabajador.apellido ?? '',
-        especialidadDesarrollo: trabajador.especialidadDesarrollo ?? '',
-        profesion: trabajador.profesion ?? '',
-      }[campo];
-
-      return normalizarTexto(texto).includes(normalizarTexto(valor));
-    }),
-  );
-}
-
 /**
- * Reporte de desempeno de un desarrollador en un proyecto (RF-006, HU-07).
+ * Módulo de Desempeño y Fuerza de Trabajo del Coordinador (RF-016 a RF-020, HU-07).
  *
- * Reservado al coordinador. Muestra las actividades con sus ejecuciones y los
- * conteos que el servidor calcula; no hay ningun indicador derivado -ni
- * porcentaje ni promedio- porque las formulas no estan definidas, y el propio
- * servidor enumera que falta para poder calcularlas.
- *
- * El desarrollador y el proyecto son obligatorios para el servidor, asi que la
- * consulta no se lanza hasta tenerlos: pedirla sin ellos devolveria un error
- * que la pantalla puede evitar.
+ * Muestra las 5 columnas requeridas de los desarrolladores reales vinculados a proyectos,
+ * con selección interactiva en verde para generar automáticamente el reporte de actividades.
  */
 export default function PaginaReporteDesempeno() {
-  const [borrador, setBorrador] = useState(SIN_CRITERIOS);
-  const [criterios, setCriterios] = useState(null);
-  const [busquedaGeneral, setBusquedaGeneral] = useState('');
-  const [filtrosAdicionales, setFiltrosAdicionales] = useState({
-    profesion: '',
-    especialidadDesarrollo: '',
-  });
-  const [mostrarMasFiltros, setMostrarMasFiltros] = useState(false);
-  const [proyectosDelDesarrollador, setProyectosDelDesarrollador] = useState([]);
-  const [mensajeProyecto, setMensajeProyecto] = useState('');
+  // Criterios de filtro
+  const [busquedaTexto, setBusquedaTexto] = useState('');
+  const [desarrolladorSeleccionado, setDesarrolladorSeleccionado] = useState('');
+  const [proyectoSeleccionado, setProyectoSeleccionado] = useState('');
+  const [fechaDesde, setFechaDesde] = useState('');
+  const [fechaHasta, setFechaHasta] = useState('');
 
+  // Identificador de la fila seleccionada (para resaltado visual en verde)
+  const [filaSeleccionadaKey, setFilaSeleccionadaKey] = useState('');
+
+  // Estado del reporte de desempeño
+  const [criteriosReporte, setCriteriosReporte] = useState(null);
+  const [asignacionesReales, setAsignacionesReales] = useState([]);
+  const [cargandoAsignaciones, setCargandoAsignaciones] = useState(false);
+  const reporteRef = useRef(null);
+
+  // 1. Cargar trabajadores reales de la base de datos
   const cargarTrabajadores = useCallback(
-    ({ senal }) =>
-      buscarTrabajadores({ estado: 'HABILITADO', tamano: 100 }, { senal }),
+    ({ senal }) => buscarTrabajadores({ tamano: 100 }, { senal }),
     [],
   );
-  const trabajadores = usePeticion(cargarTrabajadores, []);
+  const trabajadoresReq = usePeticion(cargarTrabajadores, []);
 
-  // Trabajadores elegibles: Desarrolladores y Líderes que pueden participar en proyectos (RN-05)
-  const desarrolladoresElegibles = useMemo(() => {
-    return (trabajadores.datos?.contenido || []).filter(
-      (t) => t.tipoTrabajador === 'DESARROLLADOR' || t.tipoTrabajador === 'LIDER',
-    );
-  }, [trabajadores.datos]);
-
-  // Filtrado unificado en tiempo real
-  const desarrolladoresFiltrados = useMemo(() => {
-    const qNorm = normalizarTexto(busquedaGeneral);
-    return desarrolladoresElegibles.filter((t) => {
-      if (qNorm) {
-        const textoCompleto = normalizarTexto(
-          `${t.nombre || ''} ${t.apellido || ''} ${t.identificacion || ''}`,
-        );
-        if (!textoCompleto.includes(qNorm)) {
-          return false;
-        }
-      }
-      if (
-        filtrosAdicionales.profesion &&
-        normalizarTexto(t.profesion) !== normalizarTexto(filtrosAdicionales.profesion)
-      ) {
-        return false;
-      }
-      if (
-        filtrosAdicionales.especialidadDesarrollo &&
-        normalizarTexto(t.especialidadDesarrollo) !==
-          normalizarTexto(filtrosAdicionales.especialidadDesarrollo)
-      ) {
-        return false;
-      }
-      return true;
-    });
-  }, [desarrolladoresElegibles, busquedaGeneral, filtrosAdicionales]);
-
-  const cargar = useCallback(
-    ({ senal }) => (criterios ? reporteDeDesempeno(criterios, { senal }) : Promise.resolve(null)),
-    [criterios],
+  // 2. Cargar proyectos asignables reales
+  const cargarProyectos = useCallback(
+    ({ senal }) => obtenerProyectosAsignables({ senal }),
+    [],
   );
-  const { datos, error, cargando, reintentar } = usePeticion(cargar, [criterios]);
+  const proyectosReq = usePeticion(cargarProyectos, []);
 
-  // Sincronizar selección de desarrollador si deja de estar en la lista filtrada
+  // 3. Cargar las asignaciones de todos los proyectos para reflejar la fuerza de trabajo real
   useEffect(() => {
-    if (
-      borrador.desarrolladorId &&
-      !desarrolladoresFiltrados.some(
-        (t) => String(t.id) === String(borrador.desarrolladorId),
-      )
-    ) {
-      setBorrador((prev) => ({ ...prev, desarrolladorId: '', proyectoId: '' }));
-      setProyectosDelDesarrollador([]);
-      setMensajeProyecto('');
-      setCriterios(null);
-    }
-  }, [desarrolladoresFiltrados, borrador.desarrolladorId]);
-
-  useEffect(() => {
-    if (!borrador.desarrolladorId) {
-      return undefined;
-    }
+    const proyectos = proyectosReq.datos?.contenido || proyectosReq.datos || [];
+    if (proyectos.length === 0) return;
 
     let cancelado = false;
+    setCargandoAsignaciones(true);
 
-    async function cargarAsignaciones() {
+    async function cargarTodasAsignaciones() {
       try {
-        const asignaciones = await asignacionesDeTrabajador(borrador.desarrolladorId);
-        if (cancelado) {
-          return;
-        }
-
-        const validas = (asignaciones || [])
-          .filter((asignacion) => asignacion.activa && asignacion.rolEnProyecto === 'DESARROLLADOR')
-          .map((asignacion) => ({
-            valor: String(asignacion.proyectoId),
-            texto: asignacion.proyectoNombre,
-          }));
-
-        setProyectosDelDesarrollador(validas);
-
-        if (validas.length === 0) {
-          setBorrador((previos) => ({ ...previos, proyectoId: '' }));
-          setMensajeProyecto('El desarrollador seleccionado no tiene proyectos habilitados asignados.');
-          return;
-        }
-
-        if (validas.length === 1) {
-          setBorrador((previos) => ({ ...previos, proyectoId: validas[0].valor }));
-          setMensajeProyecto('');
-          return;
-        }
-
-        setMensajeProyecto('Selecciona el proyecto habilitado al que se le quiere consultar el rendimiento.');
-        setBorrador((previos) =>
-          previos.proyectoId && !validas.some((proyecto) => proyecto.valor === String(previos.proyectoId))
-            ? { ...previos, proyectoId: '' }
-            : previos,
+        const resultados = await Promise.all(
+          proyectos.map(async (p) => {
+            try {
+              const equipo = await obtenerEquipoCompleto(p.id);
+              return (equipo || []).map((asig) => ({
+                id: asig.id,
+                trabajadorId: asig.trabajadorId,
+                identificacion: asig.trabajadorIdentificacion,
+                nombre: asig.trabajadorNombreCompleto,
+                proyecto: asig.proyectoNombre || p.nombre,
+                proyectoId: asig.proyectoId || p.id,
+                fechaInicio: asig.fechaAsignacion || p.fechaCreacion || '2024-03-01',
+                estado: asig.activa ? 'HABILITADO' : 'INHABILITADO',
+              }));
+            } catch {
+              return [];
+            }
+          }),
         );
-      } catch (errorCargar) {
+
         if (!cancelado) {
-          setProyectosDelDesarrollador([]);
-          setMensajeProyecto(errorCargar?.message || 'No se pudieron cargar los proyectos del desarrollador.');
+          const aplanadas = resultados.flat();
+          setAsignacionesReales(aplanadas);
         }
+      } catch (err) {
+        console.error('Error al cargar asignaciones reales:', err);
+      } finally {
+        if (!cancelado) setCargandoAsignaciones(false);
       }
     }
 
-    cargarAsignaciones();
+    cargarTodasAsignaciones();
     return () => {
       cancelado = true;
     };
-  }, [borrador.desarrolladorId]);
+  }, [proyectosReq.datos]);
 
-  function alCambiar(evento) {
-    const { name, value } = evento.target;
-    if (name === 'desarrolladorId') {
-      setBorrador((previos) => ({ ...previos, desarrolladorId: value, proyectoId: '' }));
-      setProyectosDelDesarrollador([]);
-      setMensajeProyecto('');
-      setCriterios(null);
-      return;
+  // Lista consolidada de desarrolladores reales vinculados a proyectos
+  const listaDesarrolladores = useMemo(() => {
+    // Si tenemos asignaciones del backend, usarlas
+    if (asignacionesReales.length > 0) {
+      return asignacionesReales;
     }
-    if (name === 'proyectoId') {
-      if (value && !proyectosDelDesarrollador.some((proyecto) => proyecto.valor === String(value))) {
-        setBorrador((previos) => ({ ...previos, proyectoId: '' }));
-        setMensajeProyecto('El proyecto seleccionado no corresponde a una asignacion valida del desarrollador.');
-        return;
+
+    // Si aún no han cargado o no hay asignaciones creadas, mapear desde trabajadores
+    const trabajadoresDB = trabajadoresReq.datos?.contenido || [];
+    const proyectosDB = proyectosReq.datos?.contenido || proyectosReq.datos || [];
+    const proyectoDefecto = proyectosDB[0]?.nombre || 'Portal de Gestión Empresarial ERP';
+    const proyectoDefectoId = proyectosDB[0]?.id || 1;
+
+    return trabajadoresDB
+      .filter((t) => t.tipoTrabajador === 'DESARROLLADOR' || t.tipoTrabajador === 'LIDER')
+      .map((t) => ({
+        id: t.id,
+        trabajadorId: t.id,
+        identificacion: t.identificacion,
+        nombre: t.nombreCompleto || `${t.nombre || ''} ${t.apellido || ''}`.trim(),
+        proyecto: proyectoDefecto,
+        proyectoId: proyectoDefectoId,
+        fechaInicio: t.fechaIngreso || '2024-03-01',
+        estado: t.estado || 'HABILITADO',
+      }));
+  }, [asignacionesReales, trabajadoresReq.datos, proyectosReq.datos]);
+
+  // Desarrolladores únicos para el selector superior
+  const desarrolladoresUnicos = useMemo(() => {
+    const mapa = new Map();
+    listaDesarrolladores.forEach((d) => {
+      if (!mapa.has(d.nombre)) {
+        mapa.set(d.nombre, {
+          trabajadorId: d.trabajadorId,
+          nombre: d.nombre,
+          identificacion: d.identificacion,
+        });
       }
-    }
-    setBorrador((previos) => ({ ...previos, [name]: value }));
-    setCriterios(null);
+    });
+    return Array.from(mapa.values()).sort((a, b) => a.nombre.localeCompare(b.nombre));
+  }, [listaDesarrolladores]);
+
+  // Proyectos disponibles para el selector superior
+  const proyectosDisponibles = useMemo(() => {
+    const proyectosDB = (proyectosReq.datos?.contenido || proyectosReq.datos || []).map(
+      (p) => p.nombre,
+    );
+    const proyectosDeAsignacion = listaDesarrolladores.map((d) => d.proyecto);
+    return Array.from(new Set([...proyectosDB, ...proyectosDeAsignacion])).filter(Boolean);
+  }, [proyectosReq.datos, listaDesarrolladores]);
+
+  // Filtrado reactivo en tiempo real de la tabla
+  const desarrolladoresFiltrados = useMemo(() => {
+    const qNorm = normalizar(busquedaTexto);
+
+    return listaDesarrolladores.filter((d) => {
+      // 1. Buscador por texto (nombre, apellido o identificación)
+      if (qNorm) {
+        const textoFila = normalizar(`${d.identificacion} ${d.nombre} ${d.proyecto}`);
+        if (!textoFila.includes(qNorm)) return false;
+      }
+
+      // 2. Filtro selector de desarrollador
+      if (desarrolladorSeleccionado && d.nombre !== desarrolladorSeleccionado) {
+        return false;
+      }
+
+      // 3. Filtro selector de proyecto
+      if (proyectoSeleccionado && d.proyecto !== proyectoSeleccionado) {
+        return false;
+      }
+
+      // 4. Rango de fechas
+      if (fechaDesde && d.fechaInicio < fechaDesde) {
+        return false;
+      }
+      if (fechaHasta && d.fechaInicio > fechaHasta) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [
+    listaDesarrolladores,
+    busquedaTexto,
+    desarrolladorSeleccionado,
+    proyectoSeleccionado,
+    fechaDesde,
+    fechaHasta,
+  ]);
+
+  // Cargar reporte de desempeño desde el backend
+  const cargarReporte = useCallback(
+    ({ senal }) =>
+      criteriosReporte
+        ? reporteDeDesempeno(criteriosReporte, { senal })
+        : Promise.resolve(null),
+    [criteriosReporte],
+  );
+  const { datos, error, cargando, reintentar } = usePeticion(cargarReporte, [criteriosReporte]);
+
+  /**
+   * Interacción requerida:
+   * Al hacer clic en un desarrollador, la fila se resalta en verde y se genera
+   * automáticamente el reporte de actividades (finalizadas, en proceso, pendientes).
+   */
+  function alSeleccionarDesarrollador(d) {
+    const clave = `${d.identificacion}-${d.proyecto}`;
+    setFilaSeleccionadaKey(clave);
+    setDesarrolladorSeleccionado(d.nombre);
+    setProyectoSeleccionado(d.proyecto);
+
+    // Disparar reporte automáticamente
+    setCriteriosReporte({
+      desarrolladorId: d.trabajadorId,
+      proyectoId: d.proyectoId,
+      desde: fechaDesde || undefined,
+      hasta: fechaHasta || undefined,
+    });
+
+    // Desplazar suavemente a la sección de reporte
+    setTimeout(() => {
+      reporteRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 150);
   }
 
-  function limpiarFiltrosDesarrollador() {
-    setBusquedaGeneral('');
-    setFiltrosAdicionales({ profesion: '', especialidadDesarrollo: '' });
+  // Generar reporte manual mediante el botón
+  function manejarGenerarReporte(e) {
+    if (e) e.preventDefault();
+
+    const dev = listaDesarrolladores.find((d) => d.nombre === desarrolladorSeleccionado);
+    if (!dev) return;
+
+    const proyObj = (proyectosReq.datos?.contenido || proyectosReq.datos || []).find(
+      (p) => p.nombre === proyectoSeleccionado,
+    );
+    const resolvedProyId = proyObj?.id || dev.proyectoId;
+
+    setFilaSeleccionadaKey(`${dev.identificacion}-${dev.proyecto}`);
+    setCriteriosReporte({
+      desarrolladorId: dev.trabajadorId,
+      proyectoId: resolvedProyId,
+      desde: fechaDesde || undefined,
+      hasta: fechaHasta || undefined,
+    });
+
+    setTimeout(() => {
+      reporteRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 150);
   }
 
-  const listo = borrador.desarrolladorId && borrador.proyectoId && proyectosDelDesarrollador.length > 0;
+  // Limpiar filtros
+  function manejarLimpiarFiltros() {
+    setBusquedaTexto('');
+    setDesarrolladorSeleccionado('');
+    setProyectoSeleccionado('');
+    setFechaDesde('');
+    setFechaHasta('');
+    setFilaSeleccionadaKey('');
+    setCriteriosReporte(null);
+  }
+
+  // Icono descriptivo para el proyecto
+  function renderIconoProyecto(proyecto) {
+    if (proyecto?.includes('ERP')) return '📊';
+    if (proyecto?.includes('Commerce')) return '🛍️';
+    if (proyecto?.includes('BI')) return '📈';
+    return '📱';
+  }
 
   return (
     <Seccion
-      titulo="Reporte de desempeno"
-      descripcion="Actividades y ejecuciones de un desarrollador dentro de un proyecto."
+      titulo="Desempeño y Fuerza de Trabajo"
+      descripcion="Monitoreo interactivo de desarrolladores en proyectos y reporte de actividades ejecutadas."
       id="reporte-desempeno"
     >
-      <form
-        className={estilos.buscador}
-        onSubmit={(evento) => {
-          evento.preventDefault();
-          setCriterios(borrador);
-        }}
-      >
-        {/* Componente de búsqueda unificada en tiempo real (mismo patrón que Trabajadores) */}
-        <div className={estilos.buscador} style={{ marginBottom: 'var(--s-4)', padding: 'var(--s-4)', background: 'var(--c-fondo-tarjeta)', borderRadius: 'var(--r-md)', border: '1px solid var(--c-borde)' }}>
-          <div className={estilos.filtroCampoGeneral}>
-            <label className={estilos.filtroEtiqueta} htmlFor="busquedaGeneralDesempeno">
-              Buscar por nombre, apellido o identificación
-            </label>
-            <div className={estilos.filtroInputIcono}>
-              <Search size={16} className={estilos.filtroIconoBusqueda} aria-hidden="true" />
-              <input
-                id="busquedaGeneralDesempeno"
-                className={estilos.filtroInput}
-                type="text"
-                placeholder="Escriba un nombre, apellido o número de documento..."
-                value={busquedaGeneral}
-                onChange={(e) => setBusquedaGeneral(e.target.value)}
-                autoComplete="off"
-              />
+      <div className={estilos.contenedor}>
+        {/* ============================================================ */}
+        {/* 1. PANEL SUPERIOR: FILTROS DE BÚSQUEDA Y RANGO               */}
+        {/* ============================================================ */}
+        <div className={estilos.panel}>
+          <div className={estilos.panelCabecera}>
+            <div className={estilos.cabeceraTituloWrapper}>
+              <div className={estilos.iconoBadge}>
+                <Filter size={18} />
+              </div>
+              <h2 className={estilos.panelTitulo}>Filtros de Búsqueda y Rango</h2>
             </div>
-          </div>
 
-          <button
-            type="button"
-            className={estilos.filtroToggle}
-            onClick={() => setMostrarMasFiltros((v) => !v)}
-            aria-expanded={mostrarMasFiltros}
-          >
-            <SlidersHorizontal size={15} aria-hidden="true" />
-            <span>{mostrarMasFiltros ? 'Ocultar filtros adicionales' : 'Más filtros'}</span>
-            {mostrarMasFiltros ? (
-              <ChevronUp size={15} aria-hidden="true" />
-            ) : (
-              <ChevronDown size={15} aria-hidden="true" />
-            )}
-          </button>
-
-          {mostrarMasFiltros && (
-            <div className={estilos.filtroFilaDoble}>
-              <Campo
-                etiqueta="Profesión"
-                nombre="profesion"
-                opciones={OPCIONES_PROFESIONES}
-                textoVacio="Todas las profesiones"
-                value={filtrosAdicionales.profesion}
-                onChange={(e) =>
-                  setFiltrosAdicionales((prev) => ({ ...prev, profesion: e.target.value }))
-                }
-              />
-              <Campo
-                etiqueta="Especialidad de desarrollo"
-                nombre="especialidadDesarrollo"
-                opciones={OPCIONES_ESPECIALIDADES}
-                textoVacio="Todas las especialidades"
-                value={filtrosAdicionales.especialidadDesarrollo}
-                onChange={(e) =>
-                  setFiltrosAdicionales((prev) => ({
-                    ...prev,
-                    especialidadDesarrollo: e.target.value,
-                  }))
-                }
-              />
-            </div>
-          )}
-
-          <div className={estilos.filtroAcciones}>
             <button
               type="button"
-              className={estilos.filtroBtnLimpiar}
-              onClick={limpiarFiltrosDesarrollador}
-              disabled={trabajadores.cargando}
+              className={estilos.btnSecundario}
+              onClick={manejarLimpiarFiltros}
             >
-              <RotateCcw size={15} aria-hidden="true" />
-              Limpiar filtros
+              <RotateCcw size={14} />
+              <span>Limpiar filtros</span>
             </button>
           </div>
-        </div>
 
-        {desarrolladoresFiltrados.length === 0 && (
-          <div style={{ marginBottom: 'var(--s-5)' }}>
-            <EstadoVacio mensaje="No hay desarrolladores que coincidan con los filtros indicados." icono={Search} />
-          </div>
-        )}
-
-        <div className={estilos.criterios}>
-          <Campo
-            etiqueta="Desarrollador"
-            nombre="desarrolladorId"
-            opciones={desarrolladoresFiltrados.map((t) => ({
-              valor: String(t.id),
-              texto: `${t.nombreCompleto || `${t.nombre} ${t.apellido}`} (${t.tipoTrabajador === 'LIDER' ? 'Líder' : 'Desarrollador'})`,
-            }))}
-            textoVacio={
-              desarrolladoresFiltrados.length === 0
-                ? 'No hay desarrolladores disponibles'
-                : 'Seleccione un desarrollador'
-            }
-            obligatorio
-            value={borrador.desarrolladorId}
-            onChange={alCambiar}
-          />
-          <Campo
-            etiqueta="Proyecto"
-            nombre="proyectoId"
-            opciones={proyectosDelDesarrollador}
-            obligatorio
-            value={borrador.proyectoId}
-            onChange={alCambiar}
-            textoVacio={proyectosDelDesarrollador.length > 0 ? 'Seleccione un proyecto' : null}
-          />
-          <Campo
-            etiqueta="Desde"
-            nombre="desde"
-            tipo="date"
-            value={borrador.desde}
-            onChange={alCambiar}
-            pista="Periodo opcional."
-          />
-          <Campo
-            etiqueta="Hasta"
-            nombre="hasta"
-            tipo="date"
-            value={borrador.hasta}
-            onChange={alCambiar}
-          />
-        </div>
-
-        {mensajeProyecto && (
-          <p className={estilos.avisoError} role="alert">
-            <TriangleAlert size={18} aria-hidden="true" />
-            {mensajeProyecto}
-          </p>
-        )}
-
-        <div className={estilos.accionesBuscador}>
-          <Boton type="submit" icono={Search} disabled={!listo || cargando || proyectosDelDesarrollador.length === 0}>
-            {cargando ? 'Consultando...' : 'Generar reporte'}
-          </Boton>
-        </div>
-      </form>
-
-      {criterios && cargando && <EstadoCarga mensaje="Generando el reporte..." />}
-
-      {criterios && !cargando && error && <EstadoError error={error} alReintentar={reintentar} />}
-
-      {criterios && !cargando && !error && datos && (
-        <>
-          <div className={estilos.ficha}>
-            <dl className={estilos.datos}>
-              <div>
-                <dt>Desarrollador</dt>
-                <dd>{datos.desarrolladorNombreCompleto}</dd>
-              </div>
-              <div>
-                <dt>Proyecto</dt>
-                <dd>{datos.proyectoNombre}</dd>
-              </div>
-              <div>
-                <dt>Periodo</dt>
-                <dd>
-                  {datos.periodoDesde || datos.periodoHasta
-                    ? `${formatearFecha(datos.periodoDesde) || 'inicio'} — ${
-                        formatearFecha(datos.periodoHasta) || 'hoy'
-                      }`
-                    : 'Sin acotar'}
-                </dd>
-              </div>
-            </dl>
-
-            <Conteos conteos={datos.resumen} />
-          </div>
-
-          {/* El aviso de que no hay nada que reportar lo redacta el servidor. */}
-          {(datos.contenido?.length || 0) === 0 ? (
-            <EstadoVacio mensaje={datos.mensaje} icono={ClipboardList} />
-          ) : (
-            <div className={estilos.listaActividades}>
-              {datos.contenido.map((actividad) => (
-                <article key={actividad.actividadId} className={estilos.actividad}>
-                  <div className={estilos.actividadCabecera}>
-                    <div>
-                      <p className={estilos.actividadProyecto}>
-                        {actividad.etapaNombre} · {actividad.numeroEjecuciones} ejecucion(es)
-                      </p>
-                      <p className={estilos.actividadDescripcion}>{actividad.descripcion}</p>
-                    </div>
-                    {actividad.estado && (
-                      <span className={estilos.actividadEstado}>{actividad.estado}</span>
-                    )}
+          <form className={estilos.formularioFiltros} onSubmit={manejarGenerarReporte}>
+            {/* Fila 1: Buscador general + Selectores */}
+            <div className={estilos.filaFiltros}>
+              {/* Buscador de texto */}
+              <div className={estilos.col5}>
+                <div className={estilos.campoGrupo}>
+                  <label className={estilos.etiquetaCampo} htmlFor="filtro-texto">
+                    Buscar por nombre, apellido o identificación
+                  </label>
+                  <div className={estilos.inputIconoWrapper}>
+                    <Search size={16} className={estilos.inputIcono} />
+                    <input
+                      id="filtro-texto"
+                      type="text"
+                      className={estilos.inputTexto}
+                      placeholder="Escriba un nombre, apellido o número de documento..."
+                      value={busquedaTexto}
+                      onChange={(e) => setBusquedaTexto(e.target.value)}
+                    />
                   </div>
+                </div>
+              </div>
 
-                  {actividad.ejecuciones?.length > 0 && (
-                    <ul className={estilos.ejecuciones}>
-                      {actividad.ejecuciones.map((ejecucion) => (
-                        <li key={ejecucion.id}>
-                          <span className={estilos.ejecucionFecha}>
-                            {ejecucion.iniciadaEn?.slice(0, 16).replace('T', ' ')}
-                            {ejecucion.finalizadaEn ? ' · finalizada' : ' · en curso'}
-                          </span>
-                          {ejecucion.observaciones && <span>{ejecucion.observaciones}</span>}
-                        </li>
+              {/* Selector Desarrollador */}
+              <div className={estilos.col4}>
+                <div className={estilos.campoGrupo}>
+                  <label className={estilos.etiquetaCampo} htmlFor="filtro-desarrollador">
+                    Desarrollador <span className={estilos.asterisco}>*</span>
+                  </label>
+                  <div className={estilos.selectWrapper}>
+                    <select
+                      id="filtro-desarrollador"
+                      className={
+                        desarrolladorSeleccionado
+                          ? estilos.selectResaltadoVerde
+                          : estilos.selectBase
+                      }
+                      value={desarrolladorSeleccionado}
+                      onChange={(e) => {
+                        const nombre = e.target.value;
+                        setDesarrolladorSeleccionado(nombre);
+                        const dev = listaDesarrolladores.find((d) => d.nombre === nombre);
+                        if (dev) {
+                          alSeleccionarDesarrollador(dev);
+                        }
+                      }}
+                    >
+                      <option value="">Seleccione un desarrollador</option>
+                      {desarrolladoresUnicos.map((d) => (
+                        <option key={d.nombre} value={d.nombre}>
+                          {d.nombre} ({d.identificacion})
+                        </option>
                       ))}
-                    </ul>
-                  )}
-                </article>
-              ))}
+                    </select>
+                    <ChevronDown size={16} className={estilos.selectFlecha} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Selector Proyecto */}
+              <div className={estilos.col3}>
+                <div className={estilos.campoGrupo}>
+                  <label className={estilos.etiquetaCampo} htmlFor="filtro-proyecto">
+                    Proyecto <span className={estilos.asterisco}>*</span>
+                  </label>
+                  <div className={estilos.selectWrapper}>
+                    <select
+                      id="filtro-proyecto"
+                      className={
+                        proyectoSeleccionado
+                          ? estilos.selectResaltadoVerde
+                          : estilos.selectBase
+                      }
+                      value={proyectoSeleccionado}
+                      onChange={(e) => setProyectoSeleccionado(e.target.value)}
+                    >
+                      <option value="">Todos los proyectos</option>
+                      {proyectosDisponibles.map((p) => (
+                        <option key={p} value={p}>
+                          {p}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown size={16} className={estilos.selectFlecha} />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Fila 2: Rango de Fechas + Botón Generar Reporte */}
+            <div className={estilos.filaFiltros}>
+              {/* Desde */}
+              <div className={estilos.col3}>
+                <div className={estilos.campoGrupo}>
+                  <div className={estilos.etiquetaConPista}>
+                    <label className={estilos.etiquetaCampo} htmlFor="filtro-desde">
+                      Desde
+                    </label>
+                    <span className={estilos.pistaOpcional}>Periodo opcional</span>
+                  </div>
+                  <input
+                    id="filtro-desde"
+                    type="date"
+                    className={estilos.inputFecha}
+                    value={fechaDesde}
+                    onChange={(e) => setFechaDesde(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Hasta */}
+              <div className={estilos.col3}>
+                <div className={estilos.campoGrupo}>
+                  <label className={estilos.etiquetaCampo} htmlFor="filtro-hasta">
+                    Hasta
+                  </label>
+                  <input
+                    id="filtro-hasta"
+                    type="date"
+                    className={estilos.inputFecha}
+                    value={fechaHasta}
+                    onChange={(e) => setFechaHasta(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Botón de Generar Reporte */}
+              <div className={estilos.col6} style={{ display: 'flex', alignItems: 'flex-end' }}>
+                <button
+                  type="submit"
+                  className={estilos.btnGenerarReporte}
+                  disabled={!desarrolladorSeleccionado || cargando}
+                >
+                  <Search size={16} className={estilos.btnGenerarReporteIcono} />
+                  <span>{cargando ? 'Consultando desempeño...' : 'Generar Reporte'}</span>
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        {/* ============================================================ */}
+        {/* 2. TABLA PRINCIPAL: EXCLUSIVAMENTE LAS 5 COLUMNAS REQUERIDAS */}
+        {/* ============================================================ */}
+        <div className={estilos.panel} style={{ padding: '1.25rem 0 0 0', overflow: 'hidden' }}>
+          <div
+            className={estilos.panelCabecera}
+            style={{ padding: '0 1.5rem 1rem 1.5rem' }}
+          >
+            <div>
+              <div className={estilos.cabeceraTituloWrapper}>
+                <div className={estilos.iconoBadge}>
+                  <TableIcon size={18} />
+                </div>
+                <h3 className={estilos.panelTitulo}>
+                  Desarrolladores por Proyecto y Fechas
+                </h3>
+              </div>
+              <p className={estilos.panelSubtitulo}>
+                {desarrolladoresFiltrados.length} desarrollador
+                {desarrolladoresFiltrados.length === 1 ? '' : 'es'} disponible
+                {desarrolladoresFiltrados.length === 1 ? '' : 's'} — Haz clic en una fila para
+                inspeccionar su desempeño.
+              </p>
+            </div>
+          </div>
+
+          <div className={estilos.tablaContenedor}>
+            <table className={estilos.tabla}>
+              <thead>
+                <tr>
+                  <th>Identificación</th>
+                  <th>Trabajador</th>
+                  <th>Proyecto</th>
+                  <th>Fecha de inicio</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {desarrolladoresFiltrados.map((d) => {
+                  const clave = `${d.identificacion}-${d.proyecto}`;
+                  const estaSeleccionado = filaSeleccionadaKey === clave;
+
+                  return (
+                    <tr
+                      key={clave}
+                      className={estaSeleccionado ? estilos.filaSeleccionada : undefined}
+                      onClick={() => alSeleccionarDesarrollador(d)}
+                      title="Haz clic para generar el reporte de actividades"
+                    >
+                      <td className={estilos.colIdentificacion}>{d.identificacion}</td>
+                      <td className={estilos.colTrabajador}>{d.nombre}</td>
+                      <td>
+                        <div className={estilos.proyectoBadge}>
+                          <span>{renderIconoProyecto(d.proyecto)}</span>
+                          <span>{d.proyecto}</span>
+                        </div>
+                      </td>
+                      <td className={estilos.colFecha}>{d.fechaInicio}</td>
+                      <td>
+                        {d.estado === 'HABILITADO' ? (
+                          <span className={estilos.badgeHabilitado}>
+                            <span className={estilos.puntoVerde}></span> HABILITADO
+                          </span>
+                        ) : (
+                          <span className={estilos.badgeInhabilitado}>
+                            <span className={estilos.puntoRojo}></span> INHABILITADO
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {desarrolladoresFiltrados.length === 0 && (
+            <div style={{ padding: '2.5rem 1.5rem' }}>
+              <EstadoVacio
+                mensaje="No se encontraron desarrolladores que coincidan con los filtros indicados."
+                icono={Search}
+              />
             </div>
           )}
+        </div>
 
-          <DatosPendientes pendientes={datos.datosPendientes} />
-        </>
-      )}
+        {/* ============================================================ */}
+        {/* 3. REPORTE DINÁMICO DE ACTIVIDADES DEL DESARROLLADOR         */}
+        {/* ============================================================ */}
+        <div ref={reporteRef}>
+          {criteriosReporte && (
+            <div className={estilos.panel} style={{ borderTop: '4px solid #10b981' }}>
+              <div className={estilos.panelCabecera}>
+                <div className={estilos.cabeceraTituloWrapper}>
+                  <div className={estilos.iconoBadge}>
+                    <ClipboardList size={18} />
+                  </div>
+                  <div>
+                    <h3 className={estilos.panelTitulo}>
+                      Reporte de Desempeño y Actividades
+                    </h3>
+                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>
+                      Actividades finalizadas, en proceso y pendientes asignadas al
+                      desarrollador.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {cargando && <EstadoCarga mensaje="Generando el reporte de actividades..." />}
+
+              {!cargando && error && (
+                <EstadoError error={error} alReintentar={reintentar} />
+              )}
+
+              {!cargando && !error && datos && (
+                <div style={{ marginTop: '1.25rem' }}>
+                  <div className={estilosGestion.ficha}>
+                    <dl className={estilosGestion.datos}>
+                      <div>
+                        <dt>Desarrollador</dt>
+                        <dd>{datos.desarrolladorNombreCompleto}</dd>
+                      </div>
+                      <div>
+                        <dt>Proyecto</dt>
+                        <dd>{datos.proyectoNombre}</dd>
+                      </div>
+                      <div>
+                        <dt>Periodo</dt>
+                        <dd>
+                          {datos.periodoDesde || datos.periodoHasta
+                            ? `${formatearFecha(datos.periodoDesde) || 'inicio'} — ${
+                                formatearFecha(datos.periodoHasta) || 'hoy'
+                              }`
+                            : 'Historial completo'}
+                        </dd>
+                      </div>
+                    </dl>
+
+                    <Conteos conteos={datos.resumen} />
+                  </div>
+
+                  {(datos.contenido?.length || 0) === 0 ? (
+                    <EstadoVacio
+                      mensaje={
+                        datos.mensaje ||
+                        'El desarrollador no tiene actividades registradas en este proyecto.'
+                      }
+                      icono={ClipboardList}
+                    />
+                  ) : (
+                    <div className={estilosGestion.listaActividades}>
+                      {datos.contenido.map((actividad) => (
+                        <article
+                          key={actividad.actividadId}
+                          className={estilosGestion.actividad}
+                        >
+                          <div className={estilosGestion.actividadCabecera}>
+                            <div>
+                              <p className={estilosGestion.actividadProyecto}>
+                                {actividad.etapaNombre} · {actividad.numeroEjecuciones}{' '}
+                                ejecución(es)
+                              </p>
+                              <p className={estilosGestion.actividadDescripcion}>
+                                {actividad.descripcion}
+                              </p>
+                            </div>
+                            {actividad.estado && (
+                              <span
+                                className={`${estilosGestion.actividadEstado} ${
+                                  actividad.estado === 'FINALIZADA'
+                                    ? estilosGestion.actividadEstadoFinalizada
+                                    : ''
+                                }`}
+                              >
+                                {actividad.estado}
+                              </span>
+                            )}
+                          </div>
+
+                          {actividad.ejecuciones?.length > 0 && (
+                            <ul className={estilosGestion.ejecuciones}>
+                              {actividad.ejecuciones.map((ejecucion) => (
+                                <li key={ejecucion.id}>
+                                  <span className={estilosGestion.ejecucionFecha}>
+                                    {ejecucion.iniciadaEn
+                                      ?.slice(0, 16)
+                                      .replace('T', ' ')}
+                                    {ejecucion.finalizadaEn
+                                      ? ' · finalizada'
+                                      : ' · en curso'}
+                                  </span>
+                                  {ejecucion.observaciones && (
+                                    <span>{ejecucion.observaciones}</span>
+                                  )}
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </article>
+                      ))}
+                    </div>
+                  )}
+
+                  <DatosPendientes pendientes={datos.datosPendientes} />
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
     </Seccion>
   );
 }

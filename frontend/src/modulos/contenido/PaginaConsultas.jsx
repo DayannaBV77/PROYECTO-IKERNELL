@@ -26,6 +26,7 @@ import EstadoVacio from '../../componentes/estados/EstadoVacio.jsx';
 import Boton from '../../componentes/ui/Boton.jsx';
 import Campo from '../../componentes/ui/Campo.jsx';
 import Seccion from '../../componentes/ui/Seccion.jsx';
+import { useNotificador } from '../../componentes/ui/Notificador.jsx';
 import estilosGestion from '../../estilos/gestion.module.css';
 import { usePeticion } from '../../hooks/usePeticion.js';
 import estilos from './PaginaConsultas.module.css';
@@ -93,6 +94,7 @@ function InsigniaEstado({ estado }) {
  * público (RF-035, HU-02), operado por el rol de Coordinador.
  */
 export default function PaginaConsultas() {
+  const notificador = useNotificador();
   const [filtroEstado, setFiltroEstado] = useState('TODAS');
   const [terminoBusqueda, setTerminoBusqueda] = useState('');
   const [recarga, setRecarga] = useState(0);
@@ -214,7 +216,9 @@ export default function PaginaConsultas() {
       });
 
       if (res.exitoso) {
-        setAvisoExito(res.mensaje || 'Respuesta enviada y notificada por correo exitosamente.');
+        const msjExito = res.mensaje || `Respuesta despachada y notificada por correo exitosamente a ${consulta.correoContacto || 'el visitante'}.`;
+        setAvisoExito(msjExito);
+        notificador.exito(msjExito, 'Correo enviado con éxito');
         // Limpiar el borrador si fue exitoso
         setBorradoresRespuesta((prev) => {
           const copia = { ...prev };
@@ -223,11 +227,15 @@ export default function PaginaConsultas() {
         });
       } else {
         // En caso de fallo de correo, la respuesta se conservó y la consulta no desaparece
-        setAvisoFallo(res.mensaje || 'La respuesta fue guardada, pero ocurrió un fallo al enviar la notificación por correo.');
+        const msjFallo = res.mensaje || 'La respuesta fue guardada, pero ocurrió un fallo al enviar la notificación por correo.';
+        setAvisoFallo(msjFallo);
+        notificador.advertencia(msjFallo, 'Aviso de notificación');
       }
       setRecarga((n) => n + 1);
     } catch (err) {
-      setAvisoFallo(err.message || 'Error al procesar el envío de la respuesta.');
+      const msjErr = err.message || 'Error al procesar el envío de la respuesta.';
+      setAvisoFallo(msjErr);
+      notificador.error(msjErr, 'Error de envío');
     } finally {
       setEnviando((prev) => ({ ...prev, [consulta.id]: false }));
     }
@@ -508,10 +516,9 @@ export default function PaginaConsultas() {
                         <Boton
                           tipo="submit"
                           variante="primario"
-                          icono={estaEnviando ? RefreshCw : Send}
                           disabled={estaEnviando || borrador.trim().length < 5}
                         >
-                          {estaEnviando ? 'Enviando respuesta...' : 'Enviar respuesta por correo'}
+                          {estaEnviando ? 'Enviando...' : 'Enviar'}
                         </Boton>
                       </div>
                     </form>

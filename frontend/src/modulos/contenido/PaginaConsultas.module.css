@@ -278,7 +278,23 @@
   justify-content: flex-end;
   align-items: center;
   gap: var(--s-3);
+  margin-top: var(--s-3);
   flex-wrap: wrap;
+}
+
+.accionesFormularioRespuesta button {
+  min-width: 125px;
+  height: 42px;
+  padding: 0 var(--s-5);
+  font-size: var(--t-sm);
+  font-weight: var(--p-semi);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-md);
+  box-sizing: border-box;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 /* Historial de respuestas previas */

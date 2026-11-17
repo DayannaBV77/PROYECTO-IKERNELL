@@ -39,7 +39,12 @@ export default function RutaProtegida({ tipos }) {
     return <Navigate to="/ingresar" replace state={{ destino: ubicacion.pathname }} />;
   }
 
-  if (tipos && !tipos.includes(sesion.tipoTrabajador)) {
+  const rolEfectivo = sesion.rolActivo || sesion.tipoTrabajador;
+  const autorizado = tipos
+    ? tipos.includes(rolEfectivo) || (sesion.tipoTrabajador === 'COORDINADOR' && tipos.includes('COORDINADOR'))
+    : true;
+
+  if (!autorizado) {
     return <PaginaSinPermiso />;
   }
 

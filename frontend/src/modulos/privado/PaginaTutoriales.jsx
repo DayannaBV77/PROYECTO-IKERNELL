@@ -1,15 +1,18 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
-  CircleCheck,
-  Eye,
-  EyeOff,
-  FileText,
-  GraduationCap,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  ClipboardCopy,
+  Code,
+  FileCode,
+  Folder,
+  Layers,
   Pencil,
   Plus,
-  Save,
-  Trash2,
-  TriangleAlert,
+  RotateCcw,
+  Search,
+  Sparkles,
 } from 'lucide-react';
 
 import { obtenerTutoriales } from '../../api/corporativo.js';
@@ -18,405 +21,516 @@ import {
   crearRecurso,
   eliminarRecurso,
   obtenerRecursosAdmin,
-  actualizarRecurso,
 } from '../../api/recursosAdmin.js';
 import Boton from '../../componentes/ui/Boton.jsx';
-import Campo from '../../componentes/ui/Campo.jsx';
-import Confirmacion from '../../componentes/ui/Confirmacion.jsx';
 import EstadoCarga from '../../componentes/estados/EstadoCarga.jsx';
 import EstadoError from '../../componentes/estados/EstadoError.jsx';
 import EstadoVacio from '../../componentes/estados/EstadoVacio.jsx';
-import estilos from '../../estilos/gestion.module.css';
+import Seccion from '../../componentes/ui/Seccion.jsx';
 import { usePeticion } from '../../hooks/usePeticion.js';
 import { useSesion } from '../../sesion/contexto.js';
-import ListaRecursos from './componentes/ListaRecursos.jsx';
+import estilos from './PaginaTutoriales.module.css';
 
-const FORMULARIO_VACIO = {
-  id: null,
-  tipo: 'TUTORIAL',
-  titulo: '',
-  descripcion: '',
-  categoria: '',
-  version: 'Básico',
-  contenido: '',
-  enlace: '',
-  orden: '',
-  publicada: false,
-};
+/**
+ * Catálogo base de tutoriales técnicos alineados con la arquitectura IKernell
+ * y el caso de estudio ADSI SENA.
+ */
+const TUTORIALES_BASE = [
+  {
+    id: 1,
+    titulo: 'Gestión de Migraciones Relacionales con Flyway',
+    categoria: 'Database',
+    subcategoria: 'Database',
+    version: 'v1.2',
+    descripcion:
+      'Instrucciones paso a paso para crear scripts SQL portables con control de versiones en db/migration.',
+    contenido: `# Migraciones con Flyway
 
-function normalizarFormulario(formulario) {
-  return {
-    tipo: 'TUTORIAL',
-    titulo: formulario.titulo.trim(),
-    descripcion: formulario.descripcion.trim(),
-    categoria: formulario.categoria.trim(),
-    version: formulario.version.trim(),
-    contenido: formulario.contenido.trim(),
-    enlace: formulario.enlace.trim(),
-    orden: formulario.orden === '' ? null : Number(formulario.orden),
-  };
+1. Archivos 'V<numero>__descripcion.sql' en 'src/main/resources/db/migration'.
+
+\`\`\`sql
+-- V1.0__Initial_Schema.sql
+CREATE TABLE usuarios (
+    id SERIAL PRIMARY KEY,
+    nombre VARCHAR(100),
+    email VARCHAR(255) UNIQUE
+);
+\`\`\`
+
+2. Usar tipos estándar SQL ANSI (e.g., VARCHAR, INT). Evitar tipos específicos de base de datos.
+
+\`VARCHAR(100)\`
+
+3. Probar reversión y verificación en limpio antes de enviar a git.
+
+\`\`\`bash
+mvn flyway:clean flyway:migrate
+\`\`\`
+
+4. Para pruebas automatizadas con base de datos en memoria H2, las migraciones se aplican en la carpeta de prueba 'test/resources/db/migration-h2'.`,
+  },
+  {
+    id: 2,
+    titulo: 'Getting Started con IKernell y Spring Boot',
+    categoria: 'Getting Started',
+    subcategoria: 'Getting Started',
+    version: 'v1.0',
+    descripcion:
+      'Guía inicial de preparación del entorno de desarrollo local con JDK 17 y PostgreSQL.',
+    contenido: `# Getting Started
+
+Bienvenido al repositorio central de IKernell Soluciones Software.
+
+1. Clonar el repositorio y verificar variables de entorno en el archivo .env.
+2. Iniciar el contenedor local de PostgreSQL:
+
+\`\`\`bash
+docker-compose up -d postgres
+\`\`\`
+
+3. Compilar el backend con Maven wrapper:
+
+\`\`\`bash
+./mvnw clean compile
+\`\`\``,
+  },
+  {
+    id: 3,
+    titulo: 'Configuración y Pool de Conexiones HikariCP',
+    categoria: 'Database Settings',
+    subcategoria: 'Database Settings',
+    version: 'v2.1',
+    descripcion:
+      'Ajustes de alta concurrencia, límites de conexiones simultáneas y timeouts en HikariCP.',
+    contenido: `# Configuración de HikariCP
+
+Ajuste de parámetros en 'application.properties':
+
+\`\`\`properties
+spring.datasource.hikari.maximum-pool-size=15
+spring.datasource.hikari.minimum-idle=5
+spring.datasource.hikari.idle-timeout=30000
+spring.datasource.hikari.connection-timeout=20000
+\`\`\`
+
+Verificar métricas activas en los endpoints de Micrometer y Prometheus.`,
+  },
+  {
+    id: 4,
+    titulo: 'Autenticación Stateless con Spring Security y JWT',
+    categoria: 'Authentication',
+    subcategoria: 'Authentication Cores',
+    version: 'v2.4',
+    descripcion:
+      'Implementación del filtro OncePerRequestFilter y validación de tokens de acceso criptográficos.',
+    contenido: `# Seguridad con JWT
+
+Flujo de verificación en cada petición entrante:
+
+\`\`\`java
+@Override
+protected void doFilterInternal(HttpServletRequest request, 
+                                HttpServletResponse response, 
+                                FilterChain chain) throws ServletException, IOException {
+    String authHeader = request.getHeader("Authorization");
+    if (authHeader != null && authHeader.startsWith("Bearer ")) {
+        String token = authHeader.substring(7);
+        // Validar firma HMAC-SHA256
+    }
+    chain.doFilter(request, response);
+}
+\`\`\``,
+  },
+  {
+    id: 5,
+    titulo: 'Pipelines CI/CD con GitHub Actions y Podman',
+    categoria: 'CI/CD',
+    subcategoria: 'CI/CD',
+    version: 'v1.5',
+    descripcion:
+      'Construcción automatizada de artefactos, ejecución de pruebas unitarias y generación de imágenes.',
+    contenido: `# Pipeline de Integración Continua
+
+Configuración del flujo en '.github/workflows/ci.yml':
+
+\`\`\`yaml
+name: CI Pipeline
+on: [push, pull_request]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Java 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+      - name: Build with Maven
+        run: mvn test
+\`\`\``,
+  },
+  {
+    id: 6,
+    titulo: 'Convenciones y Estándares de Diseño RESTful',
+    categoria: 'API Design',
+    subcategoria: 'API Design Servers',
+    version: 'v1.0',
+    descripcion:
+      'Códigos de estado HTTP, estructura uniforme de respuestas y paginación en Spring Web.',
+    contenido: `# Estándares de API RESTful
+
+- Nombres de recursos siempre en plural y minúsculas: '/api/proyectos', '/api/trabajadores'.
+- Métodos idempotentes bien respetados: GET, PUT, DELETE.
+- Respuestas de error estandarizadas con código RFC-7807:
+
+\`\`\`json
+{
+  "tipo": "ERROR_VALIDACION",
+  "mensaje": "Los datos suministrados son inválidos.",
+  "timestamp": "2026-11-17T02:40:00Z"
+}
+\`\`\``,
+  },
+];
+
+/**
+ * Componente interactivo para bloques de código con botón de copiado.
+ */
+function BloqueCodigo({ codigo, lenguaje = 'code' }) {
+  const [copiado, setCopiado] = useState(false);
+
+  function copiarAlPortapapeles() {
+    navigator.clipboard.writeText(codigo.trim()).then(() => {
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2000);
+    });
+  }
+
+  return (
+    <div className={estilos.bloqueCodigoWrapper}>
+      <div className={estilos.bloqueCodigoHeader}>
+        <span className={estilos.lenguajeTag}>{lenguaje}</span>
+        <button
+          type="button"
+          onClick={copiarAlPortapapeles}
+          className={`${estilos.btnCopiar} ${copiado ? estilos.btnCopiado : ''}`}
+          title="Copiar código al portapapeles"
+        >
+          {copiado ? <Check size={13} /> : <ClipboardCopy size={13} />}
+          <span>{copiado ? 'Copiado!' : 'Copiar'}</span>
+        </button>
+      </div>
+      <pre className={estilos.preCodigo}>
+        <code>{codigo.trim()}</code>
+      </pre>
+    </div>
+  );
 }
 
-/** Tutoriales de programacion (RF-030, HU-21 C03, C04 y C05). */
+/**
+ * Renderizador de texto y bloques de código de tutoriales.
+ */
+function VisorContenido({ texto = '' }) {
+  // Dividir el contenido buscando bloques ```lenguaje ... ```
+  const partes = useMemo(() => {
+    const regex = /```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g;
+    const resultado = [];
+    let ultimoIndice = 0;
+    let coincidencia;
+
+    while ((coincidencia = regex.exec(texto)) !== null) {
+      if (coincidencia.index > ultimoIndice) {
+        resultado.push({
+          tipo: 'texto',
+          valor: texto.slice(ultimoIndice, coincidencia.index),
+        });
+      }
+      resultado.push({
+        tipo: 'codigo',
+        lenguaje: coincidencia[1] || 'bash',
+        valor: coincidencia[2],
+      });
+      ultimoIndice = regex.lastIndex;
+    }
+
+    if (ultimoIndice < texto.length) {
+      resultado.push({
+        tipo: 'texto',
+        valor: texto.slice(ultimoIndice),
+      });
+    }
+
+    return resultado;
+  }, [texto]);
+
+  return (
+    <div className={estilos.cuerpoMarkdown}>
+      {partes.map((parte, idx) => {
+        if (parte.tipo === 'codigo') {
+          return (
+            <BloqueCodigo
+              key={idx}
+              codigo={parte.valor}
+              lenguaje={parte.lenguaje}
+            />
+          );
+        }
+
+        // Renderizar párrafos y código inline `...`
+        const lineas = parte.valor.split('\n');
+        return (
+          <div key={idx}>
+            {lineas.map((linea, lIdx) => {
+              const lineaTrim = linea.trim();
+              if (!lineaTrim) return <br key={lIdx} />;
+
+              if (lineaTrim.startsWith('# ')) {
+                return <h2 key={lIdx}>{lineaTrim.replace('# ', '')}</h2>;
+              }
+              if (lineaTrim.startsWith('## ')) {
+                return <h3 key={lIdx}>{lineaTrim.replace('## ', '')}</h3>;
+              }
+
+              // Parsear código inline `codigo`
+              const tokens = linea.split(/(`[^`]+`)/g);
+              return (
+                <p key={lIdx}>
+                  {tokens.map((token, tIdx) => {
+                    if (token.startsWith('`') && token.endsWith('`')) {
+                      return (
+                        <code key={tIdx} className={estilos.codigoInline}>
+                          {token.slice(1, -1)}
+                        </code>
+                      );
+                    }
+                    return token;
+                  })}
+                </p>
+              );
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * Página principal de Tutoriales de Programación (RF-030, RF-040, HU-21).
+ *
+ * Adopta el diseño de panel lateral con árbol jerárquico de navegación,
+ * buscador rápido y visor de documentación con bloques de código copiables.
+ */
 export default function PaginaTutoriales() {
   const { sesion } = useSesion();
   const esCoordinador = sesion?.tipoTrabajador === 'COORDINADOR';
 
-  const [recargaPublica, setRecargaPublica] = useState(0);
-  const [recargaAdmin, setRecargaAdmin] = useState(0);
-  const [abierto, setAbierto] = useState(false);
-  const [formulario, setFormulario] = useState(FORMULARIO_VACIO);
-  const [errores, setErrores] = useState({});
-  const [mensaje, setMensaje] = useState('');
-  const [fallo, setFallo] = useState('');
-  const [recursoAEliminar, setRecursoAEliminar] = useState(null);
-  const [guardando, setGuardando] = useState(false);
-  const [cambiando, setCambiando] = useState(null);
+  const [filtroTexto, setFiltroTexto] = useState('');
+  const [categoriasAbiertas, setCategoriasAbiertas] = useState({
+    'Getting Started': true,
+    Database: true,
+    'Database Settings': true,
+    Authentication: false,
+    'CI/CD': false,
+    'API Design': false,
+  });
 
-  const cargarAdmin = useCallback(
-    ({ senal }) => (esCoordinador ? obtenerRecursosAdmin('TUTORIAL', { senal }) : Promise.resolve({ contenido: [] })),
+  // Cargar tutoriales del backend
+  const cargarTutoriales = useCallback(
+    ({ senal }) =>
+      esCoordinador
+        ? obtenerRecursosAdmin('TUTORIAL', { senal })
+        : obtenerTutoriales('', { senal }),
     [esCoordinador],
   );
-  const { datos: admin, error: errorAdmin, cargando: cargandoAdmin, reintentar: reintentarAdmin } =
-    usePeticion(cargarAdmin, [esCoordinador, recargaAdmin]);
+  const { datos, cargando, error, reintentar } = usePeticion(cargarTutoriales, [esCoordinador]);
 
-  const tutorialesAdmin = admin?.contenido ?? [];
+  // Consolidar tutoriales de base de datos con los base
+  const listaTutoriales = useMemo(() => {
+    const backendItems = datos?.contenido || [];
+    if (backendItems.length === 0) return TUTORIALES_BASE;
 
-  function abrirFormulario(tutorial = null) {
-    setFormulario(
-      tutorial
-        ? {
-            ...tutorial,
-            orden: tutorial.orden ?? '',
-            publicada: Boolean(tutorial.publicada),
-          }
-        : { ...FORMULARIO_VACIO },
+    const mapa = new Map();
+    TUTORIALES_BASE.forEach((t) => mapa.set(t.titulo, t));
+    backendItems.forEach((item) => {
+      mapa.set(item.titulo, {
+        id: item.id,
+        titulo: item.titulo,
+        categoria: item.categoria || 'Database',
+        version: item.version || 'v1.0',
+        descripcion: item.descripcion,
+        contenido: item.contenido,
+        enlace: item.enlace,
+      });
+    });
+
+    return Array.from(mapa.values());
+  }, [datos]);
+
+  // Tutorial seleccionado actualmente (por defecto el de Migraciones Flyway)
+  const [tutorialSeleccionadoId, setTutorialSeleccionadoId] = useState(1);
+
+  const tutorialActivo = useMemo(() => {
+    return (
+      listaTutoriales.find((t) => t.id === tutorialSeleccionadoId) ||
+      listaTutoriales[0]
     );
-    setErrores({});
-    setFallo('');
-    setMensaje('');
-    setAbierto(true);
-  }
+  }, [listaTutoriales, tutorialSeleccionadoId]);
 
-  function manejarCambio(evento) {
-    const { name, value } = evento.target;
-    setFormulario((previo) => ({
-      ...previo,
-      [name]: name === 'publicada' ? value === 'true' : value,
+  // Agrupar tutoriales por categoría jerárquica
+  const arbolCategorias = useMemo(() => {
+    const mapa = new Map();
+    const qNorm = filtroTexto.toLowerCase().trim();
+
+    listaTutoriales.forEach((t) => {
+      const coincide =
+        !qNorm ||
+        t.titulo.toLowerCase().includes(qNorm) ||
+        t.categoria.toLowerCase().includes(qNorm);
+
+      if (coincide) {
+        const cat = t.categoria || 'General';
+        if (!mapa.has(cat)) {
+          mapa.set(cat, []);
+        }
+        mapa.get(cat).push(t);
+      }
+    });
+
+    return Array.from(mapa.entries());
+  }, [listaTutoriales, filtroTexto]);
+
+  function alternarCategoria(cat) {
+    setCategoriasAbiertas((prev) => ({
+      ...prev,
+      [cat]: !prev[cat],
     }));
-    setErrores((previos) => (previos[name] ? { ...previos, [name]: undefined } : previos));
-  }
-
-  async function guardarTutorial(evento) {
-    evento.preventDefault();
-    setGuardando(true);
-    setFallo('');
-    setErrores({});
-
-    const siguiente = { ...formulario };
-    const erroresNuevos = {};
-
-    if (!siguiente.titulo.trim()) erroresNuevos.titulo = 'El titulo es obligatorio.';
-    if (!siguiente.descripcion.trim()) erroresNuevos.descripcion = 'La descripcion breve es obligatoria.';
-    if (!siguiente.contenido.trim()) erroresNuevos.contenido = 'El contenido es obligatorio.';
-    if (!siguiente.categoria.trim()) erroresNuevos.categoria = 'Debe indicar el lenguaje o la tecnologia.';
-
-    if (Object.keys(erroresNuevos).length > 0) {
-      setErrores(erroresNuevos);
-      setGuardando(false);
-      return;
-    }
-
-    try {
-      const payload = normalizarFormulario(siguiente);
-      const publicadoAntes = Boolean(formulario.publicada);
-
-      if (siguiente.id) {
-        await actualizarRecurso(siguiente.id, payload);
-        if (siguiente.publicada !== publicadoAntes) {
-          await cambiarPublicacionRecurso(siguiente.id, siguiente.publicada);
-        }
-      } else {
-        const creado = await crearRecurso(payload);
-        if (siguiente.publicada) {
-          await cambiarPublicacionRecurso(creado.id, true);
-        }
-      }
-
-      setMensaje(
-        siguiente.id
-          ? 'El tutorial se actualizo correctamente.'
-          : 'El tutorial se creo correctamente.',
-      );
-      setAbierto(false);
-      setFormulario(FORMULARIO_VACIO);
-      setRecargaAdmin((actual) => actual + 1);
-      setRecargaPublica((actual) => actual + 1);
-    } catch (fallaApi) {
-      setFallo(fallaApi.message);
-      if (fallaApi.campos) {
-        setErrores(fallaApi.campos);
-      }
-    } finally {
-      setGuardando(false);
-    }
-  }
-
-  async function alternarPublicacion(tutorial) {
-    setCambiando(tutorial.id);
-    setFallo('');
-    setMensaje('');
-
-    try {
-      await cambiarPublicacionRecurso(tutorial.id, !tutorial.publicada);
-      setMensaje(
-        tutorial.publicada
-          ? `"${tutorial.titulo}" se despublico.`
-          : `"${tutorial.titulo}" ya quedo publicado.`,
-      );
-      setRecargaAdmin((actual) => actual + 1);
-      setRecargaPublica((actual) => actual + 1);
-    } catch (fallaApi) {
-      setFallo(fallaApi.message);
-    } finally {
-      setCambiando(null);
-    }
-  }
-
-  async function eliminarTutorial() {
-    if (!recursoAEliminar) {
-      return;
-    }
-
-    setGuardando(true);
-    setFallo('');
-    setMensaje('');
-
-    try {
-      await eliminarRecurso(recursoAEliminar.id);
-      setMensaje(`"${recursoAEliminar.titulo}" se elimino correctamente.`);
-      setRecursoAEliminar(null);
-      setRecargaAdmin((actual) => actual + 1);
-      setRecargaPublica((actual) => actual + 1);
-    } catch (fallaApi) {
-      setFallo(fallaApi.message);
-    } finally {
-      setGuardando(false);
-    }
   }
 
   return (
-    <>
-      <ListaRecursos
-        titulo="Tutoriales de programacion"
-        descripcion="Material de consulta publicado por la empresa para el equipo."
-        etiquetaBusqueda="Buscar entre los tutoriales"
-        obtener={obtenerTutoriales}
-        rutaBase="/app/tutoriales"
-        iconoVacio={GraduationCap}
-        id="tutoriales"
-        recarga={recargaPublica}
-      />
-
-      {esCoordinador && (
-        <div style={{ marginTop: 'var(--s-7)' }}>
-          <div className={estilos.barraSuperior}>
-            <Boton icono={Plus} onClick={() => abrirFormulario()}>
-              Agregar tutorial
-            </Boton>
+    <Seccion
+      titulo="Tutoriales de Programación"
+      descripcion="Guías oficiales, estándares de arquitectura y buenas prácticas del equipo de desarrollo."
+      id="tutoriales"
+    >
+      <div className={estilos.layoutTutoriales}>
+        {/* ============================================================ */}
+        {/* PANEL LATERAL IZQUIERDO: ÁRBOL Y BUSCADOR                     */}
+        {/* ============================================================ */}
+        <aside className={estilos.sidebar} aria-label="Navegación de tutoriales">
+          {/* Buscador de tutoriales */}
+          <div className={estilos.buscadorSidebar}>
+            <Search size={15} className={estilos.iconoBuscador} />
+            <input
+              type="text"
+              placeholder="Search for tutorials"
+              className={estilos.inputBuscador}
+              value={filtroTexto}
+              onChange={(e) => setFiltroTexto(e.target.value)}
+            />
           </div>
 
-          {mensaje && (
-            <p className={estilos.avisoExito} role="status">
-              <CircleCheck size={18} aria-hidden="true" />
-              {mensaje}
-            </p>
-          )}
+          {/* Lista colapsable por categoría */}
+          <div className={estilos.arbolCategorias}>
+            {arbolCategorias.map(([categoria, items]) => {
+              const estaAbierta = categoriasAbiertas[categoria] !== false;
 
-          {fallo && (
-            <p className={estilos.avisoError} role="alert">
-              <TriangleAlert size={18} aria-hidden="true" />
-              {fallo}
-            </p>
-          )}
+              return (
+                <div key={categoria} className={estilos.grupoCategoria}>
+                  <div
+                    className={estilos.categoriaCabecera}
+                    onClick={() => alternarCategoria(categoria)}
+                  >
+                    <div className={estilos.categoriaTitulo}>
+                      <Folder size={14} style={{ color: '#0284c7' }} />
+                      <span>{categoria}</span>
+                    </div>
+                    {estaAbierta ? (
+                      <ChevronDown size={14} className={estilos.categoriaIconoFlecha} />
+                    ) : (
+                      <ChevronRight size={14} className={estilos.categoriaIconoFlecha} />
+                    )}
+                  </div>
 
-          {abierto && (
-            <form className={estilos.formulario} onSubmit={guardarTutorial} noValidate>
-              <div className={estilos.criterios}>
-                <Campo
-                  etiqueta="Titulo"
-                  nombre="titulo"
-                  value={formulario.titulo}
-                  onChange={manejarCambio}
-                  error={errores.titulo}
-                  obligatorio
-                />
-                <Campo
-                  etiqueta="Tecnologia o lenguaje"
-                  nombre="categoria"
-                  value={formulario.categoria}
-                  onChange={manejarCambio}
-                  error={errores.categoria}
-                  placeholder="PHP, React, JavaScript..."
-                  obligatorio
-                />
-                <Campo
-                  etiqueta="Nivel"
-                  nombre="version"
-                  opciones={[
-                    { valor: 'Básico', texto: 'Básico' },
-                    { valor: 'Intermedio', texto: 'Intermedio' },
-                    { valor: 'Avanzado', texto: 'Avanzado' },
-                  ]}
-                  value={formulario.version}
-                  onChange={manejarCambio}
-                  textoVacio={null}
-                />
-                <Campo
-                  etiqueta="Estado"
-                  nombre="publicada"
-                  opciones={[
-                    { valor: 'false', texto: 'Borrador' },
-                    { valor: 'true', texto: 'Publicado' },
-                  ]}
-                  value={String(formulario.publicada)}
-                  onChange={manejarCambio}
-                  textoVacio={null}
-                />
-              </div>
-
-              <div style={{ marginTop: 'var(--s-4)' }}>
-                <Campo
-                  etiqueta="Descripcion breve"
-                  nombre="descripcion"
-                  value={formulario.descripcion}
-                  onChange={manejarCambio}
-                  error={errores.descripcion}
-                  area
-                  rows={3}
-                  obligatorio
-                />
-              </div>
-
-              <div style={{ marginTop: 'var(--s-4)' }}>
-                <Campo
-                  etiqueta="Contenido del tutorial"
-                  nombre="contenido"
-                  value={formulario.contenido}
-                  onChange={manejarCambio}
-                  error={errores.contenido}
-                  area
-                  rows={12}
-                  obligatorio
-                />
-              </div>
-
-              <div className={estilos.criterios} style={{ marginTop: 'var(--s-4)' }}>
-                <Campo
-                  etiqueta="Enlace externo"
-                  nombre="enlace"
-                  value={formulario.enlace}
-                  onChange={manejarCambio}
-                  placeholder="Opcional"
-                />
-                <Campo
-                  etiqueta="Orden"
-                  nombre="orden"
-                  tipo="number"
-                  value={formulario.orden}
-                  onChange={manejarCambio}
-                  placeholder="1"
-                />
-              </div>
-
-              <div className={estilos.accionesBuscador}>
-                <Boton type="button" variante="secundario" onClick={() => setAbierto(false)}>
-                  Cancelar
-                </Boton>
-                <Boton icono={Save} type="submit" disabled={guardando}>
-                  {guardando ? 'Guardando...' : formulario.id ? 'Guardar cambios' : 'Crear tutorial'}
-                </Boton>
-              </div>
-            </form>
-          )}
-
-          {cargandoAdmin && <EstadoCarga mensaje="Cargando tutoriales del coordinador..." />}
-
-          {!cargandoAdmin && errorAdmin && <EstadoError error={errorAdmin} alReintentar={reintentarAdmin} />}
-
-          {!cargandoAdmin && !errorAdmin && tutorialesAdmin.length === 0 && (
-            <EstadoVacio mensaje="Todavia no hay tutoriales registrados." icono={FileText} />
-          )}
-
-          {!cargandoAdmin && !errorAdmin && tutorialesAdmin.length > 0 && (
-            <div className={estilos.tablaEnvoltorio}>
-              <table className={estilos.tabla}>
-                <thead>
-                  <tr>
-                    <th scope="col">Titulo</th>
-                    <th scope="col">Lenguaje</th>
-                    <th scope="col">Nivel</th>
-                    <th scope="col">Estado</th>
-                    <th scope="col">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tutorialesAdmin.map((tutorial) => (
-                    <tr key={tutorial.id}>
-                      <th scope="row" className={estilos.celdaNombre}>
-                        {tutorial.titulo}
-                      </th>
-                      <td>{tutorial.categoria || '—'}</td>
-                      <td>{tutorial.version || '—'}</td>
-                      <td>
-                        <span className={`${estilos.estado} ${tutorial.publicada ? estilos.habilitado : estilos.inhabilitado}`}>
-                          {tutorial.publicada ? 'Publicado' : 'Borrador'}
-                        </span>
-                      </td>
-                      <td>
-                        <div className={estilos.accionesFila}>
-                          <Boton variante="texto" icono={Pencil} onClick={() => abrirFormulario(tutorial)}>
-                            Editar
-                          </Boton>
-                          <Boton
-                            variante="texto"
-                            icono={tutorial.publicada ? EyeOff : Eye}
-                            disabled={cambiando === tutorial.id}
-                            onClick={() => alternarPublicacion(tutorial)}
+                  {estaAbierta && (
+                    <div className={estilos.listaItemsCategoria}>
+                      {items.map((t) => {
+                        const esActivo = t.id === tutorialActivo?.id;
+                        return (
+                          <button
+                            key={t.id}
+                            type="button"
+                            className={`${estilos.itemTutorial} ${
+                              esActivo ? estilos.itemTutorialActivo : ''
+                            }`}
+                            onClick={() => setTutorialSeleccionadoId(t.id)}
+                            title={t.titulo}
                           >
-                            {tutorial.publicada ? 'Despublicar' : 'Publicar'}
-                          </Boton>
-                          <Boton
-                            variante="texto"
-                            icono={Trash2}
-                            onClick={() => setRecursoAEliminar(tutorial)}
-                          >
-                            Eliminar
-                          </Boton>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
+                            {t.titulo}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
 
-      <Confirmacion
-        abierto={Boolean(recursoAEliminar)}
-        titulo="Eliminar tutorial"
-        textoConfirmar="Eliminar"
-        ocupado={guardando}
-        alConfirmar={eliminarTutorial}
-        alCancelar={() => setRecursoAEliminar(null)}
-      >
-        <p>
-          ¿Seguro que quieres eliminar el tutorial <strong>{recursoAEliminar?.titulo}</strong>? Esta
-          accion no se puede deshacer.
-        </p>
-      </Confirmacion>
-    </>
+            {arbolCategorias.length === 0 && (
+              <p style={{ fontSize: '0.75rem', color: '#94a3b8', textAlign: 'center' }}>
+                No se encontraron tutoriales
+              </p>
+            )}
+          </div>
+        </aside>
+
+        {/* ============================================================ */}
+        {/* VISOR PRINCIPAL DE CONTENIDO                                  */}
+        {/* ============================================================ */}
+        <main className={estilos.panelContenido}>
+          <div className={estilos.barraSuperiorVisor}>
+            <button
+              type="button"
+              className={estilos.btnVolver}
+              onClick={() => {
+                setFiltroTexto('');
+                setTutorialSeleccionadoId(listaTutoriales[0]?.id || 1);
+              }}
+            >
+              ← Volver a los tutoriales
+            </button>
+          </div>
+
+          {tutorialActivo && (
+            <>
+              <h1 className={estilos.tituloPrincipal}>{tutorialActivo.titulo}</h1>
+
+              <div className={estilos.tarjetaVisor}>
+                <div className={estilos.metaHeader}>
+                  <span>{tutorialActivo.categoria}</span>
+                  <span>·</span>
+                  <span>VERSION {tutorialActivo.version || 'V1.0'}</span>
+                </div>
+
+                <p className={estilos.descripcionTutorial}>
+                  {tutorialActivo.descripcion}
+                </p>
+
+                <div className={estilos.separador} />
+
+                <VisorContenido texto={tutorialActivo.contenido} />
+              </div>
+            </>
+          )}
+
+          {!tutorialActivo && (
+            <EstadoVacio
+              mensaje="Seleccione un tutorial del árbol de navegación izquierdo para ver su contenido."
+              icono={FileCode}
+            />
+          )}
+        </main>
+      </div>
+    </Seccion>
   );
 }

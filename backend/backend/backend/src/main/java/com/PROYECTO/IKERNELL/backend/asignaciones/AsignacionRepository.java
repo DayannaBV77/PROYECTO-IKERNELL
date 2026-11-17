@@ -34,6 +34,9 @@ public interface AsignacionRepository extends JpaRepository<Asignacion, Long> {
 	Optional<Asignacion> findFirstByTrabajadorIdAndProyectoIdAndRolIdAndActivaTrue(
 			Long trabajadorId, Long proyectoId, Long rolId);
 
+	@EntityGraph(attributePaths = { "trabajador", "proyecto", "rol" })
+	List<Asignacion> findByTrabajadorIdAndProyectoIdAndActivaTrue(Long trabajadorId, Long proyectoId);
+
 	/** HU-06 C05: consultar las asignaciones de un trabajador. */
 	@EntityGraph(attributePaths = { "trabajador", "proyecto", "rol" })
 	List<Asignacion> findByTrabajadorIdOrderByFechaAsignacionDesc(Long trabajadorId);

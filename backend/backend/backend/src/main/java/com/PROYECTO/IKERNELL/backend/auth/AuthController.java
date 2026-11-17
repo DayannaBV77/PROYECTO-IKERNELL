@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.PROYECTO.IKERNELL.backend.asignaciones.ServicioAsignaciones;
 import com.PROYECTO.IKERNELL.backend.auth.dto.LoginRequest;
 import com.PROYECTO.IKERNELL.backend.auth.dto.SesionResponse;
 import com.PROYECTO.IKERNELL.backend.shared.error.AccesoDenegadoException;
@@ -30,12 +31,14 @@ public class AuthController {
 	private final AuthenticationManager authenticationManager;
 	private final SecurityContextRepository contextRepository;
 	private final ServicioAutenticacion servicioAutenticacion;
+	private final ServicioAsignaciones servicioAsignaciones;
 
 	public AuthController(AuthenticationManager authenticationManager, SecurityContextRepository contextRepository,
-			ServicioAutenticacion servicioAutenticacion) {
+			ServicioAutenticacion servicioAutenticacion, ServicioAsignaciones servicioAsignaciones) {
 		this.authenticationManager = authenticationManager;
 		this.contextRepository = contextRepository;
 		this.servicioAutenticacion = servicioAutenticacion;
+		this.servicioAsignaciones = servicioAsignaciones;
 	}
 
 	/**
@@ -80,20 +83,49 @@ public class AuthController {
 		if (http.getSession(false) != null) {
 			http.changeSessionId();
 		}
+
+		TrabajadorAutenticado trabajador = (TrabajadorAutenticado) autenticacion.getPrincipal();
+		var asignacionesActivas = servicioAsignaciones.misAsignacionesActivas(trabajador.getTrabajadorId());
+		if (!asignacionesActivas.isEmpty()) {
+			var primera = asignacionesActivas.get(0);
+			trabajador = trabajador.conContextoProyecto(
+					primera.getProyecto().getId(),
+					primera.getProyecto().getNombre(),
+					primera.getRolEnProyecto());
+			autenticacion = new UsernamePasswordAuthenticationToken(trabajador, "n/a", trabajador.getAuthorities());
+		}
+
 		SecurityContext contexto = SecurityContextHolder.createEmptyContext();
 		contexto.setAuthentication(autenticacion);
 		SecurityContextHolder.setContext(contexto);
 		contextRepository.saveContext(contexto, http, respuesta);
 
-		TrabajadorAutenticado trabajador = (TrabajadorAutenticado) autenticacion.getPrincipal();
 		servicioAutenticacion.registrarUltimoAcceso(trabajador.getUsername());
 		return SesionResponse.de(trabajador);
 	}
 
 	/** Datos de la sesion vigente; permite al cliente rearmar el menu de HU-03 C02. */
 	@GetMapping("/sesion")
-	public SesionResponse sesion(Authentication autenticacion) {
-		return SesionResponse.de((TrabajadorAutenticado) autenticacion.getPrincipal());
+	public SesionResponse sesion(Authentication autenticacion, HttpServletRequest http,
+			HttpServletResponse respuesta) {
+		TrabajadorAutenticado trabajador = (TrabajadorAutenticado) autenticacion.getPrincipal();
+		if (trabajador.getProyectoActivoId() == null) {
+			var asignacionesActivas = servicioAsignaciones.misAsignacionesActivas(trabajador.getTrabajadorId());
+			if (!asignacionesActivas.isEmpty()) {
+				var primera = asignacionesActivas.get(0);
+				trabajador = trabajador.conContextoProyecto(
+						primera.getProyecto().getId(),
+						primera.getProyecto().getNombre(),
+						primera.getRolEnProyecto());
+				Authentication nuevaAuth = new UsernamePasswordAuthenticationToken(
+						trabajador, "n/a", trabajador.getAuthorities());
+				SecurityContext contexto = SecurityContextHolder.createEmptyContext();
+				contexto.setAuthentication(nuevaAuth);
+				SecurityContextHolder.setContext(contexto);
+				contextRepository.saveContext(contexto, http, respuesta);
+			}
+		}
+		return SesionResponse.de(trabajador);
 	}
 
 }

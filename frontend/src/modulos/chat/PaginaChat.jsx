@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertCircle,
   CheckCheck,
@@ -15,7 +15,7 @@ import {
   X,
 } from 'lucide-react';
 
-import { obtenerMisProyectos } from '../../api/asignaciones.js';
+import { obtenerMisProyectos, obtenerProyectosAsignables } from '../../api/asignaciones.js';
 import { crearHilo, enviarMensaje, obtenerHilos, obtenerMensajes } from '../../api/chat.js';
 import EstadoCarga from '../../componentes/estados/EstadoCarga.jsx';
 import EstadoError from '../../componentes/estados/EstadoError.jsx';
@@ -36,14 +36,23 @@ import estilos from './PaginaChat.module.css';
  * activas y navegación ágil tipo mensajería profesional.
  */
 export default function PaginaChat() {
+  const { sesion } = useSesion();
+  const esCoordinador = sesion?.tipoTrabajador === 'COORDINADOR';
+
   const [proyectoId, setProyectoId] = useState('');
   const [etapaId, setEtapaId] = useState('');
   const [hiloAbierto, setHiloAbierto] = useState(null);
   const [recarga, setRecarga] = useState(0);
   const [modalNuevoHilo, setModalNuevoHilo] = useState(false);
 
-  const cargarProyectos = useCallback(({ senal }) => obtenerMisProyectos({ senal }), []);
-  const misProyectos = usePeticion(cargarProyectos, []);
+  const cargarProyectos = useCallback(
+    ({ senal }) =>
+      esCoordinador
+        ? obtenerProyectosAsignables({ senal })
+        : obtenerMisProyectos({ senal }),
+    [esCoordinador],
+  );
+  const misProyectos = usePeticion(cargarProyectos, [esCoordinador]);
 
   const { opcionesDeEtapa } = useEtapasDeProyecto(proyectoId);
 
@@ -56,7 +65,19 @@ export default function PaginaChat() {
   );
   const hilos = usePeticion(cargarHilos, [proyectoId, etapaId, recarga]);
 
-  const proyectosLista = misProyectos.datos?.contenido || [];
+  const proyectosLista = useMemo(() => {
+    let raw = [];
+    if (Array.isArray(misProyectos.datos?.contenido)) {
+      raw = misProyectos.datos.contenido;
+    } else if (Array.isArray(misProyectos.datos)) {
+      raw = misProyectos.datos;
+    }
+    return raw.map((p) => ({
+      proyectoId: p.proyectoId || p.id,
+      proyectoNombre: p.proyectoNombre || p.nombre || `Proyecto #${p.id || ''}`,
+      estadoHabilitacion: p.estadoHabilitacion || p.estado || 'HABILITADO',
+    }));
+  }, [misProyectos.datos]);
 
   // Autoseleccionar el primer proyecto disponible para agilizar la entrada
   useEffect(() => {
@@ -65,15 +86,17 @@ export default function PaginaChat() {
     }
   }, [proyectoId, proyectosLista]);
 
-  const opcionesDeProyecto = proyectosLista.map(
-    ({ proyectoId: id, proyectoNombre, estadoHabilitacion }) => ({
-      valor: String(id),
-      texto:
-        estadoHabilitacion === 'INHABILITADO'
-          ? `${proyectoNombre} (inhabilitado)`
-          : proyectoNombre,
-    }),
-  );
+  const opcionesDeProyecto = useMemo(() => {
+    return proyectosLista.map(
+      ({ proyectoId: id, proyectoNombre, estadoHabilitacion }) => ({
+        valor: String(id),
+        texto:
+          estadoHabilitacion === 'INHABILITADO'
+            ? `${proyectoNombre} (inhabilitado)`
+            : proyectoNombre,
+      }),
+    );
+  }, [proyectosLista]);
 
   function alElegirProyecto(evento) {
     setProyectoId(evento.target.value);
@@ -86,7 +109,16 @@ export default function PaginaChat() {
     setHiloAbierto(null);
   }
 
-  const listaDeHilos = hilos.datos?.contenido || [];
+  const listaDeHilos = useMemo(() => {
+    if (Array.isArray(hilos.datos?.contenido)) {
+      return hilos.datos.contenido;
+    }
+    if (Array.isArray(hilos.datos)) {
+      return hilos.datos;
+    }
+    return [];
+  }, [hilos.datos]);
+
   const proyectoActual = proyectosLista.find((p) => String(p.proyectoId) === String(proyectoId));
   const hiloActual = listaDeHilos.find((h) => h.id === hiloAbierto);
 
@@ -121,6 +153,7 @@ export default function PaginaChat() {
             <Campo
               etiqueta="Filtrar por Etapa"
               nombre="etapaId"
+              textoVacio="Todas las etapas (General)"
               opciones={opcionesDeEtapa}
               value={etapaId}
               onChange={alElegirEtapa}
@@ -199,7 +232,7 @@ export default function PaginaChat() {
 
 /** Columna lateral con filtro rápido de texto y lista estilizada de hilos */
 function ColumnaDeHilos({
-  hilos,
+  hilos = [],
   cargando,
   error,
   alReintentar,
@@ -209,10 +242,11 @@ function ColumnaDeHilos({
   onAbrirModalCreacion,
 }) {
   const [busqueda, setBusqueda] = useState('');
+  const listaSegura = Array.isArray(hilos) ? hilos : [];
 
-  const hilosFiltrados = hilos.filter((hilo) =>
-    hilo.titulo?.toLowerCase().includes(busqueda.toLowerCase()) ||
-    hilo.etapaNombre?.toLowerCase().includes(busqueda.toLowerCase())
+  const hilosFiltrados = listaSegura.filter((hilo) =>
+    hilo?.titulo?.toLowerCase().includes(busqueda.toLowerCase()) ||
+    hilo?.etapaNombre?.toLowerCase().includes(busqueda.toLowerCase())
   );
 
   return (
@@ -411,7 +445,11 @@ function Conversacion({ hiloId, hilo, proyectoNombre, alEnviar }) {
   const cargar = useCallback(({ senal }) => obtenerMensajes(hiloId, { senal }), [hiloId]);
   const mensajes = usePeticion(cargar, [hiloId, recarga]);
 
-  const listaMensajes = mensajes.datos?.contenido || [];
+  const listaMensajes = Array.isArray(mensajes.datos?.contenido)
+    ? mensajes.datos.contenido
+    : Array.isArray(mensajes.datos)
+      ? mensajes.datos
+      : [];
 
   // Scroll automático al final cuando llegan mensajes
   useEffect(() => {
