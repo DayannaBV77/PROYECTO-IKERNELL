@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FolderKanban, FolderPlus, RotateCcw, Search } from 'lucide-react';
 
@@ -17,20 +17,28 @@ import PaginacionTabla from '../../componentes/ui/PaginacionTabla.jsx';
 import Seccion from '../../componentes/ui/Seccion.jsx';
 import estilos from '../../estilos/gestion.module.css';
 import { usePeticion } from '../../hooks/usePeticion.js';
+import { useDebounce } from '../../hooks/useDebounce.js';
 
 const SIN_CRITERIOS = { identificador: '', nombre: '', estado: '' };
 
 export default function PaginaProyectos() {
   const [borrador, setBorrador] = useState(SIN_CRITERIOS);
-  const [criterios, setCriterios] = useState(SIN_CRITERIOS);
   const [pagina, setPagina] = useState(0);
   const [tamano, setTamano] = useState(10);
 
+  // Búsqueda en tiempo real con debounce
+  const criteriosEnTiempoReal = useDebounce(borrador, 250);
+
   const cargar = useCallback(
-    ({ senal }) => buscarProyectos({ ...criterios, pagina, tamano }, { senal }),
-    [criterios, pagina, tamano],
+    ({ senal }) => buscarProyectos({ ...criteriosEnTiempoReal, pagina, tamano }, { senal }),
+    [criteriosEnTiempoReal, pagina, tamano],
   );
-  const { datos, error, cargando, reintentar } = usePeticion(cargar, [criterios, pagina, tamano]);
+  const { datos, error, cargando, reintentar } = usePeticion(cargar, [criteriosEnTiempoReal, pagina, tamano]);
+
+  // Al cambiar los criterios de búsqueda, reiniciar la página a la primera
+  useEffect(() => {
+    setPagina(0);
+  }, [criteriosEnTiempoReal]);
 
   function alCambiar(evento) {
     const { name, value } = evento.target;
@@ -38,14 +46,13 @@ export default function PaginaProyectos() {
   }
 
   function alBuscar(evento) {
-    evento.preventDefault();
-    setCriterios(borrador);
-    setPagina(0);
+    if (evento?.preventDefault) {
+      evento.preventDefault();
+    }
   }
 
   function alLimpiar() {
     setBorrador(SIN_CRITERIOS);
-    setCriterios(SIN_CRITERIOS);
     setPagina(0);
   }
 

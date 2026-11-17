@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CheckCircle2, ChevronRight, Layers, Sparkles } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 import { TIPOS_CONTENIDO } from '../../api/contenidoPublico.js';
 import { iconoParaTitulo } from '../../utilidades/iconos.js';
 import SeccionContenido from './componentes/SeccionContenido.jsx';
@@ -78,31 +78,6 @@ export default function PaginaServicios() {
                 </div>
               </div>
             )}
-
-            {/* Vista en rejilla resumida complementaria */}
-            <div className={estilos.rejillaMini}>
-              {contenido.map((servicio) => {
-                const IconoMini = iconoParaTitulo(servicio.titulo);
-                const esActivo = servicio.id === servicioActivo?.id;
-                return (
-                  <div
-                    key={servicio.id}
-                    className={estilos.tarjetaMini}
-                    style={{
-                      borderColor: esActivo ? 'var(--c-enlace)' : undefined,
-                      background: esActivo ? 'color-mix(in srgb, var(--c-enlace) 5%, var(--c-superficie))' : undefined,
-                    }}
-                    onClick={() => setServicioSeleccionadoId(servicio.id)}
-                  >
-                    <div className={estilos.miniIcono}>
-                      <IconoMini size={22} aria-hidden="true" />
-                    </div>
-                    <p className={estilos.miniTitulo}>{servicio.titulo}</p>
-                    <ChevronRight size={16} style={{ marginLeft: 'auto', color: 'var(--c-texto-secundario)' }} />
-                  </div>
-                );
-              })}
-            </div>
           </div>
         );
       }}

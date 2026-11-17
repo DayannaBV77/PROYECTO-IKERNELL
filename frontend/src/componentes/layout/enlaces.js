@@ -59,16 +59,16 @@ export const ENLACES_PRIVADOS = [
   // Las actividades propias las ve cualquiera que tenga alguna asignada; se
   // ofrece a desarrolladores y lideres porque HU-16 C05 incluye al lider al
   // que asignaron como desarrollador en otro proyecto (RN-05).
-  { a: '/app/mis-actividades', texto: 'Mis actividades', tipos: ['DESARROLLADOR', 'LIDER'] },
+  { a: '/app/mis-actividades', texto: 'Mis actividades', tipos: ['DESARROLLADOR'] },
   // Errores e interrupciones: los registra quien esta asignado como
   // desarrollador al proyecto, sea cual sea su tipo global (RN-05).
-  { a: '/app/incidencias', texto: 'Incidencias', tipos: ['DESARROLLADOR', 'LIDER'] },
+  { a: '/app/incidencias', texto: 'Incidencias', tipos: ['DESARROLLADOR'] },
   // Conversaciones por proyecto y etapa (RF-037, HU-22). Sin `tipos`: el
   // permiso es la asignacion en el proyecto, no el tipo de trabajador.
-  { a: '/app/chat', texto: 'Conversaciones' },
+  { a: '/app/chat', texto: 'Chat' },
   { a: '/app/biblioteca', texto: 'Biblioteca' },
-  { a: CORREO_CORPORATIVO_URL, texto: 'Correo corporativo', externo: true },
   { a: '/app/tutoriales', texto: 'Tutoriales' },
+  { a: CORREO_CORPORATIVO_URL, texto: 'Correo', externo: true },
 ];
 
 /*

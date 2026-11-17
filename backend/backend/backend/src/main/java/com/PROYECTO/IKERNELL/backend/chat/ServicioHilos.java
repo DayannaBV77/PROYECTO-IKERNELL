@@ -19,6 +19,7 @@ import com.PROYECTO.IKERNELL.backend.proyectos.domain.Proyecto;
 import com.PROYECTO.IKERNELL.backend.shared.error.OperacionNoAutorizadaException;
 import com.PROYECTO.IKERNELL.backend.shared.error.RecursoNoEncontradoException;
 import com.PROYECTO.IKERNELL.backend.trabajadores.ServicioTrabajadores;
+import com.PROYECTO.IKERNELL.backend.trabajadores.domain.TipoTrabajador;
 import com.PROYECTO.IKERNELL.backend.trabajadores.domain.Trabajador;
 
 /**
@@ -204,6 +205,10 @@ public class ServicioHilos {
 	}
 
 	private void exigirRelacionConElProyecto(Long trabajadorId, Proyecto proyecto) {
+		Trabajador trabajador = servicioTrabajadores.obtener(trabajadorId);
+		if (trabajador.getTipoTrabajador() == TipoTrabajador.COORDINADOR) {
+			return;
+		}
 		if (!servicioAsignaciones.participaEnProyecto(trabajadorId, proyecto.getId())) {
 			throw new OperacionNoAutorizadaException(
 					"Solo los trabajadores asignados al proyecto pueden consultar y escribir"

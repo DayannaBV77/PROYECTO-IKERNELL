@@ -28,7 +28,6 @@ import Seccion from '../../componentes/ui/Seccion.jsx';
 import { usePeticion } from '../../hooks/usePeticion.js';
 import { formatearFecha } from '../../utilidades/formato.js';
 import Conteos from './componentes/Conteos.jsx';
-import DatosPendientes from './componentes/DatosPendientes.jsx';
 import estilosGestion from '../../estilos/gestion.module.css';
 import estilos from './PaginaReporteDesempeno.module.css';
 
@@ -310,9 +309,6 @@ export default function PaginaReporteDesempeno() {
         <div className={estilos.panel}>
           <div className={estilos.panelCabecera}>
             <div className={estilos.cabeceraTituloWrapper}>
-              <div className={estilos.iconoBadge}>
-                <Filter size={18} />
-              </div>
               <h2 className={estilos.panelTitulo}>Filtros de Búsqueda y Rango</h2>
             </div>
 
@@ -358,11 +354,7 @@ export default function PaginaReporteDesempeno() {
                   <div className={estilos.selectWrapper}>
                     <select
                       id="filtro-desarrollador"
-                      className={
-                        desarrolladorSeleccionado
-                          ? estilos.selectResaltadoVerde
-                          : estilos.selectBase
-                      }
+                      className={estilos.selectBase}
                       value={desarrolladorSeleccionado}
                       onChange={(e) => {
                         const nombre = e.target.value;
@@ -394,11 +386,7 @@ export default function PaginaReporteDesempeno() {
                   <div className={estilos.selectWrapper}>
                     <select
                       id="filtro-proyecto"
-                      className={
-                        proyectoSeleccionado
-                          ? estilos.selectResaltadoVerde
-                          : estilos.selectBase
-                      }
+                      className={estilos.selectBase}
                       value={proyectoSeleccionado}
                       onChange={(e) => setProyectoSeleccionado(e.target.value)}
                     >
@@ -451,18 +439,6 @@ export default function PaginaReporteDesempeno() {
                   />
                 </div>
               </div>
-
-              {/* Botón de Generar Reporte */}
-              <div className={estilos.col6} style={{ display: 'flex', alignItems: 'flex-end' }}>
-                <button
-                  type="submit"
-                  className={estilos.btnGenerarReporte}
-                  disabled={!desarrolladorSeleccionado || cargando}
-                >
-                  <Search size={16} className={estilos.btnGenerarReporteIcono} />
-                  <span>{cargando ? 'Consultando desempeño...' : 'Generar Reporte'}</span>
-                </button>
-              </div>
             </div>
           </form>
         </div>
@@ -477,9 +453,6 @@ export default function PaginaReporteDesempeno() {
           >
             <div>
               <div className={estilos.cabeceraTituloWrapper}>
-                <div className={estilos.iconoBadge}>
-                  <TableIcon size={18} />
-                </div>
                 <h3 className={estilos.panelTitulo}>
                   Desarrolladores por Proyecto y Fechas
                 </h3>
@@ -558,12 +531,9 @@ export default function PaginaReporteDesempeno() {
         {/* ============================================================ */}
         <div ref={reporteRef}>
           {criteriosReporte && (
-            <div className={estilos.panel} style={{ borderTop: '4px solid #10b981' }}>
+            <div className={estilos.panel}>
               <div className={estilos.panelCabecera}>
                 <div className={estilos.cabeceraTituloWrapper}>
-                  <div className={estilos.iconoBadge}>
-                    <ClipboardList size={18} />
-                  </div>
                   <div>
                     <h3 className={estilos.panelTitulo}>
                       Reporte de Desempeño y Actividades
@@ -670,8 +640,6 @@ export default function PaginaReporteDesempeno() {
                       ))}
                     </div>
                   )}
-
-                  <DatosPendientes pendientes={datos.datosPendientes} />
                 </div>
               )}
             </div>

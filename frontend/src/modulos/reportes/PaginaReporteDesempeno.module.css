@@ -185,8 +185,8 @@
 }
 
 .inputTexto:focus {
-  border-color: #10b981;
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
 .inputFecha {
@@ -203,11 +203,11 @@
 }
 
 .inputFecha:focus {
-  border-color: #10b981;
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
-/* Selectores con estilo normal y resaltado en verde de confirmación */
+/* Selectores con estilo normal y resaltado en azul */
 .selectWrapper {
   position: relative;
   width: 100%;
@@ -229,30 +229,30 @@
 }
 
 .selectBase:focus {
-  border-color: #10b981;
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
-/* Selector resaltado en verde cuando tiene valor seleccionado */
+/* Selector resaltado en azul cuando tiene valor seleccionado */
 .selectResaltadoVerde {
   width: 100%;
   appearance: none;
   padding: 0.65rem 2.25rem 0.65rem 0.85rem;
-  background-color: #f0fdf4;
-  border: 2px solid #10b981;
+  background-color: #eff6ff;
+  border: 2px solid #2563eb;
   border-radius: 0.625rem;
   font-size: 0.875rem;
   font-weight: 600;
-  color: #065f46;
+  color: #1e40af;
   outline: none;
   cursor: pointer;
   transition: all 0.2s ease;
   box-sizing: border-box;
-  box-shadow: 0 1px 3px rgba(16, 185, 129, 0.12);
+  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.12);
 }
 
 .selectResaltadoVerde:focus {
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
 }
 
 .selectFlecha {
@@ -337,16 +337,16 @@
 }
 
 .filaSeleccionada {
-  background-color: #ecfdf5 !important;
-  border-left: 4px solid #10b981 !important;
+  background-color: #eff6ff !important;
+  border-left: 4px solid #2563eb !important;
 }
 
 .filaSeleccionada td {
-  color: #065f46;
+  color: #1e40af;
 }
 
 .filaSeleccionada .colTrabajador {
-  color: #047857 !important;
+  color: #1d4ed8 !important;
   font-weight: 700;
 }
 

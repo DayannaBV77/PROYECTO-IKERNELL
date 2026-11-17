@@ -453,17 +453,6 @@ export default function PaginaConsultas() {
                   >
                     {estaExpandida ? 'Ocultar gestión' : 'Gestionar / Responder'}
                   </Boton>
-
-                  {estadoActual === 'PENDIENTE' && (
-                    <Boton
-                      variante="secundario"
-                      icono={RefreshCw}
-                      disabled={marcandoGestion[consulta.id]}
-                      onClick={() => alIniciarGestion(consulta)}
-                    >
-                      {marcandoGestion[consulta.id] ? 'Marcando...' : 'Iniciar gestión'}
-                    </Boton>
-                  )}
                 </div>
 
                 {/* Panel desplegable: Redacción integrada y trazabilidad del historial */}

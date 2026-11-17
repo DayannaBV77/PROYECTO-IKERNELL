@@ -591,14 +591,18 @@
 /* Acciones por fila: compactas, para que la tabla no crezca de alto. */
 .accionesFila {
   display: flex;
+  align-items: center;
   gap: var(--s-2);
+  white-space: nowrap;
 }
 
 .accionesFila button {
-  padding-block: var(--s-1);
+  padding: 4px var(--s-2) !important;
   text-transform: none !important;
   letter-spacing: normal;
   font-weight: var(--p-medio);
+  white-space: nowrap !important;
+  flex-shrink: 0;
 }
 
 /* La descripcion es el unico texto largo de la tabla; se deja fluir. */

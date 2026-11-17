@@ -623,7 +623,7 @@
   border: 1px solid var(--c-borde, #e2e8f0);
   border-radius: 16px;
   width: 100%;
-  max-width: 630px;
+  max-width: 680px;
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
@@ -727,7 +727,7 @@
 /* Grid de Tarjetas de Info */
 .modalGridInfo {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 0.75rem;
 }
 
@@ -735,10 +735,11 @@
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
-  padding: 0.75rem;
+  padding: 0.85rem 1rem;
   display: flex;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.75rem;
+  min-width: 0;
 }
 
 .modalCardIconoMorado,

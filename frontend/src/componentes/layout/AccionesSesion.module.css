@@ -1,16 +1,16 @@
 .sesion {
   display: flex;
   align-items: center;
-  gap: var(--s-3);
+  gap: var(--s-2);
 }
 
 /* Identifica la sesion sin robar ancho a la navegacion. */
 .identidad {
   display: flex;
   flex-direction: column;
-  line-height: 1.25;
-  min-width: 140px;
-  max-width: 260px;
+  line-height: 1.2;
+  min-width: 100px;
+  max-width: 160px;
 }
 
 .nombre {

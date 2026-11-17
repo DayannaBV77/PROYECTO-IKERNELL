@@ -7,8 +7,8 @@
 .botonSelector {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.35rem 0.75rem;
+  gap: 0.4rem;
+  padding: 0.3rem 0.55rem;
   font-size: 0.8125rem;
   font-weight: 500;
   color: var(--color-texto-principal, #1e293b);
@@ -17,7 +17,7 @@
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.15s ease-in-out;
-  max-width: 320px;
+  max-width: 210px;
 }
 
 .botonSelector:hover {
@@ -49,7 +49,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 180px;
+  max-width: 130px;
 }
 
 .etiquetaRol {
