@@ -345,37 +345,45 @@ export default function PaginaTutoriales() {
   );
   const { datos, cargando, error, reintentar } = usePeticion(cargarTutoriales, [esCoordinador]);
 
-  // Consolidar tutoriales de base de datos con los base
+  // Consolidar tutoriales de base de datos con los base evitando colisiones de ID
   const listaTutoriales = useMemo(() => {
     const backendItems = datos?.contenido || [];
-    if (backendItems.length === 0) return TUTORIALES_BASE;
-
     const mapa = new Map();
-    TUTORIALES_BASE.forEach((t) => mapa.set(t.titulo, t));
+
+    TUTORIALES_BASE.forEach((t) => {
+      mapa.set(t.titulo, {
+        ...t,
+        claveUnica: `base-${t.id}`,
+      });
+    });
+
     backendItems.forEach((item) => {
+      const previo = mapa.get(item.titulo);
       mapa.set(item.titulo, {
         id: item.id,
+        claveUnica: `backend-${item.id}`,
         titulo: item.titulo,
-        categoria: item.categoria || 'Database',
-        version: item.version || 'v1.0',
-        descripcion: item.descripcion,
-        contenido: item.contenido,
-        enlace: item.enlace,
+        categoria: item.categoria || previo?.categoria || 'General',
+        subcategoria: item.subcategoria || previo?.subcategoria || 'General',
+        version: item.version || previo?.version || 'v1.0',
+        descripcion: item.descripcion || previo?.descripcion || '',
+        contenido: item.contenido || previo?.contenido || '',
+        enlace: item.enlace || previo?.enlace || null,
       });
     });
 
     return Array.from(mapa.values());
   }, [datos]);
 
-  // Tutorial seleccionado actualmente (por defecto el de Migraciones Flyway)
-  const [tutorialSeleccionadoId, setTutorialSeleccionadoId] = useState(1);
+  // Tutorial seleccionado actualmente (clave única para identificar inequívocamente)
+  const [tutorialSeleccionadoClave, setTutorialSeleccionadoClave] = useState('base-1');
 
   const tutorialActivo = useMemo(() => {
     return (
-      listaTutoriales.find((t) => t.id === tutorialSeleccionadoId) ||
+      listaTutoriales.find((t) => t.claveUnica === tutorialSeleccionadoClave) ||
       listaTutoriales[0]
     );
-  }, [listaTutoriales, tutorialSeleccionadoId]);
+  }, [listaTutoriales, tutorialSeleccionadoClave]);
 
   // Agrupar tutoriales por categoría jerárquica
   const arbolCategorias = useMemo(() => {
@@ -455,15 +463,15 @@ export default function PaginaTutoriales() {
                   {estaAbierta && (
                     <div className={estilos.listaItemsCategoria}>
                       {items.map((t) => {
-                        const esActivo = t.id === tutorialActivo?.id;
+                        const esActivo = t.claveUnica === tutorialActivo?.claveUnica;
                         return (
                           <button
-                            key={t.id}
+                            key={t.claveUnica}
                             type="button"
                             className={`${estilos.itemTutorial} ${
                               esActivo ? estilos.itemTutorialActivo : ''
                             }`}
-                            onClick={() => setTutorialSeleccionadoId(t.id)}
+                            onClick={() => setTutorialSeleccionadoClave(t.claveUnica)}
                             title={t.titulo}
                           >
                             {t.titulo}
@@ -494,7 +502,7 @@ export default function PaginaTutoriales() {
               className={estilos.btnVolver}
               onClick={() => {
                 setFiltroTexto('');
-                setTutorialSeleccionadoId(listaTutoriales[0]?.id || 1);
+                setTutorialSeleccionadoClave(listaTutoriales[0]?.claveUnica || 'base-1');
               }}
             >
               ← Volver a los tutoriales

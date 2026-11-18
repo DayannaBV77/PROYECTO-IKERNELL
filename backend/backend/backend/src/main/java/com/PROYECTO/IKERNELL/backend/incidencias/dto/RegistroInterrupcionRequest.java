@@ -8,6 +8,7 @@ import com.PROYECTO.IKERNELL.backend.incidencias.domain.UnidadDuracion;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Size;
 
 /**
@@ -25,6 +26,7 @@ public record RegistroInterrupcionRequest(
 		String tipoInterrupcion,
 
 		@NotNull(message = "Debe indicar la fecha de la interrupcion.")
+		@PastOrPresent(message = "La fecha de la interrupcion no puede ser posterior a hoy.")
 		LocalDate fecha,
 
 		@NotNull(message = "Debe indicar la duracion de la interrupcion.")

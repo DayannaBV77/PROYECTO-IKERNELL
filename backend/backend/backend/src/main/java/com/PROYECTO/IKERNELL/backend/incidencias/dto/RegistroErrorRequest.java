@@ -4,6 +4,7 @@ import java.time.LocalDate;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Size;
 
 /**
@@ -30,5 +31,6 @@ public record RegistroErrorRequest(
 		@Size(max = 2000, message = "La descripcion admite hasta 2000 caracteres.")
 		String descripcion,
 
+		@PastOrPresent(message = "La fecha del error no puede ser posterior a hoy.")
 		LocalDate fecha) {
 }

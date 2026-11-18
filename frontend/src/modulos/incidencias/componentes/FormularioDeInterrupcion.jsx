@@ -169,6 +169,7 @@ export default function FormularioDeInterrupcion({
         etiqueta="Fecha"
         nombre="fecha"
         tipo="date"
+        max={hoyLocal()}
         obligatorio
         value={valores.fecha}
         onChange={alCambiar}
@@ -188,7 +189,7 @@ export default function FormularioDeInterrupcion({
           error={errores.duracionValor}
         />
         <Campo
-          etiqueta="Unidad"
+          etiqueta="horas o días"
           nombre="duracionUnidad"
           opciones={UNIDADES_DURACION}
           textoVacio={null}
@@ -261,6 +262,8 @@ function validar(valores) {
   }
   if (!valores.fecha) {
     errores.fecha = 'Debe indicar la fecha de la interrupcion.';
+  } else if (valores.fecha > hoyLocal()) {
+    errores.fecha = 'La fecha de la interrupción no puede ser posterior a hoy.';
   }
   if (valores.duracionValor === '') {
     errores.duracionValor = 'Debe indicar la duracion de la interrupcion.';

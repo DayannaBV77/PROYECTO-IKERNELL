@@ -109,6 +109,14 @@ function Avisos({ confirmado, fallo }) {
 
 const ERROR_VACIO = { proyectoId: '', tipoError: '', etapaId: '', descripcion: '', fecha: '' };
 
+/** Fecha local en formato ISO corto (YYYY-MM-DD) */
+function hoyLocal() {
+  const ahora = new Date();
+  const mes = String(ahora.getMonth() + 1).padStart(2, '0');
+  const dia = String(ahora.getDate()).padStart(2, '0');
+  return `${ahora.getFullYear()}-${mes}-${dia}`;
+}
+
 /**
  * Registro de un error (RF-023, HU-17).
  *
@@ -142,6 +150,8 @@ function FormularioDeError({ proyectos }) {
       const fechaNormalizada = new Date(`${fechaLimpia}T00:00:00`);
       if (Number.isNaN(fechaNormalizada.getTime())) {
         erroresLocales.fecha = 'La fecha del error no es válida.';
+      } else if (fechaLimpia > hoyLocal()) {
+        erroresLocales.fecha = 'La fecha del error no puede ser posterior a hoy.';
       }
     }
 
@@ -243,6 +253,7 @@ function FormularioDeError({ proyectos }) {
         etiqueta="Fecha"
         nombre="fecha"
         tipo="date"
+        max={hoyLocal()}
         value={valores.fecha}
         onChange={alCambiar}
         error={errores.fecha}

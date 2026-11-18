@@ -32,6 +32,7 @@ export default function Campo({
   pista,
   opciones,
   textoVacio = 'Seleccione una opcion',
+  className = '',
   ...resto
 }) {
   const idGenerado = useId();
@@ -69,7 +70,7 @@ export default function Campo({
         type={Control === 'input' ? tipo : undefined}
         className={`${estilos.control} ${area ? estilos.area : ''} ${
           opciones ? estilos.lista : ''
-        } ${error ? estilos.conError : ''} ${exito ? estilos.conExito : ''}`}
+        } ${tipo === 'number' ? estilos.sinSpinner : ''} ${error ? estilos.conError : ''} ${exito ? estilos.conExito : ''} ${className}`}
         aria-invalid={error ? 'true' : undefined}
         aria-describedby={descritoPor || undefined}
         aria-required={obligatorio || undefined}

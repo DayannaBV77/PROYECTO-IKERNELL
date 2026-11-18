@@ -1,0 +1,11 @@
+.formularioModal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+.filaPlanificacion {
+  padding-top: var(--s-4);
+  margin-top: var(--s-2);
+  border-top: 1px solid var(--c-borde);
+}

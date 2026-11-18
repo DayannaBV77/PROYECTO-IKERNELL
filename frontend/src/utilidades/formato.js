@@ -40,6 +40,16 @@ export function formatearFechaHora(iso) {
   }).format(fecha);
 }
 
+/**
+ * Formatea un identificador de estado o texto en formato Tipo Título (ej. "PENDIENTE" -> "Pendiente", "EN_PROCESO" -> "En proceso")
+ */
+export function formatearTipoTitulo(texto) {
+  if (!texto) return '—';
+  const normalizado = String(texto).replace(/_/g, ' ').trim().toLowerCase();
+  if (!normalizado) return '—';
+  return normalizado.charAt(0).toUpperCase() + normalizado.slice(1);
+}
+
 /** Una fecha ya en ISO: AAAA-MM-DD, que es lo que produce <input type="date">. */
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
 

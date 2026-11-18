@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ClipboardList, Plus, RotateCcw, Search } from 'lucide-react';
+import { ClipboardList, Plus, RotateCcw } from 'lucide-react';
 
 import { ETIQUETA_PRIORIDAD, buscarActividades } from '../../api/actividades.js';
 import EstadoCarga from '../../componentes/estados/EstadoCarga.jsx';
@@ -11,8 +11,10 @@ import Campo from '../../componentes/ui/Campo.jsx';
 import PaginacionTabla from '../../componentes/ui/PaginacionTabla.jsx';
 import Seccion from '../../componentes/ui/Seccion.jsx';
 import estilos from '../../estilos/gestion.module.css';
+import { useDebounce } from '../../hooks/useDebounce.js';
 import { usePeticion } from '../../hooks/usePeticion.js';
-import { formatearFecha } from '../../utilidades/formato.js';
+import { formatearFecha, formatearTipoTitulo } from '../../utilidades/formato.js';
+import ModalRegistroActividad from './ModalRegistroActividad.jsx';
 import {
   useContextoDeProyecto,
   useProyectosComoOpciones,
@@ -22,21 +24,25 @@ const SIN_CRITERIOS = { identificador: '', proyectoId: '', etapaId: '', desarrol
 
 export default function PaginaActividades() {
   const [borrador, setBorrador] = useState(SIN_CRITERIOS);
-  const [criterios, setCriterios] = useState(SIN_CRITERIOS);
   const [pagina, setPagina] = useState(0);
   const [tamano, setTamano] = useState(10);
+  const [modalRegistroAbierto, setModalRegistroAbierto] = useState(false);
 
   const { opcionesDeProyecto } = useProyectosComoOpciones();
   const { opcionesDeEtapa, opcionesDeDesarrollador } = useContextoDeProyecto(borrador.proyectoId);
 
+  // Filtrado en tiempo real con debounce
+  const criteriosEnTiempoReal = useDebounce(borrador, 250);
+
   const cargar = useCallback(
-    ({ senal }) => buscarActividades({ ...criterios, pagina, tamano }, { senal }),
-    [criterios, pagina, tamano],
+    ({ senal }) => buscarActividades({ ...criteriosEnTiempoReal, pagina, tamano }, { senal }),
+    [criteriosEnTiempoReal, pagina, tamano],
   );
-  const { datos, error, cargando, reintentar } = usePeticion(cargar, [criterios, pagina, tamano]);
+  const { datos, error, cargando, reintentar } = usePeticion(cargar, [criteriosEnTiempoReal, pagina, tamano]);
 
   function alCambiar(evento) {
     const { name, value } = evento.target;
+    setPagina(0);
     setBorrador((previos) =>
       name === 'proyectoId'
         ? { ...previos, proyectoId: value, etapaId: '', desarrolladorId: '' }
@@ -44,21 +50,18 @@ export default function PaginaActividades() {
     );
   }
 
-  function alBuscar(evento) {
-    evento.preventDefault();
-    setCriterios(borrador);
-    setPagina(0);
-  }
-
   function alLimpiar() {
-    setBorrador(SIN_CRITERIOS);
-    setCriterios(SIN_CRITERIOS);
     setPagina(0);
+    setBorrador(SIN_CRITERIOS);
   }
 
   function alCambiarTamano(nuevoTamano) {
     setTamano(nuevoTamano);
     setPagina(0);
+  }
+
+  function alRegistrarActividad() {
+    reintentar();
   }
 
   const resultados = datos?.contenido || [];
@@ -70,12 +73,18 @@ export default function PaginaActividades() {
       id="actividades"
     >
       <div className={estilos.barraSuperior}>
-        <Boton a="/app/actividades/nueva" icono={Plus}>
+        <Boton type="button" onClick={() => setModalRegistroAbierto(true)} icono={Plus}>
           Registrar actividad
         </Boton>
       </div>
 
-      <form className={estilos.buscador} onSubmit={alBuscar}>
+      <ModalRegistroActividad
+        abierto={modalRegistroAbierto}
+        alCerrar={() => setModalRegistroAbierto(false)}
+        alRegistrar={alRegistrarActividad}
+      />
+
+      <form className={estilos.buscador} onSubmit={(e) => e.preventDefault()}>
         <div className={estilos.criterios}>
           <Campo
             etiqueta="Identificador"
@@ -102,7 +111,6 @@ export default function PaginaActividades() {
             value={borrador.etapaId}
             onChange={alCambiar}
             disabled={!borrador.proyectoId}
-            pista={borrador.proyectoId ? undefined : 'Elija primero un proyecto'}
           />
           <Campo
             etiqueta="Desarrollador asignado"
@@ -112,14 +120,10 @@ export default function PaginaActividades() {
             value={borrador.desarrolladorId}
             onChange={alCambiar}
             disabled={!borrador.proyectoId}
-            pista={borrador.proyectoId ? undefined : 'Elija primero un proyecto'}
           />
         </div>
 
         <div className={estilos.accionesBuscador}>
-          <Boton type="submit" icono={Search} disabled={cargando}>
-            Buscar
-          </Boton>
           <Boton type="button" variante="secundario" icono={RotateCcw} onClick={alLimpiar} disabled={cargando}>
             Limpiar filtros
           </Boton>
@@ -163,7 +167,7 @@ export default function PaginaActividades() {
                   <th scope="col">Proyecto</th>
                   <th scope="col">Etapa</th>
                   <th scope="col">Desarrollador</th>
-                  <th scope="col">Prioridad</th>
+                  <th scope="col" className={estilos.celdaCentrada}>Prioridad</th>
                   <th scope="col">Dia</th>
                   <th scope="col">Estado</th>
                   <th scope="col">
@@ -183,10 +187,10 @@ export default function PaginaActividades() {
                     <td>{actividad.desarrolladorNombreCompleto}</td>
                     {/* Prioridad y dia los anade RF-038; pueden faltar en las
                         actividades registradas antes de que existieran. */}
-                    <td>{ETIQUETA_PRIORIDAD[actividad.prioridad] || '—'}</td>
+                    <td className={estilos.celdaCentrada}>{ETIQUETA_PRIORIDAD[actividad.prioridad] || '—'}</td>
                     <td>{formatearFecha(actividad.fechaPlanificada) || '—'}</td>
-                    {/* Los estados posibles los define la empresa (D-04). */}
-                    <td>{actividad.estado || '—'}</td>
+                    {/* Los estados posibles formateados tipo título (ej: "Pendiente", "Finalizada") */}
+                    <td>{formatearTipoTitulo(actividad.estado)}</td>
                     <td>
                       <Link className={estilos.abrir} to={`/app/actividades/${actividad.id}`}>
                         <span>Ver detalle</span>

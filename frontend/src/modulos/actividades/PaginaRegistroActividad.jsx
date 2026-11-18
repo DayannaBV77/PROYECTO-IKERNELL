@@ -196,7 +196,6 @@ export default function PaginaRegistroActividad() {
             onChange={alCambiar}
             error={errores.etapaId}
             disabled={!valores.proyectoId}
-            pista={valores.proyectoId ? undefined : 'Elija primero un proyecto.'}
           />
           <Campo
             etiqueta="Desarrollador"
@@ -207,11 +206,6 @@ export default function PaginaRegistroActividad() {
             onChange={alCambiar}
             error={errores.desarrolladorId}
             disabled={!valores.proyectoId}
-            pista={
-              valores.proyectoId
-                ? 'Se ofrecen los desarrolladores del equipo del proyecto.'
-                : 'Elija primero un proyecto.'
-            }
           />
         </div>
 
@@ -229,7 +223,7 @@ export default function PaginaRegistroActividad() {
         {/* Prioridad y dia: los pide RF-038 para el panel «Mi Dia» del
             desarrollador. No son obligatorios, porque RF-019 no los exige al
             registrar; sin ellos la actividad no aparece en el panel del dia. */}
-        <div className={estilos.criterios}>
+        <div className={estilos.criterios} style={{ paddingTop: 'var(--s-4)', marginTop: 'var(--s-2)', borderTop: '1px solid var(--c-borde)' }}>
           <Campo
             etiqueta="Prioridad"
             nombre="prioridad"
@@ -237,7 +231,6 @@ export default function PaginaRegistroActividad() {
             value={valores.prioridad}
             onChange={alCambiar}
             error={errores.prioridad}
-            pista="Opcional. Ordena las actividades en el panel del desarrollador."
           />
           <Campo
             etiqueta="Dia planificado"
@@ -246,7 +239,6 @@ export default function PaginaRegistroActividad() {
             value={valores.fechaPlanificada}
             onChange={alCambiar}
             error={errores.fechaPlanificada}
-            pista="Opcional. Es el dia en que la actividad aparece en el panel."
           />
         </div>
 

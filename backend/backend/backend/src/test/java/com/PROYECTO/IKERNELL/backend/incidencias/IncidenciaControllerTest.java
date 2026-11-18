@@ -417,6 +417,43 @@ class IncidenciaControllerTest {
 	}
 
 	@Test
+	@DisplayName("RNF-003: rechaza error con fecha futura")
+	void rechazaErrorConFechaFutura() throws Exception {
+		mockMvc.perform(post("/api/proyectos/" + proyecto.getId() + "/errores")
+				.with(authentication(desarrollador)).with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{
+							"tipoError": "Error de lógica / Algoritmo",
+							"etapaId": %d,
+							"descripcion": "Descripción válida con más de 5 caracteres",
+							"fecha": "%s"
+						}
+						""".formatted(etapaPruebas.getId(), LocalDate.now().plusDays(1))))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.campos.fecha").value("La fecha del error no puede ser posterior a hoy."));
+	}
+
+	@Test
+	@DisplayName("RNF-003: rechaza interrupcion con fecha futura")
+	void rechazaInterrupcionConFechaFutura() throws Exception {
+		mockMvc.perform(post("/api/proyectos/" + proyecto.getId() + "/interrupciones")
+				.with(authentication(desarrollador)).with(csrf())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("""
+						{
+							"tipoInterrupcion": "Corte de fluido eléctrico",
+							"etapaId": %d,
+							"duracionValor": 2.5,
+							"duracionUnidad": "HORAS",
+							"fecha": "%s"
+						}
+						""".formatted(etapaPruebas.getId(), LocalDate.now().plusDays(1))))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.campos.fecha").value("La fecha de la interrupcion no puede ser posterior a hoy."));
+	}
+
+	@Test
 	@DisplayName("open-in-view=false: errores e interrupciones llegan con proyecto y etapa cargados")
 	void lasIncidenciasLleganConSusRelacionesCargadas() throws Exception {
 		Trabajador dev = trabajadores.findByIdentificacion("9200000002").orElseThrow();

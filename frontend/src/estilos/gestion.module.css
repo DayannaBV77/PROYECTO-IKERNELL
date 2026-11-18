@@ -317,6 +317,10 @@
   color: var(--c-marino-titulo);
 }
 
+.celdaCentrada {
+  text-align: center;
+}
+
 .abrir {
   display: inline-flex;
   align-items: center;

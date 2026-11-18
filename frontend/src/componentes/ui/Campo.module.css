@@ -102,6 +102,20 @@
 }
 
 /*
+ * Elimina spinners numéricos nativos en navegadores WebKit/Blink y Firefox
+ */
+.sinSpinner::-webkit-outer-spin-button,
+.sinSpinner::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.sinSpinner {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/*
  * El <select> nativo con estilo premium y flecha dinámica
  */
 .lista {
