@@ -2,29 +2,26 @@ import { useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
   BarChart3,
-  FileDown,
-  FileText,
-  Inbox,
+  Bell,
   Bug,
-  Link2,
   ClipboardCheck,
   ClipboardList,
   ExternalLink,
+  FileDown,
+  FileText,
   FolderKanban,
   GraduationCap,
+  Inbox,
   Library,
+  Link2,
   Mail,
   MessagesSquare,
   Users,
 } from 'lucide-react';
 
-import { ETIQUETA_SERVICIO, ETIQUETA_TIPO } from '../../api/autenticacion.js';
+import { ETIQUETA_SERVICIO } from '../../api/autenticacion.js';
 import { obtenerAccesoCorreo } from '../../api/corporativo.js';
-import Boton from '../../componentes/ui/Boton.jsx';
-import Seccion, { Rejilla } from '../../componentes/ui/Seccion.jsx';
-import Tarjeta from '../../componentes/ui/Tarjeta.jsx';
 import { usePeticion } from '../../hooks/usePeticion.js';
-import { iniciales } from '../../utilidades/formato.js';
 import { useSesion } from '../../sesion/contexto.js';
 import PaginaMiDia from './PaginaMiDia.jsx';
 import estilos from './PaginaPanel.module.css';
@@ -176,56 +173,8 @@ export default function PaginaPanel() {
   );
   const tieneProyectos = Array.isArray(misProyectos) && misProyectos.length > 0;
 
-  if (esCoordinador) {
-    return (
-      <main className={estilos.contenedorPanel}>
-        <div className={estilos.cabeceraPrincipal}>
-          <h1 className={estilos.tituloPrincipal}>Nuestros Servicios</h1>
-          <p className={estilos.subtituloPrincipal}>Encuentra todo lo que necesitas en un solo lugar</p>
-        </div>
-
-        <section className={estilos.bloqueSeccion} aria-label="Servicios Internos">
-          <div className={estilos.pildoraLinea}>
-            <span className={estilos.pildoraTitulo}>Servicios Internos</span>
-          </div>
-
-          <div className={estilos.rejillaTarjetas}>
-            {servicios.map((clave) => (
-              <TarjetaServicioUnificada
-                key={clave}
-                clave={clave}
-                titulo={ETIQUETA_SERVICIO[clave] || clave}
-                correo={correo}
-              />
-            ))}
-          </div>
-        </section>
-
-        {gestion.length > 0 && (
-          <section className={estilos.bloqueSeccion} aria-label="Gestión">
-            <div className={estilos.pildoraLinea}>
-              <span className={estilos.pildoraTitulo}>Gestión</span>
-            </div>
-
-            <div className={estilos.rejillaTarjetas}>
-              {gestion.map(({ a, icono: Icono, titulo, detalle }) => (
-                <Link key={a} to={a} className={estilos.tarjetaUnificada}>
-                  <div className={estilos.iconoTarjeta}>
-                    <Icono size={28} strokeWidth={1.7} aria-hidden="true" />
-                  </div>
-                  <h3 className={estilos.tituloTarjeta}>{titulo}</h3>
-                  <p className={estilos.detalleTarjeta}>{detalle}</p>
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
-      </main>
-    );
-  }
-
   return (
-    <>
+    <main className={estilos.contenedorPanel}>
       {!tieneProyectos && !esCoordinador && (
         <section className={estilos.bloqueSeccion} style={{ marginBottom: '1.5rem' }}>
           <div style={{
@@ -242,42 +191,84 @@ export default function PaginaPanel() {
         </section>
       )}
 
-      {TIPOS_CON_PANEL_DEL_DIA.includes(rolEfectivo) && <PaginaMiDia />}
-
-      {gestion.length > 0 && (
-        <Seccion
-          titulo="Gestion"
-          descripcion="Funciones que corresponden a su tipo de trabajador."
-          id="gestion"
-        >
-          <Rejilla columnas={2}>
-            {gestion.map(({ a, icono, titulo, detalle }) => (
-              <Tarjeta key={a} como={Link} to={a} interactiva icono={icono} titulo={titulo}>
-                {detalle}
-              </Tarjeta>
-            ))}
-          </Rejilla>
-        </Seccion>
+      {/* Panel del día para roles operativos */}
+      {TIPOS_CON_PANEL_DEL_DIA.includes(rolEfectivo) && (
+        <section style={{ marginBottom: '2rem' }}>
+          <PaginaMiDia />
+        </section>
       )}
 
-      <Seccion
-        titulo="Servicios internos"
-        descripcion="Servicios disponibles para cualquier trabajador con la sesion iniciada."
-        fondo="tenue"
-        id="servicios-internos"
-      >
-        <Rejilla columnas={2}>
+      <div className={estilos.cabeceraPrincipal}>
+        <h1 className={estilos.tituloPrincipal}>Espacio de Trabajo</h1>
+        <p className={estilos.subtituloPrincipal}>Notificaciones, herramientas de gestión y servicios corporativos</p>
+      </div>
+
+      {/* 1. Notificaciones y Comunicación */}
+      <section className={estilos.bloqueSeccion} aria-label="Notificaciones">
+        <div className={estilos.pildoraLinea}>
+          <span className={estilos.pildoraTitulo}>Notificaciones y Comunicación</span>
+        </div>
+        <div className={estilos.rejillaTarjetas}>
+          <Link to="/app/chat" className={estilos.tarjetaUnificada}>
+            <div className={estilos.iconoTarjeta}>
+              <MessagesSquare size={28} strokeWidth={1.7} aria-hidden="true" />
+            </div>
+            <h3 className={estilos.tituloTarjeta}>Conversaciones del Equipo</h3>
+            <p className={estilos.detalleTarjeta}>
+              Canales de discusión, consultas de etapas y mensajería en tiempo real de los proyectos.
+            </p>
+          </Link>
+          {esCoordinador && (
+            <Link to="/app/consultas" className={estilos.tarjetaUnificada}>
+              <div className={estilos.iconoTarjeta}>
+                <Inbox size={28} strokeWidth={1.7} aria-hidden="true" />
+              </div>
+              <h3 className={estilos.tituloTarjeta}>Consultas Recibidas</h3>
+              <p className={estilos.detalleTarjeta}>
+                Preguntas y mensajes ciudadanos recibidos a través del portal público pendientes de respuesta.
+              </p>
+            </Link>
+          )}
+        </div>
+      </section>
+
+      {/* 2. Herramientas de Gestión */}
+      {gestion.length > 0 && (
+        <section className={estilos.bloqueSeccion} aria-label="Gestión">
+          <div className={estilos.pildoraLinea}>
+            <span className={estilos.pildoraTitulo}>Gestión</span>
+          </div>
+          <div className={estilos.rejillaTarjetas}>
+            {gestion.map(({ a, icono: Icono, titulo, detalle }) => (
+              <Link key={a} to={a} className={estilos.tarjetaUnificada}>
+                <div className={estilos.iconoTarjeta}>
+                  <Icono size={28} strokeWidth={1.7} aria-hidden="true" />
+                </div>
+                <h3 className={estilos.tituloTarjeta}>{titulo}</h3>
+                <p className={estilos.detalleTarjeta}>{detalle}</p>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* 3. Servicios Internos */}
+      <section className={estilos.bloqueSeccion} aria-label="Servicios Internos">
+        <div className={estilos.pildoraLinea}>
+          <span className={estilos.pildoraTitulo}>Servicios Internos</span>
+        </div>
+        <div className={estilos.rejillaTarjetas}>
           {servicios.map((clave) => (
-            <TarjetaServicio
+            <TarjetaServicioUnificada
               key={clave}
               clave={clave}
               titulo={ETIQUETA_SERVICIO[clave] || clave}
               correo={correo}
             />
           ))}
-        </Rejilla>
-      </Seccion>
-    </>
+        </div>
+      </section>
+    </main>
   );
 }
 

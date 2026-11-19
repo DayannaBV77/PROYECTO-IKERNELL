@@ -14,6 +14,7 @@ import EstadoError from '../../componentes/estados/EstadoError.jsx';
 import EstadoVacio from '../../componentes/estados/EstadoVacio.jsx';
 import Boton from '../../componentes/ui/Boton.jsx';
 import Campo from '../../componentes/ui/Campo.jsx';
+import Dialogo from '../../componentes/ui/Dialogo.jsx';
 import Seccion from '../../componentes/ui/Seccion.jsx';
 import estilos from '../../estilos/gestion.module.css';
 import { usePeticion } from '../../hooks/usePeticion.js';
@@ -60,16 +61,17 @@ export default function PaginaContenidoAdmin() {
   const piezas = datos?.contenido || [];
 
   function abrir(pieza) {
+    const hoy = new Date().toISOString().split('T')[0];
     setEdicion(
       pieza
         ? {
             ...pieza,
             cuerpo: pieza.cuerpo || '',
             enlace: pieza.enlace || '',
-            fecha: pieza.fecha || '',
+            fecha: pieza.fecha || hoy,
             orden: pieza.orden ?? '',
           }
-        : PIEZA_VACIA,
+        : { ...PIEZA_VACIA, fecha: hoy },
     );
     setErrores({});
     setFallo(null);
@@ -84,9 +86,22 @@ export default function PaginaContenidoAdmin() {
 
   async function alGuardar(evento) {
     evento.preventDefault();
-    setGuardando(true);
     setFallo(null);
     setErrores({});
+
+    if (!edicion.titulo || !edicion.titulo.trim()) {
+      setErrores((prev) => ({ ...prev, titulo: 'Debe indicar el título.' }));
+      setFallo('El título es obligatorio.');
+      return;
+    }
+
+    if (!edicion.fecha || !edicion.fecha.trim()) {
+      setErrores((prev) => ({ ...prev, fecha: 'Debe indicar la fecha.' }));
+      setFallo('La fecha es obligatoria.');
+      return;
+    }
+
+    setGuardando(true);
 
     const esNueva = !edicion.id;
     try {
@@ -238,91 +253,100 @@ export default function PaginaContenidoAdmin() {
         </div>
       )}
 
-      {edicion ? (
-        <form className={estilos.formularioEtapa} onSubmit={alGuardar} noValidate>
-          <p className={estilos.rotulo}>
-            {edicion.id ? 'Modificar la pieza' : 'Nueva pieza de contenido'}
-          </p>
+      <div className={estilos.accionesBuscador} style={{ marginTop: '1.5rem' }}>
+        <Boton icono={Plus} onClick={() => abrir(null)}>
+          Añadir contenido a esta sección
+        </Boton>
+      </div>
 
-          <div className={estilos.criterios}>
-            <Campo
-              etiqueta="Titulo"
-              nombre="titulo"
-              obligatorio
-              value={edicion.titulo}
-              onChange={alCambiar}
-              error={errores.titulo}
-            />
-            <Campo
-              etiqueta="Orden"
-              nombre="orden"
-              tipo="number"
-              min="1"
-              value={edicion.orden}
-              onChange={alCambiar}
-              error={errores.orden}
-              pista="Opcional. Posicion dentro de la seccion."
-            />
-          </div>
+      <Dialogo
+        abierto={Boolean(edicion)}
+        alCerrar={guardando ? undefined : () => setEdicion(null)}
+        titulo={edicion?.id ? 'Modificar pieza de contenido' : 'Añadir contenido a esta sección'}
+        descripcion={`Sección activa: ${SECCIONES.find((s) => s.valor === tipo)?.texto || tipo}`}
+      >
+        {edicion && (
+          <form onSubmit={alGuardar} noValidate style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '0.5rem' }}>
+            {fallo && (
+              <p className={estilos.avisoError} role="alert" style={{ margin: 0 }}>
+                <TriangleAlert size={18} aria-hidden="true" />
+                {fallo}
+              </p>
+            )}
 
-          <Campo
-            etiqueta="Cuerpo"
-            nombre="cuerpo"
-            area
-            rows={6}
-            value={edicion.cuerpo}
-            onChange={alCambiar}
-            error={errores.cuerpo}
-            pista={
-              tipo === 'PREGUNTA_FRECUENTE'
-                ? 'Aqui va la respuesta a la pregunta.'
-                : 'Hasta 2000 caracteres.'
-            }
-          />
+            <div className={estilos.criterios}>
+              <Campo
+                etiqueta="Título"
+                nombre="titulo"
+                obligatorio
+                value={edicion.titulo}
+                onChange={alCambiar}
+                error={errores.titulo}
+              />
+              <Campo
+                etiqueta="Orden"
+                nombre="orden"
+                tipo="number"
+                min="1"
+                value={edicion.orden}
+                onChange={alCambiar}
+                error={errores.orden}
+              />
+            </div>
 
-          <div className={estilos.criterios}>
             <Campo
-              etiqueta="Enlace"
-              nombre="enlace"
-              tipo="url"
-              value={edicion.enlace}
+              etiqueta="Cuerpo"
+              nombre="cuerpo"
+              area
+              rows={5}
+              value={edicion.cuerpo}
               onChange={alCambiar}
-              error={errores.enlace}
-              pista={tipo === 'ENLACE_INTERES' ? 'Obligatorio en esta seccion.' : 'Opcional.'}
+              error={errores.cuerpo}
+              pista={
+                tipo === 'PREGUNTA_FRECUENTE'
+                  ? 'Aquí va la respuesta a la pregunta.'
+                  : 'Hasta 2000 caracteres.'
+              }
             />
-            <Campo
-              etiqueta="Fecha"
-              nombre="fecha"
-              tipo="date"
-              value={edicion.fecha}
-              onChange={alCambiar}
-              error={errores.fecha}
-              pista={tipo === 'NOTICIA' ? 'Fecha de la noticia.' : 'Opcional.'}
-            />
-          </div>
 
-          <div className={estilos.accionesBuscador}>
-            <Boton type="submit" icono={Save} disabled={guardando}>
-              {guardando ? 'Guardando...' : 'Guardar'}
-            </Boton>
-            <Boton
-              type="button"
-              variante="texto"
-              icono={X}
-              onClick={() => setEdicion(null)}
-              disabled={guardando}
-            >
-              Cancelar
-            </Boton>
-          </div>
-        </form>
-      ) : (
-        <div className={estilos.accionesBuscador}>
-          <Boton icono={Plus} onClick={() => abrir(null)}>
-            Anadir contenido a esta seccion
-          </Boton>
-        </div>
-      )}
+            <div className={estilos.criterios}>
+              <Campo
+                etiqueta="Enlace"
+                nombre="enlace"
+                tipo="url"
+                value={edicion.enlace}
+                onChange={alCambiar}
+                error={errores.enlace}
+                pista={tipo === 'ENLACE_INTERES' ? 'Obligatorio en esta sección.' : 'Opcional.'}
+              />
+              <Campo
+                etiqueta="Fecha"
+                nombre="fecha"
+                tipo="date"
+                obligatorio
+                value={edicion.fecha}
+                onChange={alCambiar}
+                error={errores.fecha}
+              />
+            </div>
+
+            <div className={estilos.accionesBuscador} style={{ marginTop: '0.5rem' }}>
+              <Boton type="submit" icono={Save} disabled={guardando}>
+                {guardando ? 'Guardando...' : 'Guardar'}
+              </Boton>
+              <Boton
+                type="button"
+                variante="texto"
+                icono={X}
+                onClick={() => setEdicion(null)}
+                disabled={guardando}
+              >
+                Cancelar
+              </Boton>
+            </div>
+          </form>
+        )}
+      </Dialogo>
     </Seccion>
   );
 }

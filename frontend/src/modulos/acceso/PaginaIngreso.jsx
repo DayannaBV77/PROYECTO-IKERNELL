@@ -35,7 +35,8 @@ export default function PaginaIngreso() {
   const [mostrarPassword, setMostrarPassword] = useState(false);
   const notificador = useNotificador();
 
-  const destino = ubicacion.state?.destino || '/app';
+  // Al iniciar sesion, dirigir siempre al Panel principal (/app) para limpiar rutas residuales de sesiones previas
+  const destino = '/app';
 
   function alCambiar(evento) {
     const { name, value } = evento.target;

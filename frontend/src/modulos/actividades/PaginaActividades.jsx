@@ -15,6 +15,7 @@ import { useDebounce } from '../../hooks/useDebounce.js';
 import { usePeticion } from '../../hooks/usePeticion.js';
 import { formatearFecha, formatearTipoTitulo } from '../../utilidades/formato.js';
 import ModalRegistroActividad from './ModalRegistroActividad.jsx';
+import ModalDetalleActividad from './ModalDetalleActividad.jsx';
 import {
   useContextoDeProyecto,
   useProyectosComoOpciones,
@@ -27,6 +28,8 @@ export default function PaginaActividades() {
   const [pagina, setPagina] = useState(0);
   const [tamano, setTamano] = useState(10);
   const [modalRegistroAbierto, setModalRegistroAbierto] = useState(false);
+  const [actividadDetalleId, setActividadDetalleId] = useState(null);
+  const [recarga, setRecarga] = useState(0);
 
   const { opcionesDeProyecto } = useProyectosComoOpciones();
   const { opcionesDeEtapa, opcionesDeDesarrollador } = useContextoDeProyecto(borrador.proyectoId);
@@ -38,7 +41,7 @@ export default function PaginaActividades() {
     ({ senal }) => buscarActividades({ ...criteriosEnTiempoReal, pagina, tamano }, { senal }),
     [criteriosEnTiempoReal, pagina, tamano],
   );
-  const { datos, error, cargando, reintentar } = usePeticion(cargar, [criteriosEnTiempoReal, pagina, tamano]);
+  const { datos, error, cargando, reintentar } = usePeticion(cargar, [criteriosEnTiempoReal, pagina, tamano, recarga]);
 
   function alCambiar(evento) {
     const { name, value } = evento.target;
@@ -82,6 +85,13 @@ export default function PaginaActividades() {
         abierto={modalRegistroAbierto}
         alCerrar={() => setModalRegistroAbierto(false)}
         alRegistrar={alRegistrarActividad}
+      />
+
+      <ModalDetalleActividad
+        actividadId={actividadDetalleId}
+        abierto={Boolean(actividadDetalleId)}
+        alCerrar={() => setActividadDetalleId(null)}
+        alGuardar={() => setRecarga((n) => n + 1)}
       />
 
       <form className={estilos.buscador} onSubmit={(e) => e.preventDefault()}>
@@ -192,10 +202,15 @@ export default function PaginaActividades() {
                     {/* Los estados posibles formateados tipo título (ej: "Pendiente", "Finalizada") */}
                     <td>{formatearTipoTitulo(actividad.estado)}</td>
                     <td>
-                      <Link className={estilos.abrir} to={`/app/actividades/${actividad.id}`}>
+                      <button
+                        type="button"
+                        className={estilos.abrir}
+                        onClick={() => setActividadDetalleId(actividad.id)}
+                        style={{ background: 'transparent', border: 'none', cursor: 'pointer', font: 'inherit', padding: 0 }}
+                      >
                         <span>Ver detalle</span>
                         <span className="solo-lectores"> la actividad {actividad.id}</span>
-                      </Link>
+                      </button>
                     </td>
                   </tr>
                 ))}

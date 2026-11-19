@@ -77,17 +77,18 @@ public class FormateadorPdf implements FormateadorReporteExterno {
 				flujo.lineTo(802, 522);
 				flujo.stroke();
 
-				// Cabecera de columnas con fondo/espaciado proporcional
+				// Cabecera de columnas con fondo/espaciado proporcional sin superposición
 				float y = 505f;
 				float inicioX = 40f;
-				float anchoCol = 54f; // 14 columnas x 54 = ~756px
-
+				float anchoDisponible = 762f;
 				String[] cabeceraActual = cabecera.toArray(String[]::new);
+				float anchoCol = anchoDisponible / Math.max(1, cabeceraActual.length);
+
 				for (int indice = 0; indice < cabeceraActual.length; indice++) {
 					String texto = cabeceraActual[indice];
 					// Formatear nombre de columna más legible si contiene guiones bajos
 					String tituloCol = texto.replace('_', ' ');
-					agregarTexto(flujo, inicioX + (indice * anchoCol), y, tituloCol, 7, true, fuenteTitulo, fuenteNormal);
+					agregarTexto(flujo, inicioX + (indice * anchoCol), y, tituloCol, 7, true, fuenteTitulo, fuenteNormal, anchoCol - 4f);
 				}
 
 				y -= 18;
@@ -96,7 +97,7 @@ public class FormateadorPdf implements FormateadorReporteExterno {
 					String[] valores = fila.toArray(String[]::new);
 					for (int indice = 0; indice < valores.length && indice < cabeceraActual.length; indice++) {
 						String texto = valores[indice] == null ? "" : valores[indice];
-						agregarTexto(flujo, inicioX + (indice * anchoCol), y, texto, 7, false, fuenteTitulo, fuenteNormal);
+						agregarTexto(flujo, inicioX + (indice * anchoCol), y, texto, 7, false, fuenteTitulo, fuenteNormal, anchoCol - 4f);
 					}
 					y -= 14;
 					if (y < 40) {
@@ -123,13 +124,14 @@ public class FormateadorPdf implements FormateadorReporteExterno {
 	}
 
 	private void agregarTexto(PDPageContentStream flujo, float x, float y, String texto, int tamano,
-			boolean negrita, PDType1Font fuenteTitulo, PDType1Font fuenteNormal) throws IOException {
+			boolean negrita, PDType1Font fuenteTitulo, PDType1Font fuenteNormal, float anchoMaximo) throws IOException {
 		flujo.beginText();
 		flujo.setFont(negrita ? fuenteTitulo : fuenteNormal, tamano);
 		flujo.newLineAtOffset(x, y);
-		String valor = texto == null ? "" : texto.replace("\n", " ").replace("\r", " ");
-		if (valor.length() > 60) {
-			valor = valor.substring(0, 57) + "...";
+		String valor = texto == null ? "" : texto.replace("\n", " ").replace("\r", " ").trim();
+		int maxCaracteres = Math.max(6, (int) (anchoMaximo / (tamano * 0.55f)));
+		if (valor.length() > maxCaracteres) {
+			valor = valor.substring(0, Math.max(3, maxCaracteres - 2)) + "..";
 		}
 		flujo.showText(valor);
 		flujo.endText();

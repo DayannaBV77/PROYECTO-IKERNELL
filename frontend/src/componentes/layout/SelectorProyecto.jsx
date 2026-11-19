@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Check, ChevronDown, FolderKanban } from 'lucide-react';
 
 import { useNotificador } from '../ui/Notificador.jsx';
@@ -23,6 +24,7 @@ export default function SelectorProyecto() {
   const [cambiando, setCambiando] = useState(false);
   const contenedorRef = useRef(null);
   const notificador = useNotificador();
+  const navigate = useNavigate();
 
   // Cerrar menú al hacer click fuera
   useEffect(() => {
@@ -40,6 +42,8 @@ export default function SelectorProyecto() {
   if (!sesion) {
     return null;
   }
+
+  const esCoordinador = sesion.tipoTrabajador === 'COORDINADOR';
 
   // Generar opciones: cada par (proyecto, rol)
   const opciones = [];
@@ -60,10 +64,16 @@ export default function SelectorProyecto() {
   }
 
   const tieneProyectos = opciones.length > 0;
+
+  // Para el rol Coordinador sin asignaciones a proyectos específicos, se oculta el selector ("Sin asignaciones")
+  if (esCoordinador && !tieneProyectos) {
+    return null;
+  }
+
   const nombreActivo = sesion.proyectoActivoNombre || (tieneProyectos ? 'Seleccionar proyecto' : 'Sin asignaciones');
   const rolActivoTexto = sesion.rolActivo
     ? ETIQUETA_ROL[sesion.rolActivo] || sesion.rolActivo
-    : sesion.tipoTrabajador === 'COORDINADOR'
+    : esCoordinador
       ? 'Coordinador'
       : 'Sin rol activo';
 
@@ -80,6 +90,8 @@ export default function SelectorProyecto() {
         'Contexto actualizado',
       );
       setDesplegado(false);
+      // Reiniciar vista al Panel principal correspondiente al nuevo rol
+      navigate('/app', { replace: true });
     } catch (error) {
       notificador.error(error.message || 'No se pudo cambiar el contexto del proyecto.', 'Error');
     } finally {

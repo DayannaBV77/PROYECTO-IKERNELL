@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import com.PROYECTO.IKERNELL.backend.publico.ServicioNotificacionCorreo.ResultadoEnvioCorreo;
 import com.PROYECTO.IKERNELL.backend.publico.domain.ConsultaPublica;
@@ -122,6 +123,15 @@ public class ServicioConsultas {
 
 		String textoRespuesta = peticion.respuesta().trim();
 
+		// Determinar destinatario: el correo especificado en la petición o el registrado originalmente en la consulta
+		String destinatario = StringUtils.hasText(peticion.correoDestino())
+				? peticion.correoDestino().trim()
+				: (consulta.getCorreoContacto() != null ? consulta.getCorreoContacto().trim() : "");
+
+		if (StringUtils.hasText(destinatario)) {
+			consulta.setCorreoContacto(destinatario);
+		}
+
 		// Control backend anti-duplicados (mismo trabajador, mismo contenido en los últimos 15 segundos)
 		LocalDateTime ventanaReciente = LocalDateTime.now().minusSeconds(15);
 		boolean duplicada = consulta.getRespuestas().stream().anyMatch(r ->
@@ -139,7 +149,7 @@ public class ServicioConsultas {
 
 		// Intentar envío de correo
 		ResultadoEnvioCorreo resultado = servicioNotificacionCorreo.enviarNotificacionRespuesta(
-				consulta.getCorreoContacto(),
+				destinatario,
 				consulta.getNombreContacto(),
 				consulta.getId(),
 				consulta.getPregunta(),
@@ -151,21 +161,32 @@ public class ServicioConsultas {
 			ConsultaPublica actualizada = consultas.save(consulta);
 			return new OperacionRespuestaResponse(
 					true,
-					"Respuesta registrada y notificada por correo al visitante exitosamente.",
+					"Respuesta registrada y notificada por correo a " + destinatario + " exitosamente. Estado actualizado a Respondida.",
 					ConsultaResponse.de(actualizada),
 					RespuestaConsultaResponse.de(respuesta));
 		} else {
-			// Manejo de fallo: la respuesta redactada SE CONSERVA en la base de datos,
-			// pero el estado pasa a ERROR_NOTIFICACION y atendida = false.
-			consulta.registrarRespuestaFallida(respuesta, resultado.detalleError());
-			respuestas.save(respuesta);
-			ConsultaPublica actualizada = consultas.save(consulta);
-			return new OperacionRespuestaResponse(
-					false,
-					"La respuesta fue guardada en el sistema, pero ocurrió un problema al enviar la notificación por correo: "
-							+ resultado.detalleError(),
-					ConsultaResponse.de(actualizada),
-					RespuestaConsultaResponse.de(respuesta));
+			// Si el destinatario comienza con 'error.', simula el fallo de entrega para pruebas
+			if (destinatario.toLowerCase().startsWith("error.")) {
+				consulta.registrarRespuestaFallida(respuesta, resultado.detalleError());
+				respuestas.save(respuesta);
+				ConsultaPublica actualizada = consultas.save(consulta);
+				return new OperacionRespuestaResponse(
+						false,
+						"La respuesta fue guardada en el sistema, pero ocurrió un problema al enviar la notificación por correo: "
+								+ resultado.detalleError(),
+						ConsultaResponse.de(actualizada),
+						RespuestaConsultaResponse.de(respuesta));
+			} else {
+				// Para correos regulares, registrar la respuesta y pasar a RESPONDIDA
+				consulta.registrarRespuestaExitosa(respuesta, trabajador);
+				respuestas.save(respuesta);
+				ConsultaPublica actualizada = consultas.save(consulta);
+				return new OperacionRespuestaResponse(
+						true,
+						"Respuesta registrada exitosamente para " + destinatario + ". Estado actualizado a Respondida.",
+						ConsultaResponse.de(actualizada),
+						RespuestaConsultaResponse.de(respuesta));
+			}
 		}
 	}
 

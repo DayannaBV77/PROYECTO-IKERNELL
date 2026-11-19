@@ -154,6 +154,10 @@ public class ConsultaPublica {
 		return correoContacto;
 	}
 
+	public void setCorreoContacto(String correoContacto) {
+		this.correoContacto = correoContacto;
+	}
+
 	public String getTelefonoContacto() {
 		return telefonoContacto;
 	}

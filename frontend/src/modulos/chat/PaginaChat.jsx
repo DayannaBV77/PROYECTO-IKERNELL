@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertCircle,
   CheckCheck,
+  ChevronDown,
   CircleCheck,
   FolderKanban,
   Layers,
@@ -431,7 +432,7 @@ function FormularioDeHilo({
   );
 }
 
-/** Conversación activa con lista de mensajes en burbujas y envío ágil con tecla Enter */
+/** Conversación activa con lista de mensajes en burbujas, tiempo real y scroll fluido */
 function Conversacion({ hiloId, hilo, proyectoNombre, alEnviar }) {
   const [recarga, setRecarga] = useState(0);
   const [texto, setTexto] = useState('');
@@ -439,27 +440,112 @@ function Conversacion({ hiloId, hilo, proyectoNombre, alEnviar }) {
   const [fallo, setFallo] = useState(null);
   const [confirmado, setConfirmado] = useState(null);
   const [enviando, setEnviando] = useState(false);
+  const [mensajesLista, setMensajesLista] = useState([]);
+  const [mostrarBotonBajar, setMostrarBotonBajar] = useState(false);
 
   const scrollRef = useRef(null);
+  const textareaRef = useRef(null);
+  const usuarioHizoScrollArribaRef = useRef(false);
+  const esCargaInicialRef = useRef(true);
+
+  // Al cambiar de conversación, restablecer estado de scroll
+  useEffect(() => {
+    esCargaInicialRef.current = true;
+    usuarioHizoScrollArribaRef.current = false;
+    setMostrarBotonBajar(false);
+  }, [hiloId]);
 
   const cargar = useCallback(({ senal }) => obtenerMensajes(hiloId, { senal }), [hiloId]);
   const mensajes = usePeticion(cargar, [hiloId, recarga]);
 
-  const listaMensajes = Array.isArray(mensajes.datos?.contenido)
-    ? mensajes.datos.contenido
-    : Array.isArray(mensajes.datos)
-      ? mensajes.datos
-      : [];
-
-  // Scroll automático al final cuando llegan mensajes
+  // Sincronizar datos iniciales de la petición
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    if (mensajes.datos) {
+      const lista = Array.isArray(mensajes.datos?.contenido)
+        ? mensajes.datos.contenido
+        : Array.isArray(mensajes.datos)
+          ? mensajes.datos
+          : [];
+      setMensajesLista(lista);
     }
-  }, [listaMensajes]);
+  }, [mensajes.datos]);
+
+  // Sincronización continua en tiempo real contra BD (polling suave cada 2.5s)
+  useEffect(() => {
+    if (!hiloId) return;
+    let vigente = true;
+
+    const temporizador = setInterval(async () => {
+      try {
+        const respuesta = await obtenerMensajes(hiloId);
+        if (!vigente) return;
+        const listaActual = Array.isArray(respuesta?.contenido)
+          ? respuesta.contenido
+          : Array.isArray(respuesta)
+            ? respuesta
+            : [];
+        setMensajesLista((prev) => {
+          if (!prev || prev.length !== listaActual.length) {
+            return listaActual;
+          }
+          if (prev.length > 0 && listaActual.length > 0 && prev[prev.length - 1].id !== listaActual[listaActual.length - 1].id) {
+            return listaActual;
+          }
+          return prev;
+        });
+      } catch {
+        // En segundo plano sin interrumpir la experiencia de usuario
+      }
+    }, 2500);
+
+    return () => {
+      vigente = false;
+      clearInterval(temporizador);
+    };
+  }, [hiloId]);
+
+  // Scroll inteligente estilo WhatsApp / Telegram: scroll libre hacia arriba/abajo sin bloqueos
+  useEffect(() => {
+    if (!scrollRef.current) return;
+    const el = scrollRef.current;
+
+    // Al abrir el hilo por primera vez, bajar al último mensaje
+    if (esCargaInicialRef.current && mensajesLista.length > 0) {
+      el.scrollTop = el.scrollHeight;
+      esCargaInicialRef.current = false;
+      return;
+    }
+
+    // Si el usuario no está navegando hacia arriba y se encuentra cerca del fondo (< 60px),
+    // acompañar suavemente al nuevo mensaje que llega
+    if (!usuarioHizoScrollArribaRef.current) {
+      const cercaDelFondo = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
+      if (cercaDelFondo) {
+        el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+      }
+    }
+  }, [mensajesLista]);
+
+  function alHacerScroll(evento) {
+    const el = evento.currentTarget;
+    const distanciaAlFondo = el.scrollHeight - el.scrollTop - el.clientHeight;
+    // Si la distancia supera 40px, el usuario está navegando el historial hacia arriba
+    const navegandoArriba = distanciaAlFondo > 40;
+    usuarioHizoScrollArribaRef.current = navegandoArriba;
+    setMostrarBotonBajar(distanciaAlFondo > 100);
+  }
+
+  function irAlFondo() {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+      usuarioHizoScrollArribaRef.current = false;
+      setMostrarBotonBajar(false);
+    }
+  }
 
   async function procesarEnvio() {
-    if (!texto.trim() || enviando) return;
+    const cuerpo = texto.trim();
+    if (!cuerpo || enviando) return;
 
     setEnviando(true);
     setFallo(null);
@@ -467,12 +553,22 @@ function Conversacion({ hiloId, hilo, proyectoNombre, alEnviar }) {
     setErrores({});
 
     try {
-      await enviarMensaje(hiloId, texto.trim());
+      await enviarMensaje(hiloId, cuerpo);
       setTexto('');
       setConfirmado('Mensaje enviado');
-      setTimeout(() => setConfirmado(null), 3000);
+      setTimeout(() => setConfirmado(null), 2500);
+      usuarioHizoScrollArribaRef.current = false;
+      setMostrarBotonBajar(false);
       setRecarga((n) => n + 1);
       alEnviar();
+
+      // Mantener el cursor activo en el textarea para continuar escribiendo sin pausas
+      setTimeout(() => {
+        textareaRef.current?.focus();
+        if (scrollRef.current) {
+          scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        }
+      }, 40);
     } catch (error) {
       if (error.campos) {
         setErrores(error.campos);
@@ -509,30 +605,46 @@ function Conversacion({ hiloId, hilo, proyectoNombre, alEnviar }) {
 
         <div className={estilos.indicadorSeguro} title="Canal cifrado y restringido a los participantes autorizados del proyecto">
           <Lock size={12} aria-hidden="true" />
-          <span>Canal de equipo verificado</span>
+          <span>Canal en tiempo real verificado</span>
         </div>
       </div>
 
-      {/* Historial de mensajes */}
-      <div className={estilos.areaMensajes} ref={scrollRef}>
-        {mensajes.cargando && <EstadoCarga mensaje="Cargando mensajes del hilo..." esqueleto={3} />}
+      {/* Historial de mensajes con scroll libre y botón para bajar */}
+      <div className={estilos.areaMensajesWrapper}>
+        <div className={estilos.areaMensajes} ref={scrollRef} onScroll={alHacerScroll}>
+          {mensajes.cargando && mensajesLista.length === 0 && (
+            <EstadoCarga mensaje="Cargando mensajes del hilo..." esqueleto={3} />
+          )}
 
-        {!mensajes.cargando && mensajes.error && (
-          <EstadoError error={mensajes.error} alReintentar={mensajes.reintentar} />
+          {!mensajes.cargando && mensajes.error && mensajesLista.length === 0 && (
+            <EstadoError error={mensajes.error} alReintentar={mensajes.reintentar} />
+          )}
+
+          {!mensajes.cargando && !mensajes.error && mensajesLista.length === 0 && (
+            <div style={{ margin: 'auto', textAlign: 'center' }}>
+              <EstadoVacio
+                mensaje={mensajes.datos?.mensaje || 'Aún no hay mensajes en este hilo. Sé el primero en escribir.'}
+                icono={MessagesSquare}
+              />
+            </div>
+          )}
+
+          {mensajesLista.map((mensaje) => (
+            <BurbujaMensaje key={mensaje.id} mensaje={mensaje} />
+          ))}
+        </div>
+
+        {mostrarBotonBajar && (
+          <button
+            type="button"
+            className={estilos.botonBajarFlotante}
+            onClick={irAlFondo}
+            title="Ir a los mensajes más recientes"
+            aria-label="Ir al último mensaje"
+          >
+            <ChevronDown size={18} />
+          </button>
         )}
-
-        {!mensajes.cargando && !mensajes.error && listaMensajes.length === 0 && (
-          <div style={{ margin: 'auto', textAlign: 'center' }}>
-            <EstadoVacio
-              mensaje={mensajes.datos?.mensaje || 'Aún no hay mensajes en este hilo. Sé el primero en escribir.'}
-              icono={MessagesSquare}
-            />
-          </div>
-        )}
-
-        {!mensajes.cargando && !mensajes.error && listaMensajes.map((mensaje) => (
-          <BurbujaMensaje key={mensaje.id} mensaje={mensaje} />
-        ))}
       </div>
 
       {/* Área inferior de escritura */}
@@ -559,6 +671,7 @@ function Conversacion({ hiloId, hilo, proyectoNombre, alEnviar }) {
           }}
         >
           <textarea
+            ref={textareaRef}
             className={estilos.textareaMensaje}
             placeholder="Escriba un mensaje aquí... (Presione Enter para enviar)"
             value={texto}

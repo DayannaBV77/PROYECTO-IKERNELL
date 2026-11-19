@@ -605,7 +605,7 @@ class TrabajadorControllerTest {
 		mockMvc.perform(put("/api/trabajadores/" + trabajador.getId()).with(csrf())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("""
-						{"direccion":"Calle 2","profesion":"Ingenieria","especialidadDesarrollo":"Backend","tipoTrabajador":"DESARROLLADOR",
+						{"direccion":"Calle 2 # 10-20","profesion":"Ingenieria","especialidadDesarrollo":"Backend","tipoTrabajador":"DESARROLLADOR",
 						 "habilidades":[{"categoria":"LENGUAJE","nombre":"TypeScript"}]}
 						"""))
 				.andExpect(status().isOk())
@@ -616,7 +616,7 @@ class TrabajadorControllerTest {
 		mockMvc.perform(put("/api/trabajadores/" + trabajador.getId()).with(csrf())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("""
-						{"direccion":"Calle 2","profesion":"Ingenieria","especialidadDesarrollo":"Backend","tipoTrabajador":"DESARROLLADOR",
+						{"direccion":"Calle 2 # 10-20","profesion":"Ingenieria","especialidadDesarrollo":"Backend","tipoTrabajador":"DESARROLLADOR",
 						 "habilidades":[]}
 						"""))
 				.andExpect(status().isOk())
@@ -672,7 +672,7 @@ class TrabajadorControllerTest {
 		mockMvc.perform(put("/api/trabajadores/" + trabajador.getId()).with(csrf())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("""
-						{"identificacion":"9999999999","direccion":"Calle 2","profesion":"Ingenieria",
+						{"identificacion":"9999999999","direccion":"Calle 2 # 10-20","profesion":"Ingenieria",
 						 "especialidadDesarrollo":"Backend","tipoTrabajador":"DESARROLLADOR"}
 						"""))
 				.andExpect(status().isOk())

@@ -148,8 +148,8 @@ function PerfilCargado({ inicial }) {
     setConfirmado(null);
 
     const erroresValidacion = {};
-    if (!editables.profesion || !editables.profesion.trim()) {
-      erroresValidacion.profesion = 'Debe indicar la profesión.';
+    if (!editables.profesion || !editables.profesion.trim() || editables.profesion === 'Seleccione una profesión') {
+      erroresValidacion.profesion = 'La profesión es obligatoria. Por favor seleccione una profesión del catálogo.';
     }
     if (!editables.direccion || !editables.direccion.trim()) {
       erroresValidacion.direccion = 'La dirección es obligatoria.';
@@ -166,7 +166,9 @@ function PerfilCargado({ inicial }) {
 
     if (Object.keys(erroresValidacion).length > 0) {
       setErrores(erroresValidacion);
-      setFallo('Corrija los campos señalados antes de guardar los cambios.');
+      const mensajeError = erroresValidacion.profesion || 'Corrija los campos señalados antes de guardar los cambios.';
+      setFallo(mensajeError);
+      notificador.error(mensajeError, 'Validación de perfil');
       return;
     }
 

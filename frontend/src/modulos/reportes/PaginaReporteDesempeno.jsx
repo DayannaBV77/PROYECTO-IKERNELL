@@ -323,10 +323,10 @@ export default function PaginaReporteDesempeno() {
           </div>
 
           <form className={estilos.formularioFiltros} onSubmit={manejarGenerarReporte}>
-            {/* Fila 1: Buscador general + Selectores */}
+            {/* Fila 1: Buscador general + Selector Proyecto */}
             <div className={estilos.filaFiltros}>
               {/* Buscador de texto */}
-              <div className={estilos.col5}>
+              <div className={estilos.col6}>
                 <div className={estilos.campoGrupo}>
                   <label className={estilos.etiquetaCampo} htmlFor="filtro-texto">
                     Buscar por nombre, apellido o identificación
@@ -345,40 +345,8 @@ export default function PaginaReporteDesempeno() {
                 </div>
               </div>
 
-              {/* Selector Desarrollador */}
-              <div className={estilos.col4}>
-                <div className={estilos.campoGrupo}>
-                  <label className={estilos.etiquetaCampo} htmlFor="filtro-desarrollador">
-                    Desarrollador <span className={estilos.asterisco}>*</span>
-                  </label>
-                  <div className={estilos.selectWrapper}>
-                    <select
-                      id="filtro-desarrollador"
-                      className={estilos.selectBase}
-                      value={desarrolladorSeleccionado}
-                      onChange={(e) => {
-                        const nombre = e.target.value;
-                        setDesarrolladorSeleccionado(nombre);
-                        const dev = listaDesarrolladores.find((d) => d.nombre === nombre);
-                        if (dev) {
-                          alSeleccionarDesarrollador(dev);
-                        }
-                      }}
-                    >
-                      <option value="">Seleccione un desarrollador</option>
-                      {desarrolladoresUnicos.map((d) => (
-                        <option key={d.nombre} value={d.nombre}>
-                          {d.nombre} ({d.identificacion})
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown size={16} className={estilos.selectFlecha} />
-                  </div>
-                </div>
-              </div>
-
               {/* Selector Proyecto */}
-              <div className={estilos.col3}>
+              <div className={estilos.col6}>
                 <div className={estilos.campoGrupo}>
                   <label className={estilos.etiquetaCampo} htmlFor="filtro-proyecto">
                     Proyecto <span className={estilos.asterisco}>*</span>
@@ -403,10 +371,10 @@ export default function PaginaReporteDesempeno() {
               </div>
             </div>
 
-            {/* Fila 2: Rango de Fechas + Botón Generar Reporte */}
+            {/* Fila 2: Rango de Fechas (Desde / Hasta) */}
             <div className={estilos.filaFiltros}>
               {/* Desde */}
-              <div className={estilos.col3}>
+              <div className={estilos.col6}>
                 <div className={estilos.campoGrupo}>
                   <div className={estilos.etiquetaConPista}>
                     <label className={estilos.etiquetaCampo} htmlFor="filtro-desde">
@@ -425,11 +393,14 @@ export default function PaginaReporteDesempeno() {
               </div>
 
               {/* Hasta */}
-              <div className={estilos.col3}>
+              <div className={estilos.col6}>
                 <div className={estilos.campoGrupo}>
-                  <label className={estilos.etiquetaCampo} htmlFor="filtro-hasta">
-                    Hasta
-                  </label>
+                  <div className={estilos.etiquetaConPista}>
+                    <label className={estilos.etiquetaCampo} htmlFor="filtro-hasta">
+                      Hasta
+                    </label>
+                    <span className={estilos.pistaOpcional}>Periodo opcional</span>
+                  </div>
                   <input
                     id="filtro-hasta"
                     type="date"

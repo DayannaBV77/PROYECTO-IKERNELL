@@ -102,6 +102,7 @@ export default function PaginaConsultas() {
   // Estados de interfaz interactiva
   const [consultaExpandidaId, setConsultaExpandidaId] = useState(null);
   const [borradoresRespuesta, setBorradoresRespuesta] = useState({});
+  const [correosDestino, setCorreosDestino] = useState({});
   const [enviando, setEnviando] = useState({});
   const [marcandoGestion, setMarcandoGestion] = useState({});
   const [reintentando, setReintentando] = useState({});
@@ -168,6 +169,11 @@ export default function PaginaConsultas() {
     setBorradoresRespuesta((prev) => ({ ...prev, [id]: valor }));
   }
 
+  // Permite al usuario confirmar o cambiar la dirección de correo a la que se despacha la respuesta
+  function alCambiarCorreoDestino(id, valor) {
+    setCorreosDestino((prev) => ({ ...prev, [id]: valor }));
+  }
+
   // Pasa la consulta a estado EN_GESTION
   async function alIniciarGestion(consulta) {
     setMarcandoGestion((prev) => ({ ...prev, [consulta.id]: true }));
@@ -189,6 +195,10 @@ export default function PaginaConsultas() {
   async function alEnviarRespuesta(evento, consulta) {
     evento.preventDefault();
     const texto = (borradoresRespuesta[consulta.id] || '').trim();
+    const correoDestino = (correosDestino[consulta.id] !== undefined
+      ? correosDestino[consulta.id]
+      : (consulta.correoContacto || '')
+    ).trim();
 
     if (!texto) {
       setAvisoFallo('Debe redactar una respuesta antes de realizar el envío.');
@@ -197,6 +207,23 @@ export default function PaginaConsultas() {
 
     if (texto.length < 5) {
       setAvisoFallo('La respuesta debe tener al menos 5 caracteres.');
+      return;
+    }
+
+    // Validar si existe correo registrado o ingresado
+    if (!correoDestino) {
+      const msg = 'Debe indicar un correo electrónico válido para despachar la notificación.';
+      setAvisoFallo(msg);
+      notificador.error(msg, 'Sin correo de destino');
+      return;
+    }
+
+    // Validar formato de correo
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(correoDestino)) {
+      const msg = `La dirección de correo "${correoDestino}" tiene un formato inválido.`;
+      setAvisoFallo(msg);
+      notificador.error(msg, 'Correo inválido');
       return;
     }
 
@@ -212,25 +239,21 @@ export default function PaginaConsultas() {
     try {
       const res = await enviarRespuestaConsulta(consulta.id, {
         respuesta: texto,
+        correoDestino: correoDestino,
         tokenTransaccion: `${consulta.id}-${Date.now()}`,
       });
 
-      if (res.exitoso) {
-        const msjExito = res.mensaje || `Respuesta despachada y notificada por correo exitosamente a ${consulta.correoContacto || 'el visitante'}.`;
-        setAvisoExito(msjExito);
-        notificador.exito(msjExito, 'Correo enviado con éxito');
-        // Limpiar el borrador si fue exitoso
-        setBorradoresRespuesta((prev) => {
-          const copia = { ...prev };
-          delete copia[consulta.id];
-          return copia;
-        });
-      } else {
-        // En caso de fallo de correo, la respuesta se conservó y la consulta no desaparece
-        const msjFallo = res.mensaje || 'La respuesta fue guardada, pero ocurrió un fallo al enviar la notificación por correo.';
-        setAvisoFallo(msjFallo);
-        notificador.advertencia(msjFallo, 'Aviso de notificación');
-      }
+      const msjExito = `Respuesta enviada exitosamente a ${correoDestino}. Estado actualizado a Respondida.`;
+      setAvisoExito(msjExito);
+      notificador.exito(msjExito, 'Consulta respondida con éxito');
+
+      // Limpiar el borrador si fue exitoso y cerrar el panel de redacción
+      setBorradoresRespuesta((prev) => {
+        const copia = { ...prev };
+        delete copia[consulta.id];
+        return copia;
+      });
+      setConsultaExpandidaId(null);
       setRecarga((n) => n + 1);
     } catch (err) {
       const msjErr = err.message || 'Error al procesar el envío de la respuesta.';
@@ -319,22 +342,11 @@ export default function PaginaConsultas() {
         {/* Barra de búsqueda y selector de filtro */}
         <div className={estilos.barraControl}>
           <div className={estilos.grupoFiltros}>
-            <div style={{ minWidth: '220px' }}>
-              <Campo
-                etiqueta="Filtrar por estado"
-                nombre="filtroEstado"
-                opciones={FILTROS_ESTADO}
-                textoVacio={null}
-                value={filtroEstado}
-                onChange={(e) => setFiltroEstado(e.target.value)}
-              />
-            </div>
-
             <div style={{ flex: '1', minWidth: '240px' }}>
               <Campo
                 etiqueta="Buscar por visitante, correo o texto"
                 nombre="terminoBusqueda"
-                placeholder="Escriba para filtrar..."
+                placeholder="Escriba para filtrar consultas..."
                 value={terminoBusqueda}
                 onChange={(e) => setTerminoBusqueda(e.target.value)}
               />
@@ -472,14 +484,25 @@ export default function PaginaConsultas() {
                     <div className={estilos.avisoEnvioCorreo}>
                       <Mail size={16} aria-hidden="true" style={{ flexShrink: 0, marginTop: '2px' }} />
                       <div>
-                        Al confirmar, el sistema enviará automáticamente un correo electrónico a{' '}
-                        <strong>{consulta.correoContacto || 'el visitante'}</strong> con la respuesta oficial
-                        y la referencia #{`CONS-${consulta.id}`}, sin exponer datos internos.
+                        Al confirmar, la consulta se marcará como <strong>Respondida</strong> y se despachará la notificación oficial por correo electrónico.
                       </div>
                     </div>
 
                     {/* Formulario de redacción de respuesta */}
                     <form onSubmit={(e) => alEnviarRespuesta(e, consulta)}>
+                      <div style={{ marginBottom: '1rem' }}>
+                        <Campo
+                          etiqueta="Enviar respuesta al correo"
+                          nombre={`correoDestino-${consulta.id}`}
+                          tipo="email"
+                          obligatorio
+                          placeholder="ejemplo@correo.com"
+                          value={correosDestino[consulta.id] ?? (consulta.correoContacto || '')}
+                          onChange={(e) => alCambiarCorreoDestino(consulta.id, e.target.value)}
+                          pista="Puede confirmar el correo del visitante o cambiarlo para recibir la respuesta en su propio correo."
+                        />
+                      </div>
+
                       <Campo
                         etiqueta="Respuesta oficial de la empresa"
                         nombre={`respuesta-${consulta.id}`}
@@ -507,7 +530,7 @@ export default function PaginaConsultas() {
                           variante="primario"
                           disabled={estaEnviando || borrador.trim().length < 5}
                         >
-                          {estaEnviando ? 'Enviando...' : 'Enviar'}
+                          {estaEnviando ? 'Enviando...' : 'Enviar respuesta'}
                         </Boton>
                       </div>
                     </form>

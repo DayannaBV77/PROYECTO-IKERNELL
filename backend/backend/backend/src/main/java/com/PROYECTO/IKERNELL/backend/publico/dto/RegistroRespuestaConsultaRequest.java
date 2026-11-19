@@ -10,6 +10,15 @@ public record RegistroRespuestaConsultaRequest(
 		@NotBlank(message = "La respuesta a la consulta no puede estar vacía.")
 		@Size(min = 5, max = 4000, message = "La respuesta debe contener entre 5 y 4000 caracteres.")
 		String respuesta,
+		String correoDestino,
 		String tokenTransaccion
-) {}
+) {
+	public RegistroRespuestaConsultaRequest(String respuesta) {
+		this(respuesta, null, null);
+	}
+
+	public RegistroRespuestaConsultaRequest(String respuesta, String tokenTransaccion) {
+		this(respuesta, null, tokenTransaccion);
+	}
+}
 

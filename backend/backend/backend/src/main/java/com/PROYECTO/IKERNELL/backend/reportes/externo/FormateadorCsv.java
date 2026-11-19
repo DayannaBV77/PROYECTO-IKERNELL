@@ -33,9 +33,14 @@ public class FormateadorCsv implements FormateadorReporteExterno {
 	@Override
 	public String formatear(List<String> cabecera, List<List<String>> filas,
 			ConfiguracionReporteExterno config) {
-		String separador = config.getSeparador();
+		String configSep = config.getSeparador();
+		// Para formato CSV compatible con Excel, usar ';' o ',' en lugar de tubería '|' que junta todo en una columna
+		String separador = ("|".equals(configSep) || configSep == null || configSep.isBlank()) ? ";" : configSep;
 		String fin = config.getFinDeLinea();
 		StringBuilder contenido = new StringBuilder();
+
+		// BOM UTF-8 para que Microsoft Excel abra las columnas y tildes correctamente
+		contenido.append('\uFEFF');
 
 		if (config.isIncluirCabecera()) {
 			contenido.append(fila(cabecera, separador)).append(fin);

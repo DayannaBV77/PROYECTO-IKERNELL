@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FolderKanban, FolderPlus, RotateCcw, Search } from 'lucide-react';
+import { Filter, FolderKanban, FolderPlus, RotateCcw } from 'lucide-react';
 
 import {
   ESTADOS_HABILITACION,
@@ -104,9 +104,13 @@ export default function PaginaProyectos() {
         </div>
 
         <div className={estilos.accionesBuscador}>
-          <Boton type="submit" icono={Search} disabled={cargando}>
-            Buscar
-          </Boton>
+          <Boton
+            type="submit"
+            icono={Filter}
+            disabled={cargando}
+            aria-label="Filtrar proyectos"
+            title="Filtrar proyectos"
+          />
           <Boton type="button" variante="secundario" icono={RotateCcw} onClick={alLimpiar} disabled={cargando}>
             Limpiar filtros
           </Boton>

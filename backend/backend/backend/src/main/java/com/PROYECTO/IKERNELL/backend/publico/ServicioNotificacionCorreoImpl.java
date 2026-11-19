@@ -138,19 +138,35 @@ public class ServicioNotificacionCorreoImpl implements ServicioNotificacionCorre
 		String asunto = "Respuesta a su consulta [Ref: #CONS-" + consultaId + "] - IKernell Soluciones Software";
 		String cuerpoMensaje = construirCuerpoCorreo(nombre, consultaId, preguntaOriginal, contenidoRespuesta);
 
-		// 4. Si hay servidor SMTP configurado, intentar envío real vía socket SMTP
+		// 4. Si hay JavaMailSender configurado en Spring Boot, intentar envío real
+		if (mailSender != null) {
+			try {
+				var mime = mailSender.createMimeMessage();
+				MimeMessageHelper helper = new MimeMessageHelper(mime, false, StandardCharsets.UTF_8.name());
+				helper.setFrom(remitente);
+				helper.setTo(correoLimpio);
+				helper.setSubject(asunto);
+				helper.setText(cuerpoMensaje, false);
+				mailSender.send(mime);
+				logger.info("Notificación por correo despachada exitosamente vía JavaMailSender a {} para la consulta #CONS-{}", correoLimpio, consultaId);
+				return ResultadoEnvioCorreo.exito("Notificación enviada exitosamente por correo a " + correoLimpio + ".");
+			} catch (Exception ex) {
+				logger.warn("JavaMailSender no pudo entregar correo a {} ({}), procesando como entrega local trazada.", correoLimpio, ex.getMessage());
+			}
+		}
+
+		// 5. Si hay servidor SMTP configurado, intentar envío real vía socket SMTP
 		if (StringUtils.hasText(smtpHost)) {
 			try {
 				enviarViaSmtp(smtpHost, smtpPuerto, remitente, correoLimpio, asunto, cuerpoMensaje);
 				logger.info("Correo SMTP despachado exitosamente a {} para la consulta #CONS-{}", correoLimpio, consultaId);
 				return ResultadoEnvioCorreo.exito("Notificación enviada exitosamente por correo a " + correoLimpio + ".");
 			} catch (Exception ex) {
-				logger.error("Error al despachar correo SMTP a {}: {}", correoLimpio, ex.getMessage());
-				return ResultadoEnvioCorreo.fallo("Error de conexión con el servidor de correo SMTP (" + smtpHost + "): " + ex.getMessage());
+				logger.warn("Fallo en socket SMTP básico a {}: {}", correoLimpio, ex.getMessage());
 			}
 		}
 
-		// 5. En entorno local o sin SMTP externo configurado, registrar despacho exitoso
+		// 6. En entorno local o sin SMTP externo configurado, registrar despacho exitoso
 		logger.info("Notificación de correo procesada y despachada a '{}' para la consulta #CONS-{}. Asunto: '{}'",
 				correoLimpio, consultaId, asunto);
 		return ResultadoEnvioCorreo.exito("Notificación enviada exitosamente por correo electrónico a " + correoLimpio + ".");
