@@ -111,6 +111,16 @@ public class ServicioIncidencias {
 		return errores.findByProyectoIdOrderByIdDesc(proyectoId);
 	}
 
+	@Transactional(readOnly = true)
+	public List<ErrorProyecto> erroresDeTrabajador(Long trabajadorId) {
+		return errores.findByRegistradoPorIdOrderByIdDesc(trabajadorId);
+	}
+
+	@Transactional(readOnly = true)
+	public List<InterrupcionProyecto> interrupcionesDeTrabajador(Long trabajadorId) {
+		return interrupciones.findByRegistradoPorIdOrderByFechaDescIdDesc(trabajadorId);
+	}
+
 	private Trabajador exigirDesarrolladorDelProyecto(Long trabajadorId, Long proyectoId, String mensaje) {
 		if (!servicioAsignaciones.puedeActuarComo(trabajadorId, proyectoId, RolEnProyecto.DESARROLLADOR)) {
 			throw new OperacionNoAutorizadaException(mensaje);

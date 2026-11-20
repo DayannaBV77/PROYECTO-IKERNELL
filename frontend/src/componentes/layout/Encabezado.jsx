@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Menu, MoonStar, SunMedium, X } from 'lucide-react';
+import { ExternalLink, Menu, MoonStar, SunMedium, X } from 'lucide-react';
 
 import { obtenerAccesoCorreo } from '../../api/corporativo.js';
-import { ETIQUETA_TIPO } from '../../api/autenticacion.js';
 import { useSesion } from '../../sesion/contexto.js';
 import MarcaIKernell from '../marca/MarcaIKernell.jsx';
+import ConfirmacionEnlaceExterno, { debeOmitirAvisoExterno } from '../ui/ConfirmacionEnlaceExterno.jsx';
 import estilos from './Encabezado.module.css';
 
 /**
@@ -35,6 +35,7 @@ export default function Encabezado({ enlaces, acciones }) {
     return window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
   });
   const { sesion } = useSesion();
+  const [enlacePendiente, setEnlacePendiente] = useState(null);
 
   useEffect(() => {
     const tema = temaOscuro ? 'dark' : 'light';
@@ -49,17 +50,27 @@ export default function Encabezado({ enlaces, acciones }) {
 
   const cerrar = () => setAbierto(false);
 
-  async function abrirCorreoExterno(evento, url) {
+  async function abrirCorreoExterno(evento, url, texto = '') {
     evento.preventDefault();
-    try {
-      const respuesta = await obtenerAccesoCorreo();
-      const destino = respuesta?.disponible ? respuesta.url : url;
-      window.open(destino, '_blank', 'noopener,noreferrer');
-      cerrar();
-    } catch {
-      window.open(url, '_blank', 'noopener,noreferrer');
-      cerrar();
+    const esCorreo = texto.toLowerCase().includes('correo');
+    let destino = url;
+    if (esCorreo) {
+      try {
+        const respuesta = await obtenerAccesoCorreo();
+        if (respuesta?.disponible && respuesta?.url) {
+          destino = respuesta.url;
+        }
+      } catch {
+        destino = url;
+      }
     }
+
+    cerrar();
+    if (debeOmitirAvisoExterno()) {
+      window.open(destino, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    setEnlacePendiente({ url: destino, esCorreo });
   }
 
   return (
@@ -97,9 +108,11 @@ export default function Encabezado({ enlaces, acciones }) {
                   key={a}
                   type="button"
                   className={estilos.enlace}
-                  onClick={(evento) => abrirCorreoExterno(evento, a)}
+                  onClick={(evento) => abrirCorreoExterno(evento, a, texto)}
+                  data-testid={texto.toLowerCase().includes('correo') ? 'header-email-button' : 'header-external-button'}
                 >
-                  {texto}
+                  <span>{texto}</span>
+                  <ExternalLink size={12} strokeWidth={1.85} className={estilos.iconoExterno} aria-hidden="true" />
                 </button>
               );
             }
@@ -148,6 +161,14 @@ export default function Encabezado({ enlaces, acciones }) {
           {abierto ? <X size={20} aria-hidden="true" /> : <Menu size={20} aria-hidden="true" />}
         </button>
       </div>
+
+      <ConfirmacionEnlaceExterno
+        abierto={Boolean(enlacePendiente)}
+        esCorreo={enlacePendiente?.esCorreo ?? true}
+        url={enlacePendiente?.url}
+        alCancelar={() => setEnlacePendiente(null)}
+        alConfirmar={() => setEnlacePendiente(null)}
+      />
     </header>
   );
 }

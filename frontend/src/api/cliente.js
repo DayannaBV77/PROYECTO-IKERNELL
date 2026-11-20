@@ -38,12 +38,14 @@ export function construirConsulta(parametros = {}) {
 async function interpretarError(respuesta) {
   const cuerpo = await respuesta.json().catch(() => null);
 
-  return new ErrorApi({
+  const error = new ErrorApi({
     estado: respuesta.status,
     mensaje: cuerpo?.mensaje || MENSAJE_INESPERADO,
     campos: cuerpo?.campos ?? null,
     advertencias: cuerpo?.advertencias ?? null,
   });
+  error.codigo = cuerpo?.codigo ?? null;
+  return error;
 }
 
 async function enviar(ruta, { metodo, cuerpo, formulario, senal }, tokenCsrf) {
@@ -103,7 +105,27 @@ export async function peticion(ruta, opciones = {}) {
   }
 
   if (!respuesta.ok) {
-    throw await interpretarError(respuesta);
+    const error = await interpretarError(respuesta);
+    const esRutaAuth =
+      ruta.startsWith('/api/auth/login') ||
+      ruta.startsWith('/api/auth/csrf') ||
+      ruta.startsWith('/api/auth/logout');
+    if (
+      respuesta.status === 401 &&
+      !esRutaAuth &&
+      (ruta !== '/api/auth/sesion' || error.codigo === 'SESION_INVALIDA')
+    ) {
+      window.dispatchEvent(
+        new CustomEvent('ikernell:sesion-invalidada', {
+          detail: {
+            mensaje:
+              error.mensaje ||
+              'Tu sesión ha finalizado o tu cuenta ha sido suspendida. Por favor, contacta al administrador.',
+          },
+        }),
+      );
+    }
+    throw error;
   }
 
   if (respuesta.status === 204) {

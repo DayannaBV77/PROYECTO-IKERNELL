@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Save, TriangleAlert } from 'lucide-react';
 
@@ -45,6 +45,7 @@ export default function PaginaRegistroActividad() {
   const [guardando, setGuardando] = useState(false);
   const [advertencias, setAdvertencias] = useState(null);
   const [mostrarConfirmacionVolver, setMostrarConfirmacionVolver] = useState(false);
+  const enviandoRef = useRef(false);
 
   const { opcionesDeProyecto } = useProyectosComoOpciones({ soloHabilitados: true });
   const { opcionesDeEtapa, opcionesDeDesarrollador } = useContextoDeProyecto(valores.proyectoId);
@@ -57,6 +58,16 @@ export default function PaginaRegistroActividad() {
     valores.prioridad ||
     valores.fechaPlanificada
   );
+
+  useEffect(() => {
+    if (!hayCambios) return undefined;
+    function alCerrarVentana(e) {
+      e.preventDefault();
+      e.returnValue = '';
+    }
+    window.addEventListener('beforeunload', alCerrarVentana);
+    return () => window.removeEventListener('beforeunload', alCerrarVentana);
+  }, [hayCambios]);
 
   function alIntentarVolver(e) {
     if (e) e.preventDefault();
@@ -102,6 +113,8 @@ export default function PaginaRegistroActividad() {
       return;
     }
 
+    if (enviandoRef.current || guardando) return;
+    enviandoRef.current = true;
     setGuardando(true);
     try {
       const creada = await registrarActividad(
@@ -130,6 +143,7 @@ export default function PaginaRegistroActividad() {
       }
       setFallo(error.message);
     } finally {
+      enviandoRef.current = false;
       setGuardando(false);
     }
   }

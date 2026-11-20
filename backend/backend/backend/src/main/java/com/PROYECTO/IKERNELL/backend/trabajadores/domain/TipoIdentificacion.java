@@ -4,14 +4,15 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 /**
- * Tipo de documento de identificacion del trabajador (RF-001).
- *
- * <p>Opciones permitidas: Cedula de ciudadania y Cedula de extranjeria.
+ * Catalogo oficial de tipos de documento de identificacion del trabajador (RF-001).
  */
 public enum TipoIdentificacion {
 
 	CEDULA_CIUDADANIA("Cédula de ciudadanía"),
-	CEDULA_EXTRANJERIA("Cédula de extranjería");
+	TARJETA_IDENTIDAD("Tarjeta de identidad"),
+	CEDULA_EXTRANJERIA("Cédula de extranjería"),
+	PASAPORTE("Pasaporte"),
+	PPT("Permiso por protección temporal");
 
 	private final String descripcion;
 
@@ -30,6 +31,16 @@ public enum TipoIdentificacion {
 			return null;
 		}
 		String normalizado = valor.trim().toUpperCase();
+		if (normalizado.equals("TI") || normalizado.contains("TARJETA")) {
+			return TARJETA_IDENTIDAD;
+		}
+		if (normalizado.equals("PA") || normalizado.contains("PASAPORTE")) {
+			return PASAPORTE;
+		}
+		if (normalizado.equals("PPT") || normalizado.contains("PROTECCION TEMPORAL")
+				|| normalizado.contains("PROTECCIÓN TEMPORAL")) {
+			return PPT;
+		}
 		if (normalizado.contains("EXTRANJER") || normalizado.equals("CEDULA_EXTRANJERIA") || normalizado.equals("CE")) {
 			return CEDULA_EXTRANJERIA;
 		}

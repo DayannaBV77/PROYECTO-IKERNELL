@@ -13,9 +13,11 @@ import EstadoVacio from '../../../componentes/estados/EstadoVacio.jsx';
 import Boton from '../../../componentes/ui/Boton.jsx';
 import Campo from '../../../componentes/ui/Campo.jsx';
 import Confirmacion from '../../../componentes/ui/Confirmacion.jsx';
+import PaginacionTabla from '../../../componentes/ui/PaginacionTabla.jsx';
 import Seccion from '../../../componentes/ui/Seccion.jsx';
 import { useNotificador } from '../../../componentes/ui/Notificador.jsx';
 import estilos from '../../../estilos/gestion.module.css';
+import { usePaginacionLocal } from '../../../hooks/usePaginacionLocal.js';
 import { usePeticion } from '../../../hooks/usePeticion.js';
 
 const ETAPA_NUEVA = { id: null, nombre: '', descripcion: '', orden: '' };
@@ -62,6 +64,14 @@ export default function EtapasProyecto({ proyecto }) {
   const { datos, error, cargando, reintentar } = usePeticion(cargar, [proyecto.id, recarga]);
 
   const etapas = datos || [];
+  const {
+    itemsPaginados: etapasPaginadas,
+    datosPaginacion,
+    pagina,
+    setPagina,
+    tamano,
+    alCambiarTamano,
+  } = usePaginacionLocal(etapas, { clavePersistencia: `etapas-${proyecto.id}` });
 
   function abrir(etapa) {
     setEdicion(etapa ? { ...etapa, orden: etapa.orden ?? '' } : ETAPA_NUEVA);
@@ -141,6 +151,7 @@ export default function EtapasProyecto({ proyecto }) {
       descripcion="Fases de ejecucion en que se organiza el proyecto."
       fondo="tenue"
       id="etapas-proyecto"
+      mostrarRegresar={false}
     >
       {confirmado && (
         <p className={estilos.avisoExito} role="status">
@@ -168,58 +179,69 @@ export default function EtapasProyecto({ proyecto }) {
       )}
 
       {!cargando && !error && etapas.length > 0 && (
-        <div className={estilos.tablaEnvoltorio}>
-          <table className={estilos.tabla}>
-            <caption className="solo-lectores">Etapas registradas del proyecto</caption>
-            <colgroup>
-              <col style={{ width: '8%' }} />
-              <col style={{ width: '22%' }} />
-              <col style={{ width: '46%' }} />
-              <col style={{ width: '24%' }} />
-            </colgroup>
-            <thead>
-              <tr>
-                <th scope="col">Orden</th>
-                <th scope="col">Etapa</th>
-                <th scope="col">Descripcion</th>
-                <th scope="col">
-                  <span className="solo-lectores">Acciones</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {etapas.map((etapa) => (
-                <tr key={etapa.id}>
-                  <td>{etapa.orden ?? '—'}</td>
-                  <th scope="row" className={estilos.celdaNombre}>
-                    {etapa.nombre}
+        <>
+          <div className={estilos.tablaEnvoltorio}>
+            <table className={estilos.tabla}>
+              <caption className="solo-lectores">Etapas registradas del proyecto</caption>
+              <colgroup>
+                <col style={{ width: '8%' }} />
+                <col style={{ width: '22%' }} />
+                <col style={{ width: '46%' }} />
+                <col style={{ width: '24%' }} />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th scope="col">Orden</th>
+                  <th scope="col">Etapa</th>
+                  <th scope="col">Descripcion</th>
+                  <th scope="col">
+                    <span className="solo-lectores">Acciones</span>
                   </th>
-                  <td className={estilos.celdaDescripcion}>{etapa.descripcion || '—'}</td>
-                  <td>
-                    <div className={estilos.accionesFila}>
-                      <Boton variante="texto" icono={Pencil} onClick={() => abrir(etapa)}>
-                        Editar
-                        <span className="solo-lectores"> la etapa {etapa.nombre}</span>
-                      </Boton>
-                      <Boton
-                        variante="texto"
-                        icono={Trash2}
-                        onClick={() => {
-                          setAEliminar(etapa);
-                          setFallo(null);
-                          setConfirmado(null);
-                        }}
-                      >
-                        Eliminar
-                        <span className="solo-lectores"> la etapa {etapa.nombre}</span>
-                      </Boton>
-                    </div>
-                  </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {etapasPaginadas.map((etapa) => (
+                  <tr key={etapa.id}>
+                    <td>{etapa.orden ?? '—'}</td>
+                    <th scope="row" className={estilos.celdaNombre}>
+                      {etapa.nombre}
+                    </th>
+                    <td className={estilos.celdaDescripcion}>{etapa.descripcion || '—'}</td>
+                    <td>
+                      <div className={estilos.accionesFila}>
+                        <Boton variante="texto" icono={Pencil} onClick={() => abrir(etapa)}>
+                          Editar
+                          <span className="solo-lectores"> la etapa {etapa.nombre}</span>
+                        </Boton>
+                        <Boton
+                          variante="texto"
+                          icono={Trash2}
+                          onClick={() => {
+                            setAEliminar(etapa);
+                            setFallo(null);
+                            setConfirmado(null);
+                          }}
+                        >
+                          Eliminar
+                          <span className="solo-lectores"> la etapa {etapa.nombre}</span>
+                        </Boton>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <PaginacionTabla
+            datos={datosPaginacion}
+            pagina={pagina}
+            alCambiarPagina={setPagina}
+            tamano={tamano}
+            alCambiarTamano={alCambiarTamano}
+            etiquetaItem="etapas"
+          />
+        </>
       )}
 
       {edicion ? (

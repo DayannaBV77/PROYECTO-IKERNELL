@@ -1,24 +1,11 @@
 import { useId } from 'react';
-import { TriangleAlert } from 'lucide-react';
+import { CheckCheck, Info, LoaderCircle, TriangleAlert } from 'lucide-react';
 
 import estilos from './Campo.module.css';
 
 /**
- * Campo de formulario accesible.
- *
- * Une etiqueta y control con `htmlFor`/`id`, marca lo obligatorio con texto
- * ademas del asterisco, y enlaza el mensaje de error con `aria-describedby`
- * para que un lector de pantalla lo anuncie al llegar al campo.
- *
- * El error que recibe procede de `ErrorRespuesta.campos`, es decir, del propio
- * servidor: la validacion que manda es la suya.
- *
- * Con `opciones` renderiza un <select> en vez de un <input>, para que una lista
- * cerrada -los tipos de trabajador, un estado- no se escriba a mano y comparta
- * la etiqueta, el error y el cableado accesible con el resto de los campos.
- *
- * @param {Array}  [opciones]  [{ valor, texto }]
- * @param {string} [textoVacio] primera opcion sin valor; null la suprime
+ * Campo de formulario accesible con guia dinamica en tiempo real, chips de
+ * atajo y soporte visual de estados de validacion.
  */
 export default function Campo({
   etiqueta,
@@ -29,9 +16,14 @@ export default function Campo({
   error,
   exito,
   validando,
+  estadoValidacion,
+  guiaDinamica,
+  chipsSugeridos,
+  alElegirChip,
   pista,
   opciones,
   textoVacio = 'Seleccione una opcion',
+  compacto = false,
   className = '',
   ...resto
 }) {
@@ -40,11 +32,43 @@ export default function Campo({
   const idError = `${idControl}-error`;
   const idPista = `${idControl}-pista`;
 
-  const mensaje = error || exito || (validando ? 'Validando...' : null);
-  const tipoMensaje = error ? 'error' : exito ? 'exito' : validando ? 'validando' : null;
+  const estadoResuelto =
+    estadoValidacion ||
+    (error ? 'invalido' : exito ? 'valido' : validando ? 'analizando' : 'inactivo');
+
+  const guiaEvaluada =
+    typeof guiaDinamica === 'function' ? guiaDinamica(resto.value ?? '') : guiaDinamica;
+  const guiaObj =
+    typeof guiaEvaluada === 'string'
+      ? { tipo: 'guia', texto: guiaEvaluada }
+      : guiaEvaluada;
+
+  const mensaje =
+    error ||
+    exito ||
+    (estadoResuelto === 'analizando' ? 'Comprobando disponibilidad...' : null);
+  const tipoMensaje = error
+    ? 'error'
+    : exito
+      ? 'exito'
+      : estadoResuelto === 'analizando'
+        ? 'validando'
+        : null;
   const descritoPor = [error ? idError : null, pista ? idPista : null].filter(Boolean).join(' ');
 
   const Control = opciones ? 'select' : area ? 'textarea' : 'input';
+  const mostrarIconoEstado =
+    Control === 'input' && (estadoResuelto === 'analizando' || estadoResuelto === 'valido');
+
+  function manejarChip(chip) {
+    if (alElegirChip) {
+      alElegirChip(chip);
+      return;
+    }
+    if (resto.onChange) {
+      resto.onChange({ target: { name: nombre, value: `${chip} ` } });
+    }
+  }
 
   return (
     <div className={estilos.campo}>
@@ -58,41 +82,106 @@ export default function Campo({
         {obligatorio && <span className="solo-lectores"> (obligatorio)</span>}
       </label>
 
+      {Array.isArray(chipsSugeridos) && chipsSugeridos.length > 0 && (
+        <div className={estilos.chipsBarra} role="group" aria-label={`Atajos para ${etiqueta}`}>
+          {chipsSugeridos.map((chip) => (
+            <button
+              key={chip}
+              type="button"
+              className={estilos.chipAtajo}
+              onClick={() => manejarChip(chip)}
+              data-testid={`chip-${nombre}-${chip.toLowerCase()}`}
+            >
+              {chip}
+            </button>
+          ))}
+        </div>
+      )}
+
       {pista && (
         <p className={estilos.pista} id={idPista}>
           {pista}
         </p>
       )}
 
-      <Control
-        id={idControl}
-        name={nombre}
-        type={Control === 'input' ? tipo : undefined}
-        className={`${estilos.control} ${area ? estilos.area : ''} ${
-          opciones ? estilos.lista : ''
-        } ${tipo === 'number' ? estilos.sinSpinner : ''} ${error ? estilos.conError : ''} ${exito ? estilos.conExito : ''} ${className}`}
-        aria-invalid={error ? 'true' : undefined}
-        aria-describedby={descritoPor || undefined}
-        aria-required={obligatorio || undefined}
-        {...resto}
-      >
-        {opciones && (
-          <>
-            {textoVacio !== null && <option value="">{textoVacio}</option>}
-            {opciones.map(({ valor, texto }) => (
-              <option key={valor} value={valor}>
-                {texto}
-              </option>
-            ))}
-          </>
-        )}
-      </Control>
+      <div className={estilos.controlWrapper}>
+        <Control
+          id={idControl}
+          name={nombre}
+          type={Control === 'input' ? tipo : undefined}
+          className={`${estilos.control} ${area ? estilos.area : ''} ${
+            opciones ? estilos.lista : ''
+          } ${tipo === 'number' ? estilos.sinSpinner : ''} ${
+            estadoResuelto === 'invalido' ? estilos.conError : ''
+          } ${estadoResuelto === 'valido' ? estilos.conExito : ''} ${
+            mostrarIconoEstado ? estilos.conIconoDerecho : ''
+          } ${className}`}
+          aria-invalid={error ? 'true' : undefined}
+          aria-describedby={descritoPor || undefined}
+          aria-required={obligatorio || undefined}
+          {...resto}
+        >
+          {opciones && (
+            <>
+              {textoVacio !== null && <option value="">{textoVacio}</option>}
+              {opciones.map(({ valor, texto }) => (
+                <option key={valor} value={valor}>
+                  {texto}
+                </option>
+              ))}
+            </>
+          )}
+        </Control>
 
-      {mensaje && (
-        <p className={tipoMensaje === 'error' ? estilos.error : tipoMensaje === 'exito' ? estilos.exito : estilos.validando} id={idError}>
-          {tipoMensaje === 'error' && <TriangleAlert size={14} aria-hidden="true" />}
-          {mensaje}
-        </p>
+        {mostrarIconoEstado && (
+          <span className={estilos.iconoEstado} aria-hidden="true">
+            {estadoResuelto === 'analizando' ? (
+              <LoaderCircle size={15} className={estilos.girando} />
+            ) : (
+              <CheckCheck size={15} className={estilos.iconoValido} />
+            )}
+          </span>
+        )}
+      </div>
+
+      {!compacto && (
+        <div className={estilos.slotFeedback} aria-live="polite">
+          {mensaje ? (
+            <p
+              className={
+                tipoMensaje === 'error'
+                  ? estilos.error
+                  : tipoMensaje === 'exito'
+                    ? estilos.exito
+                    : estilos.validando
+              }
+              id={idError}
+              data-testid={`field-message-${nombre}`}
+            >
+              {tipoMensaje === 'error' && <TriangleAlert size={14} aria-hidden="true" />}
+              {tipoMensaje === 'exito' && <CheckCheck size={14} aria-hidden="true" />}
+              <span>{mensaje}</span>
+            </p>
+          ) : guiaObj?.texto ? (
+            <p
+              className={
+                guiaObj.tipo === 'exito'
+                  ? estilos.guiaExito
+                  : guiaObj.tipo === 'aviso'
+                    ? estilos.guiaAviso
+                    : estilos.guiaDinamica
+              }
+              data-testid={`live-guidance-${nombre}`}
+            >
+              {guiaObj.tipo === 'exito' ? (
+                <CheckCheck size={13} aria-hidden="true" />
+              ) : (
+                <Info size={13} aria-hidden="true" />
+              )}
+              <span>{guiaObj.texto}</span>
+            </p>
+          ) : null}
+        </div>
       )}
     </div>
   );

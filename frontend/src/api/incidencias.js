@@ -58,3 +58,13 @@ export function obtenerInterrupciones(proyectoId, opciones) {
 export function obtenerErrores(proyectoId, opciones) {
   return api.obtener(`/api/proyectos/${proyectoId}/errores`, opciones);
 }
+
+/** Errores recientes registrados por el desarrollador autenticado. */
+export function obtenerMisErrores(opciones) {
+  return api.obtener('/api/incidencias/mis-errores', opciones);
+}
+
+/** Interrupciones recientes registradas por el desarrollador autenticado. */
+export function obtenerMisInterrupciones(opciones) {
+  return api.obtener('/api/incidencias/mis-interrupciones', opciones);
+}

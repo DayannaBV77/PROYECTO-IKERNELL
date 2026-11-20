@@ -76,25 +76,54 @@
   gap: var(--s-1);
 }
 
-.botonPaginacion {
+.numerosPagina {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin: 0 var(--s-1);
+}
+
+.botonPaginacion,
+.botonNumero {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 6px;
   border: 1px solid var(--c-borde);
   border-radius: var(--r-md);
   background: var(--c-superficie);
   color: var(--c-marino-titulo);
+  font-size: var(--t-xs);
+  font-weight: var(--p-semi);
   cursor: pointer;
-  transition: all var(--tr-rapida);
-  padding: 0;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.botonPaginacion:hover:not(:disabled) {
+.botonPaginacion {
+  padding: 0;
+  width: 30px;
+}
+
+.botonPaginacion:hover:not(:disabled),
+.botonNumero:hover:not(.botonNumeroActivo) {
   background: var(--c-superficie-tenue);
   border-color: var(--c-turquesa-fuerte);
   color: var(--c-turquesa-fuerte);
+}
+
+.botonNumeroActivo {
+  background: var(--c-marino-titulo);
+  border-color: var(--c-marino-titulo);
+  color: var(--c-texto-inverso, #ffffff);
+  cursor: default;
+}
+
+:global(html[data-theme='dark']) .botonNumeroActivo {
+  background: var(--c-turquesa-fuerte);
+  border-color: var(--c-turquesa-fuerte);
+  color: #ffffff;
 }
 
 .botonPaginacion:disabled {

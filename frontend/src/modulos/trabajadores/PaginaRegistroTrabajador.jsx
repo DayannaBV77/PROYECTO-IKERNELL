@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Save, TriangleAlert } from 'lucide-react';
 
 import {
-  TIPOS_IDENTIFICACION,
   TIPOS_TRABAJADOR,
   adjuntarFotografia,
   consultarDisponibilidadIdentificacion,
@@ -15,11 +14,16 @@ import Confirmacion from '../../componentes/ui/Confirmacion.jsx';
 import Seccion from '../../componentes/ui/Seccion.jsx';
 import estilos from '../../estilos/gestion.module.css';
 import { aFechaIso } from '../../utilidades/formato.js';
+import AsistenteDireccion from './componentes/AsistenteDireccion.jsx';
 import SelectorEspecialidades from './componentes/SelectorEspecialidades.jsx';
 import SelectorProfesiones from './componentes/SelectorProfesiones.jsx';
 import archivo from './componentes/SubidaFotografia.module.css';
 import {
   FECHA_MAXIMA_NACIMIENTO,
+  REGLAS_DOCUMENTO,
+  TIPOS_IDENTIFICACION,
+  normalizarTipoDocumento,
+  sanitizarDocumento,
   validarCampoTrabajador,
   validarTrabajador,
 } from './validaciones.js';
@@ -97,7 +101,9 @@ export default function PaginaRegistroTrabajador() {
   const hayErroresFormulario = Object.keys(validarTrabajador(valores)).length > 0;
   const identificacionPendiente = identificacionEstado.tipo === 'validando';
   const identificacionBloqueada = /^\d{10}$/.test(valores.identificacion) && identificacionEstado.tipo === 'error';
-  const identificacionDuplicada = errores.identificacion === 'Este número de documento ya existe en el sistema';
+  const identificacionDuplicada =
+    identificacionEstado.tipo === 'error' ||
+    (errores.identificacion && errores.identificacion.includes('ya se encuentra registrado'));
   const deshabilitarRegistro =
     guardando || hayErroresFormulario || identificacionPendiente || identificacionBloqueada || identificacionDuplicada;
 
@@ -119,8 +125,7 @@ export default function PaginaRegistroTrabajador() {
 
     if (name === 'tipoIdentificacion') {
       const nuevoTipo = value;
-      const maxDigitos = nuevoTipo === 'CEDULA_EXTRANJERIA' ? 7 : 10;
-      const idAjustada = valores.identificacion.slice(0, maxDigitos);
+      const idAjustada = sanitizarDocumento(valores.identificacion, nuevoTipo);
 
       setValores((previos) => ({
         ...previos,
@@ -144,10 +149,9 @@ export default function PaginaRegistroTrabajador() {
       return;
     }
 
-    const maxDigitos = valores.tipoIdentificacion === 'CEDULA_EXTRANJERIA' ? 7 : 10;
     const siguienteValor =
       name === 'identificacion'
-        ? value.replace(/\D/g, '').slice(0, maxDigitos)
+        ? sanitizarDocumento(value, valores.tipoIdentificacion)
         : value;
 
     setValores((previos) => ({ ...previos, [name]: siguienteValor }));
@@ -162,6 +166,10 @@ export default function PaginaRegistroTrabajador() {
         setIdentificacionEstado({ tipo: 'validando', mensaje: 'Validando identificación...' });
       }
     }
+    if (name === 'direccion') {
+      actualizarErroresCampo('direccion', null);
+      return;
+    }
     actualizarErroresCampo(name, error);
   }
 
@@ -169,18 +177,10 @@ export default function PaginaRegistroTrabajador() {
     const texto = valores.identificacion.trim();
     const tipo = valores.tipoIdentificacion || 'CEDULA_CIUDADANIA';
     const errorFormato = validarCampoTrabajador('identificacion', texto, tipo);
-    if (errorFormato || !texto || !/^\d+$/.test(texto)) {
+    if (errorFormato || !texto) {
       if (!texto) {
         setIdentificacionEstado({ tipo: 'inicio', mensaje: '' });
       }
-      return undefined;
-    }
-
-    const esExtranjeria = tipo === 'CEDULA_EXTRANJERIA' || tipo === 'CE';
-    if (esExtranjeria && (texto.length < 4 || texto.length > 7)) {
-      return undefined;
-    }
-    if (!esExtranjeria && (texto.length < 8 || texto.length > 10)) {
       return undefined;
     }
 
@@ -200,7 +200,11 @@ export default function PaginaRegistroTrabajador() {
         }
 
         if (!respuesta?.disponible) {
-          const mensaje = respuesta?.mensaje || 'Este número de documento ya existe en el sistema';
+          const mensaje =
+            respuesta?.mensaje === 'Este número de documento ya existe en el sistema'
+              ? 'Este número de documento ya se encuentra registrado en el sistema. Verifique los datos o consulte en el módulo de búsqueda.'
+              : respuesta?.mensaje ||
+                'Este número de documento ya se encuentra registrado en el sistema. Verifique los datos o consulte en el módulo de búsqueda.';
           setIdentificacionEstado({ tipo: 'error', mensaje });
           setErrores((previos) => ({ ...previos, identificacion: mensaje }));
           return;
@@ -323,25 +327,30 @@ export default function PaginaRegistroTrabajador() {
             etiqueta="Identificación"
             nombre="identificacion"
             obligatorio
+            placeholder={REGLAS_DOCUMENTO[normalizarTipoDocumento(valores.tipoIdentificacion)].placeholder}
             value={valores.identificacion}
-            onChange={alCambiar}
-            onKeyDown={(e) => {
-              // Impedir caracteres no numéricos
-              if (
-                !/[\d]/.test(e.key) &&
-                !['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'Enter', 'Home', 'End'].includes(e.key) &&
-                !e.ctrlKey &&
-                !e.metaKey
-              ) {
-                e.preventDefault();
-              }
+            onChange={(evento) => {
+              const limpio = sanitizarDocumento(evento.target.value, valores.tipoIdentificacion);
+              alCambiar({ target: { name: 'identificacion', value: limpio } });
+            }}
+            onBlur={() => {
+              const errorId = validarCampoTrabajador('identificacion', valores.identificacion, valores);
+              actualizarErroresCampo('identificacion', errorId);
             }}
             error={errores.identificacion}
             exito={identificacionEstado.tipo === 'exito' ? identificacionEstado.mensaje : undefined}
             validando={identificacionEstado.tipo === 'validando'}
-            maxLength={valores.tipoIdentificacion === 'CEDULA_EXTRANJERIA' ? 7 : 10}
-            inputMode="numeric"
-            pattern="[0-9]*"
+            estadoValidacion={
+              errores.identificacion || identificacionEstado.tipo === 'error'
+                ? 'invalido'
+                : identificacionEstado.tipo === 'validando'
+                  ? 'analizando'
+                  : identificacionEstado.tipo === 'exito'
+                    ? 'valido'
+                    : 'inactivo'
+            }
+            maxLength={REGLAS_DOCUMENTO[normalizarTipoDocumento(valores.tipoIdentificacion)].max}
+            inputMode={REGLAS_DOCUMENTO[normalizarTipoDocumento(valores.tipoIdentificacion)].inputMode}
           />
           <Campo
             etiqueta="Nombre"
@@ -371,14 +380,15 @@ export default function PaginaRegistroTrabajador() {
             error={errores.fechaNacimiento}
             max={FECHA_MAXIMA_NACIMIENTO}
           />
-          <Campo
-            etiqueta="Direccion"
-            nombre="direccion"
-            obligatorio
+          <AsistenteDireccion
             value={valores.direccion}
             onChange={alCambiar}
+            onBlur={() => {
+              const errorDir = validarCampoTrabajador('direccion', valores.direccion, valores);
+              actualizarErroresCampo('direccion', errorDir);
+            }}
             error={errores.direccion}
-            maxLength={200}
+            obligatorio
           />
           <SelectorProfesiones
             value={valores.profesion}

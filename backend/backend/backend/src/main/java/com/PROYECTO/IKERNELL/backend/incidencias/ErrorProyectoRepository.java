@@ -21,6 +21,9 @@ public interface ErrorProyectoRepository extends JpaRepository<ErrorProyecto, Lo
 	@EntityGraph(attributePaths = { "proyecto", "etapa" })
 	List<ErrorProyecto> findByProyectoIdOrderByIdDesc(Long proyectoId);
 
+	@EntityGraph(attributePaths = { "proyecto", "etapa" })
+	List<ErrorProyecto> findByRegistradoPorIdOrderByIdDesc(Long registradoPorId);
+
 	long countByProyectoId(Long proyectoId);
 
 	/** RN-08: una etapa con incidencias registradas no se elimina (RF-012, HU-11 C05). */

@@ -161,6 +161,9 @@
 }
 
 .enlace {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
   padding: 5px clamp(4px, 0.35vw, 8px);
   border: none;
   border-radius: var(--r-md);
@@ -174,9 +177,20 @@
   white-space: nowrap;
   cursor: pointer;
   transition:
-    color var(--tr-rapida),
-    background-color var(--tr-rapida),
-    box-shadow var(--tr-rapida);
+    color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.iconoExterno {
+  opacity: 0.65;
+  flex-shrink: 0;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+}
+
+.enlace:hover .iconoExterno {
+  opacity: 1;
+  transform: translate(1px, -1px);
 }
 
 /* Hover coherente con el indicador activo: misma franja inferior, en cian

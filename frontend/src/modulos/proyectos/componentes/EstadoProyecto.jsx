@@ -59,7 +59,7 @@ export default function EstadoProyecto({ proyecto }) {
   const conteos = Object.entries(datos?.datosDisponibles || {});
 
   return (
-    <Seccion titulo="Estado y avance" id="estado-proyecto">
+    <Seccion titulo="Estado y avance" id="estado-proyecto" mostrarRegresar={false}>
       <div className={estilos.barraSuperior}>
         <Boton variante="secundario" icono={RefreshCw} onClick={reintentar} disabled={cargando}>
           {cargando ? 'Consultando...' : 'Actualizar'}

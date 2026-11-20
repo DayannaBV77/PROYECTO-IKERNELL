@@ -18,13 +18,13 @@ import Seccion from '../../componentes/ui/Seccion.jsx';
 import estilos from '../../estilos/gestion.module.css';
 import { usePeticion } from '../../hooks/usePeticion.js';
 import { useDebounce } from '../../hooks/useDebounce.js';
+import { useEstadoPaginacion } from '../../hooks/usePaginacionLocal.js';
 
 const SIN_CRITERIOS = { identificador: '', nombre: '', estado: '' };
 
 export default function PaginaProyectos() {
   const [borrador, setBorrador] = useState(SIN_CRITERIOS);
-  const [pagina, setPagina] = useState(0);
-  const [tamano, setTamano] = useState(10);
+  const { pagina, setPagina, tamano, alCambiarTamano } = useEstadoPaginacion('proyectos', 10);
 
   // Búsqueda en tiempo real con debounce
   const criteriosEnTiempoReal = useDebounce(borrador, 250);
@@ -35,13 +35,9 @@ export default function PaginaProyectos() {
   );
   const { datos, error, cargando, reintentar } = usePeticion(cargar, [criteriosEnTiempoReal, pagina, tamano]);
 
-  // Al cambiar los criterios de búsqueda, reiniciar la página a la primera
-  useEffect(() => {
-    setPagina(0);
-  }, [criteriosEnTiempoReal]);
-
   function alCambiar(evento) {
     const { name, value } = evento.target;
+    setPagina(0);
     setBorrador((previos) => ({ ...previos, [name]: value }));
   }
 
@@ -53,11 +49,6 @@ export default function PaginaProyectos() {
 
   function alLimpiar() {
     setBorrador(SIN_CRITERIOS);
-    setPagina(0);
-  }
-
-  function alCambiarTamano(nuevoTamano) {
-    setTamano(nuevoTamano);
     setPagina(0);
   }
 
@@ -82,6 +73,7 @@ export default function PaginaProyectos() {
             nombre="identificador"
             tipo="number"
             min="1"
+            compacto
             placeholder="Ej: 101"
             value={borrador.identificador}
             onChange={alCambiar}
@@ -89,6 +81,7 @@ export default function PaginaProyectos() {
           <Campo
             etiqueta="Nombre del proyecto"
             nombre="nombre"
+            compacto
             placeholder="Buscar por nombre..."
             value={borrador.nombre}
             onChange={alCambiar}
@@ -96,6 +89,7 @@ export default function PaginaProyectos() {
           <Campo
             etiqueta="Estado"
             nombre="estado"
+            compacto
             opciones={ESTADOS_HABILITACION}
             textoVacio="Todos los estados"
             value={borrador.estado}

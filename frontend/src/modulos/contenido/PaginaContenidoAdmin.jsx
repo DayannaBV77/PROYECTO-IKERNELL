@@ -15,8 +15,10 @@ import EstadoVacio from '../../componentes/estados/EstadoVacio.jsx';
 import Boton from '../../componentes/ui/Boton.jsx';
 import Campo from '../../componentes/ui/Campo.jsx';
 import Dialogo from '../../componentes/ui/Dialogo.jsx';
+import PaginacionTabla from '../../componentes/ui/PaginacionTabla.jsx';
 import Seccion from '../../componentes/ui/Seccion.jsx';
 import estilos from '../../estilos/gestion.module.css';
+import { usePaginacionLocal } from '../../hooks/usePaginacionLocal.js';
 import { usePeticion } from '../../hooks/usePeticion.js';
 import { formatearFecha } from '../../utilidades/formato.js';
 
@@ -59,6 +61,14 @@ export default function PaginaContenidoAdmin() {
   const { datos, error, cargando, reintentar } = usePeticion(cargar, [tipo, recarga]);
 
   const piezas = datos?.contenido || [];
+  const {
+    itemsPaginados: piezasPaginadas,
+    datosPaginacion,
+    pagina,
+    setPagina,
+    tamano,
+    alCambiarTamano,
+  } = usePaginacionLocal(piezas, { clavePersistencia: `contenido-${tipo}` });
 
   function abrir(pieza) {
     const hoy = new Date().toISOString().split('T')[0];
@@ -198,59 +208,70 @@ export default function PaginaContenidoAdmin() {
       )}
 
       {!cargando && !error && piezas.length > 0 && (
-        <div className={estilos.tablaEnvoltorio}>
-          <table className={estilos.tabla}>
-            <caption className="solo-lectores">Contenido registrado de la seccion</caption>
-            <thead>
-              <tr>
-                <th scope="col">Orden</th>
-                <th scope="col">Titulo</th>
-                <th scope="col">Fecha</th>
-                <th scope="col">En la pagina</th>
-                <th scope="col">
-                  <span className="solo-lectores">Acciones</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {piezas.map((pieza) => (
-                <tr key={pieza.id}>
-                  <td>{pieza.orden ?? '—'}</td>
-                  <th scope="row" className={estilos.celdaNombre}>
-                    {pieza.titulo}
+        <>
+          <div className={estilos.tablaEnvoltorio}>
+            <table className={estilos.tabla}>
+              <caption className="solo-lectores">Contenido registrado de la seccion</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Orden</th>
+                  <th scope="col">Titulo</th>
+                  <th scope="col">Fecha</th>
+                  <th scope="col">En la pagina</th>
+                  <th scope="col">
+                    <span className="solo-lectores">Acciones</span>
                   </th>
-                  <td>{formatearFecha(pieza.fecha) || '—'}</td>
-                  <td>
-                    <span
-                      className={`${estilos.estado} ${
-                        pieza.publicada ? estilos.habilitado : estilos.inhabilitado
-                      }`}
-                    >
-                      {pieza.publicada ? 'Publicada' : 'Borrador'}
-                    </span>
-                  </td>
-                  <td>
-                    <div className={estilos.accionesFila}>
-                      <Boton variante="texto" icono={Pencil} onClick={() => abrir(pieza)}>
-                        Editar
-                        <span className="solo-lectores"> {pieza.titulo}</span>
-                      </Boton>
-                      <Boton
-                        variante="texto"
-                        icono={pieza.publicada ? EyeOff : Eye}
-                        disabled={cambiando === pieza.id}
-                        onClick={() => alPublicar(pieza, !pieza.publicada)}
-                      >
-                        {pieza.publicada ? 'Retirar' : 'Publicar'}
-                        <span className="solo-lectores"> {pieza.titulo}</span>
-                      </Boton>
-                    </div>
-                  </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {piezasPaginadas.map((pieza) => (
+                  <tr key={pieza.id}>
+                    <td>{pieza.orden ?? '—'}</td>
+                    <th scope="row" className={estilos.celdaNombre}>
+                      {pieza.titulo}
+                    </th>
+                    <td>{formatearFecha(pieza.fecha) || '—'}</td>
+                    <td>
+                      <span
+                        className={`${estilos.estado} ${
+                          pieza.publicada ? estilos.habilitado : estilos.inhabilitado
+                        }`}
+                      >
+                        {pieza.publicada ? 'Publicada' : 'Borrador'}
+                      </span>
+                    </td>
+                    <td>
+                      <div className={estilos.accionesFila}>
+                        <Boton variante="texto" icono={Pencil} onClick={() => abrir(pieza)}>
+                          Editar
+                          <span className="solo-lectores"> {pieza.titulo}</span>
+                        </Boton>
+                        <Boton
+                          variante="texto"
+                          icono={pieza.publicada ? EyeOff : Eye}
+                          disabled={cambiando === pieza.id}
+                          onClick={() => alPublicar(pieza, !pieza.publicada)}
+                        >
+                          {pieza.publicada ? 'Retirar' : 'Publicar'}
+                          <span className="solo-lectores"> {pieza.titulo}</span>
+                        </Boton>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <PaginacionTabla
+            datos={datosPaginacion}
+            pagina={pagina}
+            alCambiarPagina={setPagina}
+            tamano={tamano}
+            alCambiarTamano={alCambiarTamano}
+            etiquetaItem="elementos"
+          />
+        </>
       )}
 
       <div className={estilos.accionesBuscador} style={{ marginTop: '1.5rem' }}>

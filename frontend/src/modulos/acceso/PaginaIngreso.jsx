@@ -25,8 +25,9 @@ const VACIO = { correoCorporativo: '', password: '' };
  * ruta que pedia, para no obligarle a buscarla de nuevo.
  */
 export default function PaginaIngreso() {
-  const { sesion, comprobando, entrar } = useSesion();
+  const { sesion, comprobando, entrar, aviso } = useSesion();
   const ubicacion = useLocation();
+  const avisoSesion = aviso || ubicacion.state?.aviso || null;
 
   const [valores, setValores] = useState(VACIO);
   const [errores, setErrores] = useState({});
@@ -79,6 +80,12 @@ export default function PaginaIngreso() {
     <div className={estilos.pantalla}>
       <div className={estilos.caja}>
         <h1 className={estilos.titulo}>Iniciar sesion</h1>
+        {avisoSesion && (
+          <div className={estilos.aviso} role="alert" data-testid="login-session-notice">
+            <TriangleAlert size={18} className={estilos.iconoAviso} aria-hidden="true" />
+            <span>{avisoSesion}</span>
+          </div>
+        )}
         <div className={estilos.introduccion}>
           <p style={{ margin: 0 }}>
             Acceso exclusivo para el personal operativo y de gestión de <strong>IKernell Soluciones Software</strong>:

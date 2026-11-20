@@ -93,4 +93,22 @@ public class IncidenciaController {
 		return ListaResponse.de(lista, "El proyecto no tiene errores registrados.");
 	}
 
+	/** Errores recientes registrados por el desarrollador autenticado. */
+	@GetMapping("/incidencias/mis-errores")
+	public ListaResponse<ErrorProyectoResponse> misErrores(
+			@AuthenticationPrincipal TrabajadorAutenticado autenticado) {
+		List<ErrorProyectoResponse> lista = servicio.erroresDeTrabajador(autenticado.getTrabajadorId())
+				.stream().map(ErrorProyectoResponse::de).toList();
+		return ListaResponse.de(lista, "Aun no ha registrado errores.");
+	}
+
+	/** Interrupciones recientes registradas por el desarrollador autenticado. */
+	@GetMapping("/incidencias/mis-interrupciones")
+	public ListaResponse<InterrupcionProyectoResponse> misInterrupciones(
+			@AuthenticationPrincipal TrabajadorAutenticado autenticado) {
+		List<InterrupcionProyectoResponse> lista = servicio.interrupcionesDeTrabajador(autenticado.getTrabajadorId())
+				.stream().map(InterrupcionProyectoResponse::de).toList();
+		return ListaResponse.de(lista, "Aun no ha registrado interrupciones.");
+	}
+
 }

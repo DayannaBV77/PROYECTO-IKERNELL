@@ -5,6 +5,9 @@ import java.util.List;
 
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.PROYECTO.IKERNELL.backend.chat.domain.MensajeHilo;
 
@@ -32,5 +35,13 @@ public interface MensajeHiloRepository extends JpaRepository<MensajeHilo, Long> 
 
 	/** Los mismos, posteriores al instante hasta el que el trabajador habia leido. */
 	long countByHiloIdAndAutorIdNotAndEnviadoEnAfter(Long hiloId, Long autorId, LocalDateTime desde);
+
+	/**
+	 * Elimina permanentemente los mensajes cuya fecha de envio sea anterior al
+	 * instante de corte (politica de retencion de 30 dias).
+	 */
+	@Modifying(clearAutomatically = true, flushAutomatically = true)
+	@Query("DELETE FROM MensajeHilo m WHERE m.enviadoEn < :corte")
+	int eliminarAnterioresA(@Param("corte") LocalDateTime corte);
 
 }

@@ -1,3 +1,5 @@
+import { useLocation } from 'react-router-dom';
+import BotonRegresar from './BotonRegresar.jsx';
 import estilos from './Seccion.module.css';
 
 /**
@@ -14,7 +16,16 @@ export default function Seccion({
   id,
   children,
   sinCabecera = false,
+  mostrarRegresar,
+  rutaFallback = '/app',
+  onRegresar,
 }) {
+  const ubicacion = useLocation();
+  const esZonaPrivadaInterna =
+    ubicacion.pathname.startsWith('/app/') && ubicacion.pathname !== '/app/';
+  const debeMostrarRegresar =
+    mostrarRegresar !== undefined ? mostrarRegresar : esZonaPrivadaInterna && !sinCabecera;
+
   const idTitulo = id ? `${id}-titulo` : undefined;
 
   return (
@@ -24,6 +35,11 @@ export default function Seccion({
       aria-labelledby={idTitulo}
     >
       <div className={estilos.contenedor}>
+        {debeMostrarRegresar && (
+          <div className={estilos.filaRegresar}>
+            <BotonRegresar rutaFallback={rutaFallback} onRegresar={onRegresar} />
+          </div>
+        )}
         {!sinCabecera && titulo && (
           <div className={estilos.cabecera}>
             <h2 className={estilos.titulo} id={idTitulo}>

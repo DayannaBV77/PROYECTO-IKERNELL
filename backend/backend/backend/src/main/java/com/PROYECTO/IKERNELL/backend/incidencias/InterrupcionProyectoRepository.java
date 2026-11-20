@@ -22,6 +22,9 @@ public interface InterrupcionProyectoRepository extends JpaRepository<Interrupci
 	@EntityGraph(attributePaths = { "proyecto", "etapa" })
 	List<InterrupcionProyecto> findByProyectoIdOrderByFechaDesc(Long proyectoId);
 
+	@EntityGraph(attributePaths = { "proyecto", "etapa" })
+	List<InterrupcionProyecto> findByRegistradoPorIdOrderByFechaDescIdDesc(Long registradoPorId);
+
 	/** Prepara el filtro por periodo que pedira el reporte de RF-017. */
 	@EntityGraph(attributePaths = { "proyecto", "etapa" })
 	List<InterrupcionProyecto> findByProyectoIdAndFechaBetweenOrderByFechaDesc(

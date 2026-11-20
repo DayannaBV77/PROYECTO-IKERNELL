@@ -102,6 +102,15 @@ export default function PaginaArchivoPlano() {
   }
 
   async function alGenerar() {
+    const objetivo = seleccion.length === 0 ? proyectos : seleccionados;
+    if (objetivo.length > 0 && objetivo.every((p) => !p.tieneDatosEjecucion)) {
+      setConfirmado(null);
+      setFallo(
+        'Los proyectos seleccionados aún no tienen actividades ni datos de ejecución exportables.',
+      );
+      return;
+    }
+
     setGenerando(true);
     setFallo(null);
     setConfirmado(null);

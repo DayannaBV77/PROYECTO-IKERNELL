@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
+  ArrowUpRight,
   CalendarDays,
-  ChevronLeft,
-  ChevronRight,
   FolderKanban,
   Info,
   Play,
@@ -33,16 +33,36 @@ import Boton from '../../componentes/ui/Boton.jsx';
 import Campo from '../../componentes/ui/Campo.jsx';
 import Confirmacion from '../../componentes/ui/Confirmacion.jsx';
 import EtiquetaEstado from '../../componentes/ui/EtiquetaEstado.jsx';
+import PaginacionTabla from '../../componentes/ui/PaginacionTabla.jsx';
 import Seccion from '../../componentes/ui/Seccion.jsx';
 import { useNotificador } from '../../componentes/ui/Notificador.jsx';
+import { usePaginacionLocal } from '../../hooks/usePaginacionLocal.js';
 import { usePeticion } from '../../hooks/usePeticion.js';
 import { formatearFecha } from '../../utilidades/formato.js';
 import ModalAsignarTrabajadores from './ModalAsignarTrabajadores.jsx';
 import ModalCambiarLider from './ModalCambiarLider.jsx';
 import estilos from './PaginaAsignaciones.module.css';
 
-const FILTROS_VACIOS = { q: '', estado: '', orden: 'recientes' };
-const TAMANO_PAGINA = 6;
+const FILTROS_VACIOS = { q: '', estado: '', equipoFiltro: 'todos', orden: 'recientes' };
+const CLAVE_FILTROS_ASIGNACIONES = 'ikernell-asignaciones-filtros';
+
+function leerFiltrosGuardados() {
+  try {
+    const raw = sessionStorage.getItem(CLAVE_FILTROS_ASIGNACIONES);
+    if (!raw) return FILTROS_VACIOS;
+    return { ...FILTROS_VACIOS, ...JSON.parse(raw) };
+  } catch {
+    return FILTROS_VACIOS;
+  }
+}
+
+function guardarFiltros(filtros) {
+  try {
+    sessionStorage.setItem(CLAVE_FILTROS_ASIGNACIONES, JSON.stringify(filtros));
+  } catch {
+    // sessionStorage puede estar deshabilitado.
+  }
+}
 
 const PESTANAS = [
   { id: 'general', etiqueta: 'General' },
@@ -52,46 +72,84 @@ const PESTANAS = [
 ];
 
 export default function PaginaAsignaciones() {
-  const [borrador, setBorrador] = useState(FILTROS_VACIOS);
-  const [filtros, setFiltros] = useState(FILTROS_VACIOS);
-  const [pagina, setPagina] = useState(0);
-  const [proyectoIdSeleccionado, setProyectoIdSeleccionado] = useState('');
-  const [pestana, setPestana] = useState('general');
-  const [modalAbierto, setModalAbierto] = useState(false);
-  const [recarga, setRecarga] = useState(0);
+  const { id: idParametro } = useParams();
+  if (idParametro) {
+    return <DetalleProyectoAsignaciones idProyecto={idParametro} />;
+  }
+  return <ListaProyectosAsignaciones />;
+}
 
+function ListaProyectosAsignaciones() {
+  const navigate = useNavigate();
+  const [borrador, setBorrador] = useState(() => leerFiltrosGuardados());
+  const [filtros, setFiltros] = useState(() => leerFiltrosGuardados());
+  const panelResultadosRef = useRef(null);
   const temporizador = useRef(null);
 
   const cargarProyectos = useCallback(
     ({ senal }) =>
       buscarProyectosParaAsignaciones(
-        { ...filtros, pagina, tamano: TAMANO_PAGINA },
+        {
+          q: filtros.q,
+          estado: filtros.estado,
+          orden: filtros.orden === 'nombre' ? 'nombre' : 'recientes',
+          pagina: 0,
+          tamano: 200,
+        },
         { senal },
       ),
-    [filtros, pagina],
+    [filtros.q, filtros.estado, filtros.orden],
   );
-  const proyectos = usePeticion(cargarProyectos, [filtros, pagina, recarga]);
-  const resultados = proyectos.datos?.contenido || [];
-  const proyectoSeleccionado =
-    resultados.find((proyecto) => String(proyecto.id) === proyectoIdSeleccionado) ||
-    resultados[0] ||
-    null;
-  const idActivo = proyectoSeleccionado ? String(proyectoSeleccionado.id) : '';
+  const proyectos = usePeticion(cargarProyectos, [filtros.q, filtros.estado, filtros.orden]);
 
-  const cargarDetalle = useCallback(
-    ({ senal }) =>
-      idActivo ? obtenerProyectoParaAsignaciones(idActivo, { senal }) : Promise.resolve(null),
-    [idActivo],
-  );
-  const detalle = usePeticion(cargarDetalle, [idActivo, recarga]);
+  const resultadosFiltrados = useMemo(() => {
+    const base = proyectos.datos?.contenido || [];
+    const filtrados = base.filter((p) => {
+      if (filtros.equipoFiltro === 'con_equipo') {
+        return (p.numeroIntegrantes ?? 0) > 0;
+      }
+      if (filtros.equipoFiltro === 'sin_equipo') {
+        return (p.numeroIntegrantes ?? 0) === 0;
+      }
+      return true;
+    });
+
+    const ordenados = [...filtrados];
+    if (filtros.orden === 'antiguos') {
+      ordenados.sort((a, b) => (a.fechaCreacion || '').localeCompare(b.fechaCreacion || '') || a.id - b.id);
+    } else if (filtros.orden === 'integrantes') {
+      ordenados.sort((a, b) => (b.numeroIntegrantes ?? 0) - (a.numeroIntegrantes ?? 0) || a.id - b.id);
+    } else if (filtros.orden === 'nombre') {
+      ordenados.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es'));
+    }
+    return ordenados;
+  }, [proyectos.datos, filtros.equipoFiltro, filtros.orden]);
+
+  const {
+    itemsPaginados: resultadosPaginados,
+    datosPaginacion,
+    pagina,
+    setPagina,
+    tamano,
+    alCambiarTamano,
+  } = usePaginacionLocal(resultadosFiltrados, {
+    clavePersistencia: 'asignaciones',
+    tamanoInicial: 6,
+  });
+
+  const hayFiltrosActivos =
+    Boolean(borrador.q.trim()) ||
+    Boolean(borrador.estado) ||
+    borrador.equipoFiltro !== 'todos' ||
+    borrador.orden !== 'recientes';
 
   function aplicarFiltrosConRetardo(nuevosFiltros) {
     clearTimeout(temporizador.current);
     temporizador.current = setTimeout(() => {
       setFiltros(nuevosFiltros);
+      guardarFiltros(nuevosFiltros);
       setPagina(0);
-      setProyectoIdSeleccionado('');
-    }, 300);
+    }, 250);
   }
 
   function alCambiarFiltro(evento) {
@@ -104,8 +162,8 @@ export default function PaginaAsignaciones() {
     } else {
       clearTimeout(temporizador.current);
       setFiltros(nuevos);
+      guardarFiltros(nuevos);
       setPagina(0);
-      setProyectoIdSeleccionado('');
     }
   }
 
@@ -113,20 +171,20 @@ export default function PaginaAsignaciones() {
     clearTimeout(temporizador.current);
     setBorrador(FILTROS_VACIOS);
     setFiltros(FILTROS_VACIOS);
+    guardarFiltros(FILTROS_VACIOS);
     setPagina(0);
-    setProyectoIdSeleccionado('');
   }
 
   useEffect(() => () => clearTimeout(temporizador.current), []);
 
-  function seleccionarProyecto(proyecto) {
-    setProyectoIdSeleccionado(String(proyecto.id));
-    setPestana('general');
+  function cambiarPaginaConScroll(nuevaPagina) {
+    setPagina(nuevaPagina);
+    panelResultadosRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  function asignacionGuardada() {
-    setModalAbierto(false);
-    setRecarga((actual) => actual + 1);
+  function cambiarTamanoConScroll(nuevoTamano) {
+    alCambiarTamano(nuevoTamano);
+    panelResultadosRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   return (
@@ -137,176 +195,228 @@ export default function PaginaAsignaciones() {
     >
       <div className={estilos.pagina}>
         <form className={estilos.busquedaProyectos} onSubmit={(evento) => evento.preventDefault()}>
-          <div className={estilos.tituloBuscador}>
-            <span className={estilos.iconoBuscador}><Search size={22} aria-hidden="true" /></span>
-            <div>
-              <h2>Buscar proyectos</h2>
-              <p>Encuentra un proyecto por nombre, identificador o estado.</p>
-            </div>
-          </div>
           <div className={estilos.filtrosProyecto}>
-            <label className={estilos.busquedaTexto} htmlFor="buscar-proyectos-asignaciones">
-              <Search size={17} aria-hidden="true" />
-              <input
-                id="buscar-proyectos-asignaciones"
-                name="q"
-                type="search"
-                value={borrador.q}
+            <div className={estilos.busquedaGrupo}>
+              <label className={estilos.busquedaEtiqueta} htmlFor="buscar-proyectos-asignaciones">
+                Búsqueda rápida
+              </label>
+              <label className={estilos.busquedaTexto} htmlFor="buscar-proyectos-asignaciones">
+                <Search size={16} aria-hidden="true" />
+                <input
+                  id="buscar-proyectos-asignaciones"
+                  name="q"
+                  type="search"
+                  value={borrador.q}
+                  onChange={alCambiarFiltro}
+                  placeholder="Buscar por nombre, código o descripción..."
+                />
+              </label>
+            </div>
+            <div className={estilos.filtroSelectEstado}>
+              <Campo
+                etiqueta="Estado"
+                nombre="estado"
+                compacto
+                opciones={ESTADOS_HABILITACION}
+                textoVacio="Todos los estados"
+                value={borrador.estado}
                 onChange={alCambiarFiltro}
-                placeholder="Buscar por nombre o identificador..."
               />
-            </label>
-            <Campo
-              etiqueta="Estado"
-              nombre="estado"
-              opciones={ESTADOS_HABILITACION}
-              textoVacio="Todos los estados"
-              value={borrador.estado}
-              onChange={alCambiarFiltro}
-            />
-            <Campo
-              etiqueta="Ordenar por"
-              nombre="orden"
-              opciones={[
-                { valor: 'recientes', texto: 'Más recientes' },
-                { valor: 'nombre', texto: 'Nombre' },
-              ]}
-              textoVacio={null}
-              value={borrador.orden}
-              onChange={alCambiarFiltro}
-            />
-            <Boton type="button" variante="secundario" icono={RotateCcw} onClick={limpiarFiltros}>
+            </div>
+            <div className={estilos.filtroSelectEquipo}>
+              <Campo
+                etiqueta="Equipo"
+                nombre="equipoFiltro"
+                compacto
+                opciones={[
+                  { valor: 'todos', texto: 'Todos los proyectos' },
+                  { valor: 'con_equipo', texto: 'Con equipo asignado' },
+                  { valor: 'sin_equipo', texto: 'Sin desarrolladores asignados' },
+                ]}
+                textoVacio={null}
+                value={borrador.equipoFiltro}
+                onChange={alCambiarFiltro}
+              />
+            </div>
+            <div className={estilos.filtroSelectOrden}>
+              <Campo
+                etiqueta="Ordenar por"
+                nombre="orden"
+                compacto
+                opciones={[
+                  { valor: 'recientes', texto: 'Más recientes' },
+                  { valor: 'antiguos', texto: 'Más antiguos' },
+                  { valor: 'nombre', texto: 'Nombre A-Z' },
+                  { valor: 'integrantes', texto: 'Mayor número de integrantes' },
+                ]}
+                textoVacio={null}
+                value={borrador.orden}
+                onChange={alCambiarFiltro}
+              />
+            </div>
+            <Boton
+              type="button"
+              variante="secundario"
+              icono={RotateCcw}
+              onClick={limpiarFiltros}
+              disabled={!hayFiltrosActivos}
+              data-testid="asignaciones-clear-filters"
+            >
               Limpiar filtros
             </Boton>
           </div>
         </form>
 
-        <section className={estilos.panelResultados} aria-labelledby="proyectos-encontrados">
+        <section
+          ref={panelResultadosRef}
+          className={estilos.panelResultados}
+          aria-labelledby="proyectos-encontrados"
+        >
           <div className={estilos.cabeceraResultados}>
             <h2 id="proyectos-encontrados">
               <FolderKanban size={19} aria-hidden="true" />
               Proyectos encontrados
             </h2>
             {proyectos.datos && (
-              <span>
-                Mostrando {resultados.length} de {proyectos.datos.totalElementos} proyectos
+              <span data-testid="asignaciones-match-count">
+                Mostrando {resultadosPaginados.length} de {resultadosFiltrados.length} proyectos encontrados
               </span>
             )}
           </div>
 
-          {proyectos.cargando && <EstadoCarga mensaje="Buscando proyectos..." />}
+          {proyectos.cargando && <EstadoCarga mensaje="Buscando proyectos..." esqueleto={6} />}
           {!proyectos.cargando && proyectos.error && (
             <EstadoError error={proyectos.error} alReintentar={proyectos.reintentar} />
           )}
-          {!proyectos.cargando && !proyectos.error && resultados.length === 0 && (
+          {!proyectos.cargando && !proyectos.error && resultadosFiltrados.length === 0 && (
             <EstadoVacio
               mensaje={proyectos.datos?.mensaje || 'No hay proyectos que coincidan con los filtros.'}
               icono={FolderKanban}
             />
           )}
 
-          {!proyectos.cargando && !proyectos.error && resultados.length > 0 && (
+          {!proyectos.cargando && !proyectos.error && resultadosFiltrados.length > 0 && (
             <>
               <div className={estilos.tarjetas}>
-                {resultados.map((proyecto) => (
+                {resultadosPaginados.map((proyecto) => (
                   <TarjetaProyecto
                     key={proyecto.id}
                     proyecto={proyecto}
-                    seleccionada={String(proyecto.id) === idActivo}
-                    onSelect={() => seleccionarProyecto(proyecto)}
+                    onSelect={() => navigate(`/app/asignaciones/${proyecto.id}`)}
                   />
                 ))}
               </div>
-              {proyectos.datos.totalPaginas > 1 && (
-                <nav className={estilos.paginacion} aria-label="Paginación de proyectos">
-                  <button
-                    type="button"
-                    disabled={pagina === 0 || proyectos.cargando}
-                    onClick={() => setPagina((actual) => actual - 1)}
-                  >
-                    <ChevronLeft size={16} aria-hidden="true" />
-                    Anterior
-                  </button>
-                  <span>Página {pagina + 1} de {proyectos.datos.totalPaginas}</span>
-                  <button
-                    type="button"
-                    disabled={pagina + 1 >= proyectos.datos.totalPaginas || proyectos.cargando}
-                    onClick={() => setPagina((actual) => actual + 1)}
-                  >
-                    Siguiente
-                    <ChevronRight size={16} aria-hidden="true" />
-                  </button>
-                </nav>
-              )}
+
+              <PaginacionTabla
+                datos={datosPaginacion}
+                pagina={pagina}
+                alCambiarPagina={cambiarPaginaConScroll}
+                tamano={tamano}
+                alCambiarTamano={cambiarTamanoConScroll}
+                opciones={[6, 12, 24, 48]}
+                etiquetaItem="proyectos"
+              />
             </>
           )}
         </section>
+      </div>
+    </Seccion>
+  );
+}
 
-        {proyectoSeleccionado && (
-          <section className={estilos.panelDetalle} aria-labelledby="detalle-proyecto-asignaciones">
-            <header className={estilos.cabeceraDetalle}>
-              <div className={estilos.tituloDetalle}>
-                <span className={estilos.iconoDetalle}><Info size={20} aria-hidden="true" /></span>
-                <div>
-                  <h2 id="detalle-proyecto-asignaciones">Detalle del proyecto</h2>
-                  <p>Información general y gestión del equipo.</p>
-                </div>
+function DetalleProyectoAsignaciones({ idProyecto }) {
+  const [pestana, setPestana] = useState('general');
+  const [modalAbierto, setModalAbierto] = useState(false);
+  const [recarga, setRecarga] = useState(0);
+
+  const cargarDetalle = useCallback(
+    ({ senal }) => obtenerProyectoParaAsignaciones(idProyecto, { senal }),
+    [idProyecto],
+  );
+  const detalle = usePeticion(cargarDetalle, [idProyecto, recarga]);
+
+  function asignacionGuardada() {
+    setModalAbierto(false);
+    setRecarga((actual) => actual + 1);
+  }
+
+  return (
+    <Seccion
+      titulo={detalle.datos?.nombre || 'Detalle del proyecto'}
+      descripcion={
+        detalle.datos?.codigo
+          ? `${detalle.datos.codigo} · Información general y gestión del equipo.`
+          : 'Información general y gestión del equipo.'
+      }
+      id="detalle-asignacion"
+      rutaFallback="/app/asignaciones"
+    >
+      <div className={estilos.pagina}>
+        <section className={estilos.panelDetalle} aria-labelledby="detalle-proyecto-asignaciones">
+          <header className={estilos.cabeceraDetalle}>
+            <div className={estilos.tituloDetalle}>
+              <span className={estilos.iconoDetalle}><Info size={20} aria-hidden="true" /></span>
+              <div>
+                <h2 id="detalle-proyecto-asignaciones">Detalle del proyecto</h2>
+                <p>Información general, equipo asignado, etapas y actividades.</p>
               </div>
+            </div>
+            {detalle.datos && (
               <Boton
                 type="button"
                 icono={Plus}
-                disabled={proyectoSeleccionado.estadoHabilitacion === 'INHABILITADO'}
+                disabled={detalle.datos.estadoHabilitacion === 'INHABILITADO'}
                 onClick={() => setModalAbierto(true)}
               >
                 Asignar desarrolladores
               </Boton>
-            </header>
+            )}
+          </header>
 
-            <div className={estilos.pestanas} role="tablist" aria-label="Secciones del proyecto">
-              {PESTANAS.map(({ id, etiqueta }) => (
-                <button
-                  key={id}
-                  type="button"
-                  role="tab"
-                  id={`pestana-${id}`}
-                  aria-selected={pestana === id}
-                  aria-controls={`panel-${id}`}
-                  className={pestana === id ? estilos.pestanaActiva : ''}
-                  onClick={() => setPestana(id)}
-                >
-                  {etiqueta}
-                </button>
-              ))}
-            </div>
+          <div className={estilos.pestanas} role="tablist" aria-label="Secciones del proyecto">
+            {PESTANAS.map(({ id, etiqueta }) => (
+              <button
+                key={id}
+                type="button"
+                role="tab"
+                id={`pestana-${id}`}
+                aria-selected={pestana === id}
+                aria-controls={`panel-${id}`}
+                className={pestana === id ? estilos.pestanaActiva : ''}
+                onClick={() => setPestana(id)}
+              >
+                {etiqueta}
+              </button>
+            ))}
+          </div>
 
-            <div
-              id={`panel-${pestana}`}
-              className={estilos.contenidoPestana}
-              role="tabpanel"
-              aria-labelledby={`pestana-${pestana}`}
-              tabIndex={0}
-            >
-              {detalle.cargando && <EstadoCarga mensaje="Cargando detalle del proyecto..." />}
-              {!detalle.cargando && detalle.error && (
-                <EstadoError error={detalle.error} alReintentar={detalle.reintentar} />
-              )}
-              {!detalle.cargando && !detalle.error && detalle.datos && (
-                <ContenidoPestana
-                  pestana={pestana}
-                  proyecto={detalle.datos}
-                  alActualizar={() => setRecarga((n) => n + 1)}
-                  alAbrirAsignar={() => setModalAbierto(true)}
-                />
-              )}
-            </div>
-          </section>
-        )}
+          <div
+            id={`panel-${pestana}`}
+            className={estilos.contenidoPestana}
+            role="tabpanel"
+            aria-labelledby={`pestana-${pestana}`}
+            tabIndex={0}
+          >
+            {detalle.cargando && <EstadoCarga mensaje="Cargando detalle del proyecto..." />}
+            {!detalle.cargando && detalle.error && (
+              <EstadoError error={detalle.error} alReintentar={detalle.reintentar} />
+            )}
+            {!detalle.cargando && !detalle.error && detalle.datos && (
+              <ContenidoPestana
+                pestana={pestana}
+                proyecto={detalle.datos}
+                alActualizar={() => setRecarga((n) => n + 1)}
+                alAbrirAsignar={() => setModalAbierto(true)}
+              />
+            )}
+          </div>
+        </section>
       </div>
 
-      {modalAbierto && proyectoSeleccionado && (
+      {modalAbierto && detalle.datos && (
         <ModalAsignarTrabajadores
           abierto={modalAbierto}
-          proyecto={proyectoSeleccionado}
+          proyecto={detalle.datos}
           alCerrar={() => setModalAbierto(false)}
           alGuardar={asignacionGuardada}
         />
@@ -315,18 +425,29 @@ export default function PaginaAsignaciones() {
   );
 }
 
-function TarjetaProyecto({ proyecto, seleccionada, onSelect }) {
+function TarjetaProyecto({ proyecto, onSelect }) {
   const fechaCreacion = proyecto.fechaCreacion
     ? formatearFecha(proyecto.fechaCreacion.slice(0, 10))
     : 'Sin dato histórico';
 
   return (
-    <article className={`${estilos.tarjetaProyecto} ${seleccionada ? estilos.tarjetaSeleccionada : ''}`}>
+    <article
+      className={estilos.tarjetaProyecto}
+      onClick={onSelect}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelect();
+        }
+      }}
+      tabIndex={0}
+      role="link"
+      data-testid={`project-card-${proyecto.id}`}
+    >
       <div className={estilos.resumenTarjeta}>
-        <span className={estilos.marcaProyecto} aria-hidden="true">K</span>
         <div className={estilos.nombreProyecto}>
+          <span className={estilos.codigoBadge}>{proyecto.codigo}</span>
           <h3>{proyecto.nombre}</h3>
-          <span>{proyecto.codigo}</span>
         </div>
         <EtiquetaEstado estado={proyecto.estadoHabilitacion} />
       </div>
@@ -334,8 +455,17 @@ function TarjetaProyecto({ proyecto, seleccionada, onSelect }) {
         <span><Users size={15} aria-hidden="true" /> {proyecto.numeroIntegrantes} integrantes</span>
         <span><CalendarDays size={15} aria-hidden="true" /> Creado: {fechaCreacion}</span>
       </div>
-      <button className={estilos.verDetalle} type="button" onClick={onSelect}>
-        Ver detalles
+      <button
+        className={estilos.verDetalle}
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onSelect();
+        }}
+        data-testid={`project-detail-btn-${proyecto.id}`}
+      >
+        <span>Ver detalles</span>
+        <ArrowUpRight size={14} aria-hidden="true" />
       </button>
     </article>
   );

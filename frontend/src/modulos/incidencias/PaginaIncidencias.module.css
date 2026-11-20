@@ -1,0 +1,214 @@
+.contenedor {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* Pestanas ergonomicas */
+.tabsBarra {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.35rem;
+  border-radius: 12px;
+  background-color: var(--c-superficie);
+  border: 1px solid var(--c-borde);
+  align-self: flex-start;
+}
+
+.tabBoton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 40px;
+  padding: 0 1rem;
+  border-radius: 9px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--c-texto-tenue);
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
+}
+
+.tabBoton:hover {
+  color: var(--c-texto);
+}
+
+.tabActiva {
+  background-color: var(--c-turquesa-fuerte, #0284c7);
+  color: #ffffff;
+}
+
+.tabActiva:hover {
+  color: #ffffff;
+}
+
+/* Formulario corporativo */
+.fichaFormulario {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.35rem;
+  border-radius: 12px;
+  background-color: var(--c-superficie);
+  border: 1px solid var(--c-borde);
+  box-shadow: var(--b-sutil);
+}
+
+.gridCampos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem 1.15rem;
+  align-items: start;
+}
+
+.severidadGrupo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.microEtiqueta {
+  font-size: var(--t-xs);
+  font-weight: var(--p-semi);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--c-marino-titulo);
+}
+
+.severidadPildoras {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  min-height: 42px;
+  align-items: center;
+}
+
+.severidadBtn {
+  height: 36px;
+  padding: 0 0.8rem;
+  border-radius: 8px;
+  border: 1px solid var(--c-borde);
+  background: var(--c-fondo);
+  color: var(--c-texto-tenue);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 140ms ease, background-color 140ms ease, color 140ms ease;
+}
+
+.severidadBtn:hover {
+  border-color: var(--c-turquesa-fuerte, #0284c7);
+  color: var(--c-texto);
+}
+
+.severidadActiva {
+  background-color: rgba(14, 165, 233, 0.14);
+  border-color: var(--c-turquesa-fuerte, #0284c7);
+  color: var(--c-turquesa-fuerte, #0284c7);
+}
+
+.accionesForm {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--c-borde);
+}
+
+/* Tabla resumen de incidencias recientes */
+.panelHistorial {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 1.25rem;
+  border-radius: 12px;
+  background-color: var(--c-superficie);
+  border: 1px solid var(--c-borde);
+  box-shadow: var(--b-sutil);
+}
+
+.historialCabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.historialTitulo {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--c-texto);
+}
+
+.historialSub {
+  font-size: 0.8rem;
+  color: var(--c-texto-tenue);
+}
+
+.tablaWrap {
+  overflow-x: auto;
+}
+
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+}
+
+.tabla th {
+  text-align: left;
+  padding: 0.65rem 0.75rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--c-texto-tenue);
+  border-bottom: 1px solid var(--c-borde);
+}
+
+.tabla td {
+  padding: 0.72rem 0.75rem;
+  border-bottom: 1px solid var(--c-borde);
+  color: var(--c-texto);
+  vertical-align: middle;
+}
+
+.tabla tbody tr:hover {
+  background-color: rgba(14, 165, 233, 0.04);
+}
+
+.badgeTipo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  font-size: 0.73rem;
+  font-weight: 600;
+}
+
+.badgeDefecto {
+  background-color: rgba(239, 68, 68, 0.13);
+  color: #f87171;
+}
+
+.badgeInterrupcion {
+  background-color: rgba(245, 158, 11, 0.14);
+  color: #fbbf24;
+}
+
+.badgeRegistrado {
+  background-color: rgba(16, 185, 129, 0.14);
+  color: #34d399;
+}
+
+@media (max-width: 760px) {
+  .gridCampos {
+    grid-template-columns: 1fr;
+  }
+}

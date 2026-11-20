@@ -27,6 +27,7 @@ import EtiquetaEstado from '../../componentes/ui/EtiquetaEstado.jsx';
 import PaginacionTabla from '../../componentes/ui/PaginacionTabla.jsx';
 import Seccion from '../../componentes/ui/Seccion.jsx';
 import estilos from '../../estilos/gestion.module.css';
+import { useEstadoPaginacion } from '../../hooks/usePaginacionLocal.js';
 import { usePeticion } from '../../hooks/usePeticion.js';
 
 const OPCIONES_PROFESIONES = [
@@ -54,8 +55,7 @@ export default function PaginaTrabajadores() {
   const [busquedaGeneral, setBusquedaGeneral] = useState('');
   const [borrador, setBorrador] = useState(SIN_CRITERIOS);
   const [criterios, setCriterios] = useState(SIN_CRITERIOS);
-  const [pagina, setPagina] = useState(0);
-  const [tamano, setTamano] = useState(10);
+  const { pagina, setPagina, tamano, alCambiarTamano } = useEstadoPaginacion('trabajadores', 10);
   const [mostrarMasFiltros, setMostrarMasFiltros] = useState(false);
 
   const temporizador = useRef(null);
@@ -93,11 +93,6 @@ export default function PaginaTrabajadores() {
     setBusquedaGeneral('');
     setBorrador(SIN_CRITERIOS);
     setCriterios(SIN_CRITERIOS);
-    setPagina(0);
-  }
-
-  function alCambiarTamano(nuevoTamano) {
-    setTamano(nuevoTamano);
     setPagina(0);
   }
 
@@ -149,6 +144,7 @@ export default function PaginaTrabajadores() {
           <Campo
             etiqueta="Tipo de trabajador"
             nombre="tipoTrabajador"
+            compacto
             opciones={TIPOS_TRABAJADOR}
             textoVacio="Todos los roles"
             value={borrador.tipoTrabajador}
@@ -157,6 +153,7 @@ export default function PaginaTrabajadores() {
           <Campo
             etiqueta="Estado"
             nombre="estado"
+            compacto
             opciones={ESTADOS_HABILITACION}
             textoVacio="Todos los estados"
             value={borrador.estado}

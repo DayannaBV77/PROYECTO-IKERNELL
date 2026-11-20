@@ -12,14 +12,14 @@
 .barraSuperior {
   display: flex;
   justify-content: flex-end;
-  margin-bottom: var(--s-5);
+  margin-bottom: var(--s-4);
 }
 
-/* --- Buscador y formularios --- */
+/* --- Buscador y formularios compactos --- */
 .buscador,
 .formulario {
-  padding: var(--s-5) var(--s-6);
-  margin-bottom: var(--s-6);
+  padding: var(--s-3) var(--s-4);
+  margin-bottom: var(--s-4);
   background: var(--c-superficie);
   border: 1px solid var(--c-borde);
   border-radius: var(--r-lg);
@@ -35,9 +35,9 @@
 .filtrosBarra {
   display: flex;
   flex-direction: column;
-  gap: var(--s-4);
-  padding: var(--s-4) var(--s-5);
-  margin-bottom: var(--s-5);
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-4);
+  margin-bottom: var(--s-4);
   background: var(--c-fondo-franja);
   border: 1px solid var(--c-borde);
   border-radius: var(--r-md);
@@ -51,9 +51,9 @@
 
 .filtrosGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: var(--s-4);
-  align-items: flex-start;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: var(--s-3);
+  align-items: end;
 }
 
 .filtrosAcciones {
@@ -61,33 +61,34 @@
   justify-content: flex-end;
   align-items: center;
   flex-wrap: wrap;
-  gap: var(--s-3);
-  margin-top: var(--s-2);
+  gap: var(--s-2);
+  margin-top: var(--s-1);
 }
 
 /*
- * Rejilla que se adapta al ancho disponible con espaciado equilibrado
+ * Rejilla horizontal compacta que se adapta al ancho disponible
  */
 .criterios {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: var(--s-4) var(--s-5);
-  align-items: flex-start;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: var(--s-3) var(--s-4);
+  align-items: end;
 }
 
 .accionesBuscador {
   display: flex;
   align-items: center;
-  gap: var(--s-3);
-  margin-top: var(--s-5);
-  padding-top: var(--s-4);
+  justify-content: flex-end;
+  gap: var(--s-2);
+  margin-top: var(--s-3);
+  padding-top: var(--s-3);
   border-top: 1px solid var(--c-borde);
 }
 
 /* --- Filtro moderno de trabajadores --- */
 
 .filtroCampoGeneral {
-  margin-bottom: var(--s-4);
+  margin-bottom: var(--s-3);
 }
 
 .filtroEtiqueta {
@@ -97,7 +98,7 @@
   letter-spacing: var(--e-nav);
   text-transform: uppercase;
   color: var(--c-texto-tenue);
-  margin-bottom: var(--s-2);
+  margin-bottom: var(--s-1);
 }
 
 .filtroInputIcono {
@@ -140,20 +141,20 @@
 .filtroFilaDoble {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--s-4);
-  margin-bottom: var(--s-4);
+  gap: var(--s-3);
+  margin-bottom: var(--s-3);
 }
 
 .filtroToggle {
   display: inline-flex;
   align-items: center;
   gap: var(--s-2);
-  padding: 0.3rem 0;
-  margin-bottom: var(--s-4);
+  padding: 0.2rem 0;
+  margin-bottom: var(--s-2);
   background: none;
   border: none;
   cursor: pointer;
-  font-size: var(--t-sm);
+  font-size: var(--t-xs);
   font-weight: var(--p-semi);
   color: var(--c-turquesa-fuerte);
   transition: opacity var(--tr-rapida);
@@ -167,7 +168,7 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  padding-top: var(--s-4);
+  padding-top: var(--s-3);
   border-top: 1px solid var(--c-borde);
 }
 
@@ -279,12 +280,19 @@
 
 .tabla th,
 .tabla td {
-  padding: 0.85rem 1rem;
+  padding: 0.65rem 0.9rem;
   border-bottom: 1px solid var(--c-borde);
   vertical-align: middle;
   white-space: normal;
   word-break: break-word;
   overflow-wrap: anywhere;
+}
+
+.celdaTruncada {
+  max-width: 240px;
+  white-space: nowrap !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .tabla thead th {
@@ -304,11 +312,14 @@
 }
 
 .tabla tbody tr {
-  transition: background-color var(--tr-rapida);
+  transition:
+    background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .tabla tbody tr:hover {
   background: var(--c-superficie-tenue);
+  box-shadow: inset 3px 0 0 var(--c-turquesa-fuerte);
 }
 
 .celdaNombre,
@@ -328,12 +339,20 @@
   font-weight: var(--p-semi);
   font-size: var(--t-xs);
   color: var(--c-turquesa-fuerte);
-  padding: 4px 8px;
+  padding: 4px 10px;
   border-radius: var(--r-sm);
   background: var(--c-superficie-tenue);
   border: 1px solid transparent;
-  transition: all var(--tr-rapida);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   white-space: nowrap;
+  text-decoration: none;
+}
+
+.tabla tbody tr:hover .abrir {
+  background: var(--c-superficie);
+  border-color: rgba(2, 132, 199, 0.3);
+  transform: translateX(1px);
 }
 
 .abrir:hover {
@@ -405,6 +424,95 @@
   flex-wrap: wrap;
   gap: var(--s-3);
   margin-top: var(--s-2);
+}
+
+/* --- Ficha de Perfil Moderna (Audit Read-Only Cards & Badges) --- */
+.fichaCabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+  min-height: 38px;
+  padding-bottom: var(--s-2);
+  border-bottom: 1px solid var(--c-borde);
+}
+
+.badgeAuditoria {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: var(--p-semi);
+  color: var(--c-texto-tenue);
+  background: var(--c-fondo-franja);
+  border: 1px solid var(--c-borde);
+}
+
+.badgePendiente {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: var(--p-semi);
+  color: var(--c-alerta-texto, #78350f);
+  background: var(--c-alerta-fondo, #fffbeb);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.datosAuditGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: var(--s-3);
+  margin: 0;
+}
+
+.datoAuditCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: var(--r-md);
+  background: var(--c-fondo-franja);
+  border: 1px solid var(--c-borde);
+  transition: border-color 0.2s ease;
+}
+
+.datoAuditCard:hover {
+  border-color: var(--c-borde-campo);
+}
+
+.datoAuditEtiqueta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.6875rem;
+  font-weight: var(--p-semi);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--c-texto-tenue);
+}
+
+.datoAuditValor {
+  margin: 0;
+  font-size: var(--t-sm);
+  font-weight: var(--p-semi);
+  color: var(--c-marino-titulo);
+  overflow-wrap: anywhere;
+}
+
+.accionesDialogoTriple {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--s-2);
+  margin-top: var(--s-4);
+  padding-top: var(--s-3);
+  border-top: 1px solid var(--c-borde);
 }
 
 /* --- Avisos --- */

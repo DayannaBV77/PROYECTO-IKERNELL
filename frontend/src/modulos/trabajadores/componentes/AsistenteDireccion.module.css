@@ -1,0 +1,130 @@
+.contenedor {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.cabeceraAccion {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: -1.45rem;
+  position: relative;
+  z-index: 2;
+}
+
+.botonAsistente {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--c-borde);
+  background: var(--c-fondo-franja);
+  color: var(--c-turquesa-fuerte);
+  font-size: 0.7rem;
+  font-weight: var(--p-semi);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.botonAsistente:hover {
+  border-color: var(--c-turquesa-fuerte);
+  background: var(--c-superficie-tenue);
+}
+
+.vistaPrevia {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 28px;
+  padding: 0.3rem 0.65rem;
+  border-radius: var(--r-sm);
+  background: var(--c-fondo-franja);
+  border: 1px solid var(--c-borde);
+  font-size: 0.75rem;
+  color: var(--c-texto-tenue);
+  transition: opacity 150ms ease;
+}
+
+.vistaPreviaOculta {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.vistaPrevia strong {
+  color: var(--c-marino-titulo);
+  font-weight: var(--p-semi);
+  letter-spacing: 0.02em;
+}
+
+.panelConstructor {
+  padding: 0.85rem 1rem;
+  border-radius: var(--r-md);
+  background: var(--c-fondo-franja);
+  border: 1px solid var(--c-borde-tarjeta, var(--c-borde));
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.tituloConstructor {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: var(--p-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--c-marino-titulo);
+}
+
+.gridConstructor {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.campoAncho {
+  grid-column: span 4;
+}
+
+.miniCampo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.72rem;
+  font-weight: var(--p-semi);
+  color: var(--c-texto-tenue);
+}
+
+.miniCampo input,
+.miniCampo select {
+  width: 100%;
+  padding: 0.42rem 0.6rem;
+  font-size: 0.8rem;
+  font-family: inherit;
+  color: var(--c-texto);
+  background: var(--c-superficie);
+  border: 1px solid var(--c-borde-campo, var(--c-borde));
+  border-radius: var(--r-sm);
+}
+
+.miniCampo input:focus,
+.miniCampo select:focus {
+  outline: none;
+  border-color: var(--c-turquesa-fuerte);
+}
+
+.accionesConstructor {
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 640px) {
+  .gridConstructor {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .campoAncho {
+    grid-column: span 2;
+  }
+}

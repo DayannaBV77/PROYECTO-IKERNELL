@@ -2,6 +2,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 
 import ErrorBoundary from '../ErrorBoundary.jsx';
 import { useSesion } from '../../sesion/contexto.js';
+import DockChat from '../chat/DockChat.jsx';
 import AccionesSesion from './AccionesSesion.jsx';
 import Encabezado from './Encabezado.jsx';
 import PieDePagina from './PieDePagina.jsx';
@@ -37,6 +38,8 @@ export default function LayoutPrincipal() {
           <Outlet />
         </ErrorBoundary>
       </main>
+
+      {!esPantallaChat && sesion && <DockChat />}
 
       {!esPantallaChat && (
         <PieDePagina

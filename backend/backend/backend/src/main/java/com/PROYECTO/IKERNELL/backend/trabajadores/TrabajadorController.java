@@ -27,6 +27,7 @@ import com.PROYECTO.IKERNELL.backend.shared.dto.PaginaResponse;
 import com.PROYECTO.IKERNELL.backend.trabajadores.domain.TipoIdentificacion;
 import com.PROYECTO.IKERNELL.backend.trabajadores.domain.TipoTrabajador;
 import com.PROYECTO.IKERNELL.backend.trabajadores.domain.Trabajador;
+import com.PROYECTO.IKERNELL.backend.trabajadores.validacion.IdentificacionValidaValidator;
 import com.PROYECTO.IKERNELL.backend.trabajadores.dto.CriteriosBusquedaTrabajador;
 import com.PROYECTO.IKERNELL.backend.trabajadores.dto.DisponibilidadIdentificacionResponse;
 import com.PROYECTO.IKERNELL.backend.trabajadores.dto.ModificacionTrabajadorRequest;
@@ -86,20 +87,9 @@ public class TrabajadorController {
 		if (texto.isEmpty()) {
 			return new DisponibilidadIdentificacionResponse(false, "Debe indicar la identificación.");
 		}
-		if (!texto.matches("\\d+")) {
-			return new DisponibilidadIdentificacionResponse(false,
-					"La identificación solo puede contener números.");
-		}
-		if (tipo == TipoIdentificacion.CEDULA_EXTRANJERIA) {
-			if (texto.length() < 4 || texto.length() > 7) {
-				return new DisponibilidadIdentificacionResponse(false,
-						"La cédula de extranjería debe tener entre 4 y 7 dígitos.");
-			}
-		} else {
-			if (texto.length() < 8 || texto.length() > 10) {
-				return new DisponibilidadIdentificacionResponse(false,
-						"La cédula de ciudadanía debe tener entre 8 y 10 dígitos.");
-			}
+		String errorFormato = IdentificacionValidaValidator.validarSegunTipo(tipo, texto);
+		if (errorFormato != null) {
+			return new DisponibilidadIdentificacionResponse(false, errorFormato);
 		}
 		boolean disponible = !servicio.existeIdentificacion(tipo, texto);
 		return new DisponibilidadIdentificacionResponse(disponible,

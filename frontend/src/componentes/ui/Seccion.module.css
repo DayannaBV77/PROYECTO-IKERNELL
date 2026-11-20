@@ -17,6 +17,11 @@
   padding-inline: var(--s-4);
 }
 
+.filaRegresar {
+  display: flex;
+  justify-content: flex-start;
+}
+
 .cabecera {
   margin-bottom: var(--s-6);
   text-align: center;

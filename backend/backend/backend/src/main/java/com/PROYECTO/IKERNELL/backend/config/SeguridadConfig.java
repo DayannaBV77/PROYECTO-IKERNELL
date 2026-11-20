@@ -7,6 +7,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -14,9 +15,12 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextHolderFilter;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 
+import com.PROYECTO.IKERNELL.backend.auth.FiltroVigenciaCuenta;
 import com.PROYECTO.IKERNELL.backend.shared.error.AccesoDenegadoException;
 
 /**
@@ -54,9 +58,18 @@ public class SeguridadConfig {
 	}
 
 	@Bean
-	public SecurityFilterChain filterChain(HttpSecurity http, SecurityContextRepository contextRepository)
+	public SecurityFilterChain filterChain(HttpSecurity http, SecurityContextRepository contextRepository,
+			FiltroVigenciaCuenta filtroVigenciaCuenta)
 			throws Exception {
 		http
+				// Cabeceras de seguridad HTTP esenciales: anti-clickjacking, anti-MIME sniffing,
+				// politica de referrer estricta y no almacenamiento en cache de respuestas privadas.
+				.headers(headers -> headers
+						.frameOptions(frame -> frame.deny())
+						.contentTypeOptions(Customizer.withDefaults())
+						.referrerPolicy(referrer -> referrer
+								.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+						.cacheControl(Customizer.withDefaults()))
 				// RF-026 y RF-032..036: la informacion empresarial y el formulario de
 				// consultas son publicos; RNF-001 reserva todo lo demas (HU-01 C05).
 				.authorizeHttpRequests(peticiones -> peticiones
@@ -66,15 +79,19 @@ public class SeguridadConfig {
 				// cookie, asi que la proteccion CSRF debe quedar activa.
 				.csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()))
 				.securityContext(contexto -> contexto.securityContextRepository(contextRepository))
+				.addFilterAfter(filtroVigenciaCuenta, SecurityContextHolderFilter.class)
 				// El login se expone como endpoint JSON propio, no como formulario.
 				.formLogin(login -> login.disable())
 				.httpBasic(basic -> basic.disable())
 				.logout(logout -> logout
 						.logoutUrl("/api/auth/logout")
 						.invalidateHttpSession(true)
-						.deleteCookies("JSESSIONID")
-						.logoutSuccessHandler((peticion, respuesta, autenticacion) -> respuesta
-								.setStatus(HttpStatus.NO_CONTENT.value())))
+						.clearAuthentication(true)
+						.deleteCookies("JSESSIONID", "XSRF-TOKEN")
+						.logoutSuccessHandler((peticion, respuesta, autenticacion) -> {
+							respuesta.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+							respuesta.setStatus(HttpStatus.NO_CONTENT.value());
+						}))
 				.exceptionHandling(manejo -> manejo
 						// Sin sesion: mismo mensaje generico que el login fallido (RN-11).
 						.authenticationEntryPoint((peticion, respuesta, excepcion) -> {

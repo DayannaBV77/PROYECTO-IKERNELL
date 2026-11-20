@@ -12,6 +12,7 @@ import PaginacionTabla from '../../componentes/ui/PaginacionTabla.jsx';
 import Seccion from '../../componentes/ui/Seccion.jsx';
 import estilos from '../../estilos/gestion.module.css';
 import { useDebounce } from '../../hooks/useDebounce.js';
+import { useEstadoPaginacion } from '../../hooks/usePaginacionLocal.js';
 import { usePeticion } from '../../hooks/usePeticion.js';
 import { formatearFecha, formatearTipoTitulo } from '../../utilidades/formato.js';
 import ModalRegistroActividad from './ModalRegistroActividad.jsx';
@@ -25,8 +26,7 @@ const SIN_CRITERIOS = { identificador: '', proyectoId: '', etapaId: '', desarrol
 
 export default function PaginaActividades() {
   const [borrador, setBorrador] = useState(SIN_CRITERIOS);
-  const [pagina, setPagina] = useState(0);
-  const [tamano, setTamano] = useState(10);
+  const { pagina, setPagina, tamano, alCambiarTamano } = useEstadoPaginacion('actividades', 10);
   const [modalRegistroAbierto, setModalRegistroAbierto] = useState(false);
   const [actividadDetalleId, setActividadDetalleId] = useState(null);
   const [recarga, setRecarga] = useState(0);
@@ -56,11 +56,6 @@ export default function PaginaActividades() {
   function alLimpiar() {
     setPagina(0);
     setBorrador(SIN_CRITERIOS);
-  }
-
-  function alCambiarTamano(nuevoTamano) {
-    setTamano(nuevoTamano);
-    setPagina(0);
   }
 
   function alRegistrarActividad() {
@@ -101,6 +96,7 @@ export default function PaginaActividades() {
             nombre="identificador"
             tipo="number"
             min="1"
+            compacto
             placeholder="Ej: 1"
             value={borrador.identificador}
             onChange={alCambiar}
@@ -108,6 +104,7 @@ export default function PaginaActividades() {
           <Campo
             etiqueta="Proyecto"
             nombre="proyectoId"
+            compacto
             opciones={opcionesDeProyecto}
             textoVacio="Todos los proyectos"
             value={borrador.proyectoId}
@@ -116,6 +113,7 @@ export default function PaginaActividades() {
           <Campo
             etiqueta="Etapa"
             nombre="etapaId"
+            compacto
             opciones={opcionesDeEtapa}
             textoVacio="Todas las etapas"
             value={borrador.etapaId}
@@ -125,6 +123,7 @@ export default function PaginaActividades() {
           <Campo
             etiqueta="Desarrollador asignado"
             nombre="desarrolladorId"
+            compacto
             opciones={opcionesDeDesarrollador}
             textoVacio="Todos los desarrolladores"
             value={borrador.desarrolladorId}
@@ -206,7 +205,6 @@ export default function PaginaActividades() {
                         type="button"
                         className={estilos.abrir}
                         onClick={() => setActividadDetalleId(actividad.id)}
-                        style={{ background: 'transparent', border: 'none', cursor: 'pointer', font: 'inherit', padding: 0 }}
                       >
                         <span>Ver detalle</span>
                         <span className="solo-lectores"> la actividad {actividad.id}</span>

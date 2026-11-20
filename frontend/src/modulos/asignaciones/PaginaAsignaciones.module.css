@@ -14,10 +14,8 @@
 }
 
 .busquedaProyectos {
-  display: grid;
-  grid-template-columns: minmax(190px, 0.8fr) minmax(0, 2fr);
-  gap: var(--s-3) var(--s-5);
-  align-items: end;
+  display: block;
+  width: 100%;
 }
 
 .tituloBuscador,
@@ -54,21 +52,56 @@
 }
 
 .filtrosProyecto {
-  display: grid;
-  grid-template-columns: minmax(180px, 1.6fr) minmax(140px, 0.8fr) minmax(140px, 0.8fr) auto auto;
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--s-3);
-  align-items: end;
+  align-items: flex-end;
+}
+
+.busquedaGrupo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1 1 240px;
+  min-width: 210px;
+}
+
+.busquedaEtiqueta {
+  font-size: var(--t-xs);
+  font-weight: var(--p-semi);
+  letter-spacing: 0.02em;
+  line-height: 1.25;
+  min-height: 15px;
+  text-transform: uppercase;
+  color: var(--c-marino-titulo);
+}
+
+.filtroSelectEstado {
+  flex: 0 1 170px;
+  min-width: 165px;
+}
+
+.filtroSelectEquipo {
+  flex: 0 1 200px;
+  min-width: 185px;
+}
+
+.filtroSelectOrden {
+  flex: 0 1 200px;
+  min-width: 185px;
 }
 
 .busquedaTexto {
   display: flex;
   min-width: 0;
-  min-height: 2.65rem;
+  height: 42px;
+  box-sizing: border-box;
   align-items: center;
   gap: var(--s-2);
   padding: 0 var(--s-3);
   color: var(--c-info);
-  border: 1px solid var(--c-borde-tarjeta);
+  background: var(--c-superficie);
+  border: 1px solid var(--c-borde-campo, var(--c-borde-tarjeta));
   border-radius: var(--r-md);
 }
 
@@ -93,7 +126,9 @@
 }
 
 .filtrosProyecto > button {
+  height: 42px;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .panelResultados {
@@ -130,20 +165,52 @@
 }
 
 .tarjetaProyecto {
-  display: grid;
-  grid-template-rows: 1fr auto auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
   min-width: 0;
-  padding: var(--s-3);
+  gap: var(--s-2);
+  padding: 1.1rem 1.15rem;
   background: var(--c-superficie);
-  border: 1px solid var(--c-borde);
-  border-radius: var(--r-md);
-  transition: border-color var(--tr-rapida), box-shadow var(--tr-rapida);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 0.85rem;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.02),
+    0 8px 16px -4px rgba(0, 0, 0, 0.03);
+  cursor: pointer;
+  transition:
+    transform 200ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 200ms ease,
+    box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+:global(html[data-theme='dark']) .tarjetaProyecto {
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 .tarjetaProyecto:hover,
+.tarjetaProyecto:focus-visible,
 .tarjetaSeleccionada {
+  transform: translateY(-2px);
   border-color: var(--c-turquesa-fuerte);
-  box-shadow: var(--b-sutil);
+  box-shadow:
+    0 4px 10px rgba(0, 0, 0, 0.04),
+    0 12px 24px -6px rgba(2, 132, 199, 0.14);
+  outline: none;
+}
+
+.codigoBadge {
+  display: inline-block;
+  align-self: flex-start;
+  padding: 0.15rem 0.5rem;
+  margin-bottom: 0.35rem;
+  border-radius: var(--r-sm);
+  font-size: 0.6875rem;
+  font-weight: var(--p-bold);
+  letter-spacing: 0.04em;
+  color: var(--c-turquesa-fuerte);
+  background: var(--c-superficie-tenue);
+  border: 1px solid rgba(2, 132, 199, 0.2);
 }
 
 .resumenTarjeta {
@@ -181,10 +248,11 @@
 }
 
 .nombreProyecto h3 {
-  overflow: hidden;
-  font-size: var(--t-sm);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: var(--t-base);
+  line-height: 1.35;
+  margin: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .nombreProyecto > span,
@@ -580,7 +648,10 @@
   }
 
   .filtrosProyecto {
-    grid-template-columns: minmax(180px, 1fr) repeat(2, minmax(130px, 0.7fr)) auto auto;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .busquedaTexto {
+    grid-column: 1 / -1;
   }
 
   .tarjetas {

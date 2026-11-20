@@ -11,8 +11,10 @@ import EstadoCarga from '../../../componentes/estados/EstadoCarga.jsx';
 import EstadoError from '../../../componentes/estados/EstadoError.jsx';
 import EstadoVacio from '../../../componentes/estados/EstadoVacio.jsx';
 import Boton from '../../../componentes/ui/Boton.jsx';
+import PaginacionTabla from '../../../componentes/ui/PaginacionTabla.jsx';
 import Seccion from '../../../componentes/ui/Seccion.jsx';
 import estilos from '../../../estilos/gestion.module.css';
+import { usePaginacionLocal } from '../../../hooks/usePaginacionLocal.js';
 import { usePeticion } from '../../../hooks/usePeticion.js';
 import { formatearFecha } from '../../../utilidades/formato.js';
 
@@ -53,6 +55,14 @@ export default function EquipoProyecto({ proyecto }) {
 
   const habilitado = proyecto.estadoHabilitacion !== 'INHABILITADO';
   const disponibles = candidatos.datos?.contenido || [];
+  const {
+    itemsPaginados: equipoPaginado,
+    datosPaginacion,
+    pagina,
+    setPagina,
+    tamano,
+    alCambiarTamano,
+  } = usePaginacionLocal(equipo.datos || [], { clavePersistencia: `equipo-${proyecto.id}` });
 
   function alMarcar(id) {
     setSeleccion((previos) =>
@@ -96,6 +106,7 @@ export default function EquipoProyecto({ proyecto }) {
       descripcion="Desarrolladores asignados al proyecto."
       fondo="tenue"
       id="equipo-proyecto"
+      mostrarRegresar={false}
     >
       {resultado && (
         <div role="status">
@@ -149,31 +160,42 @@ export default function EquipoProyecto({ proyecto }) {
       )}
 
       {!equipo.cargando && !equipo.error && equipo.datos?.length > 0 && (
-        <div className={estilos.tablaEnvoltorio}>
-          <table className={estilos.tabla}>
-            <caption className="solo-lectores">Equipo asignado al proyecto</caption>
-            <thead>
-              <tr>
-                <th scope="col">Identificacion</th>
-                <th scope="col">Desarrollador</th>
-                <th scope="col">Rol en el proyecto</th>
-                <th scope="col">Asignado el</th>
-              </tr>
-            </thead>
-            <tbody>
-              {equipo.datos.map((asignacion) => (
-                <tr key={asignacion.id}>
-                  <td>{asignacion.trabajadorIdentificacion}</td>
-                  <th scope="row" className={estilos.celdaNombre}>
-                    {asignacion.trabajadorNombreCompleto}
-                  </th>
-                  <td>{ETIQUETA_ROL[asignacion.rolEnProyecto] || asignacion.rolEnProyecto}</td>
-                  <td>{formatearFecha(asignacion.fechaAsignacion)}</td>
+        <>
+          <div className={estilos.tablaEnvoltorio}>
+            <table className={estilos.tabla}>
+              <caption className="solo-lectores">Equipo asignado al proyecto</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Identificacion</th>
+                  <th scope="col">Desarrollador</th>
+                  <th scope="col">Rol en el proyecto</th>
+                  <th scope="col">Asignado el</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {equipoPaginado.map((asignacion) => (
+                  <tr key={asignacion.id}>
+                    <td>{asignacion.trabajadorIdentificacion}</td>
+                    <th scope="row" className={estilos.celdaNombre}>
+                      {asignacion.trabajadorNombreCompleto}
+                    </th>
+                    <td>{ETIQUETA_ROL[asignacion.rolEnProyecto] || asignacion.rolEnProyecto}</td>
+                    <td>{formatearFecha(asignacion.fechaAsignacion)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <PaginacionTabla
+            datos={datosPaginacion}
+            pagina={pagina}
+            alCambiarPagina={setPagina}
+            tamano={tamano}
+            alCambiarTamano={alCambiarTamano}
+            etiquetaItem="integrantes"
+          />
+        </>
       )}
 
       {/* --- C01: asignar --- */}

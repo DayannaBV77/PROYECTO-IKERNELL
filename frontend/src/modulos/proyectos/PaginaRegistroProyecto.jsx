@@ -1,13 +1,14 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Save, TriangleAlert } from 'lucide-react';
 
-import { registrarProyecto } from '../../api/proyectos.js';
+import { buscarProyectos, registrarProyecto } from '../../api/proyectos.js';
 import Boton from '../../componentes/ui/Boton.jsx';
 import Campo from '../../componentes/ui/Campo.jsx';
 import Confirmacion from '../../componentes/ui/Confirmacion.jsx';
 import Seccion from '../../componentes/ui/Seccion.jsx';
 import estilos from '../../estilos/gestion.module.css';
+import { useDebounce } from '../../hooks/useDebounce.js';
 
 const VACIO = { nombre: '', descripcion: '', reporteExternoAutorizado: false };
 
@@ -19,8 +20,39 @@ export default function PaginaRegistroProyecto() {
   const [fallo, setFallo] = useState(null);
   const [guardando, setGuardando] = useState(false);
   const [mostrarConfirmacionVolver, setMostrarConfirmacionVolver] = useState(false);
+  const [nombreDuplicado, setNombreDuplicado] = useState(false);
+  const nombreDebounced = useDebounce(valores.nombre.trim(), 350);
+  const enviandoRef = useRef(false);
 
   const hayCambios = Boolean(valores.nombre.trim() || valores.descripcion.trim() || valores.reporteExternoAutorizado);
+
+  useEffect(() => {
+    if (!hayCambios) return undefined;
+    function alCerrarVentana(e) {
+      e.preventDefault();
+      e.returnValue = '';
+    }
+    window.addEventListener('beforeunload', alCerrarVentana);
+    return () => window.removeEventListener('beforeunload', alCerrarVentana);
+  }, [hayCambios]);
+
+  useEffect(() => {
+    if (nombreDebounced.length < 3) {
+      return undefined;
+    }
+    const controlador = new AbortController();
+    buscarProyectos({ nombre: nombreDebounced, tamano: 10 }, { senal: controlador.signal })
+      .then((res) => {
+        const existe = (res?.contenido || []).some(
+          (p) => (p.nombre || '').trim().toLowerCase() === nombreDebounced.toLowerCase(),
+        );
+        setNombreDuplicado(existe);
+      })
+      .catch(() => {});
+    return () => controlador.abort();
+  }, [nombreDebounced]);
+
+  const esNombreDuplicado = nombreDebounced.length >= 3 && nombreDuplicado;
 
   function alIntentarVolver(e) {
     if (e) e.preventDefault();
@@ -60,7 +92,8 @@ export default function PaginaRegistroProyecto() {
       setErrores(nuevosErrores);
       return;
     }
-
+    if (enviandoRef.current || guardando) return;
+    enviandoRef.current = true;
     setGuardando(true);
     try {
       const creado = await registrarProyecto({
@@ -76,6 +109,7 @@ export default function PaginaRegistroProyecto() {
       }
       setFallo(error.message);
       setGuardando(false);
+      enviandoRef.current = false;
     }
   }
 
@@ -121,7 +155,17 @@ export default function PaginaRegistroProyecto() {
           obligatorio
           value={valores.nombre}
           onChange={alCambiar}
-          error={errores.nombre}
+          error={
+            errores.nombre ||
+            (esNombreDuplicado ? 'Ya existe un proyecto registrado con este nombre.' : undefined)
+          }
+          estadoValidacion={
+            errores.nombre || esNombreDuplicado
+              ? 'invalido'
+              : valores.nombre.trim().length >= 3
+                ? 'valido'
+                : undefined
+          }
         />
         <Campo
           etiqueta="Descripcion"

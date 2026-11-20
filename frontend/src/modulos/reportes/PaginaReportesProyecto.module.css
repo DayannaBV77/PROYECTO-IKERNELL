@@ -487,8 +487,19 @@
   border-bottom: none;
 }
 
-.tablaCompacta tr:hover td {
-  background: #f8fafc;
+.tablaCompacta tbody tr {
+  transition:
+    background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tablaCompacta tbody tr:hover {
+  background: #eaf7fa;
+  box-shadow: inset 3px 0 0 #0284c7;
+}
+
+.tablaCompacta tbody tr:hover td {
+  background: transparent;
 }
 
 .badgeEstado {

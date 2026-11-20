@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { CircleCheck, PauseCircle, Save, TriangleAlert } from 'lucide-react';
+import { PauseCircle, Save } from 'lucide-react';
 
 import { UNIDADES_DURACION, registrarInterrupcion } from '../../../api/incidencias.js';
 import Boton from '../../../componentes/ui/Boton.jsx';
 import Campo from '../../../componentes/ui/Campo.jsx';
+import { useNotificador } from '../../../componentes/ui/Notificador.jsx';
 import estilos from '../../../estilos/gestion.module.css';
 import { useEtapasDeProyecto } from '../../../hooks/useEtapasDeProyecto.js';
 
@@ -38,6 +39,7 @@ export default function FormularioDeInterrupcion({
   alRegistrar,
   alCancelar,
 }) {
+  const notificador = useNotificador();
   const [valores, setValores] = useState(() => ({
     ...VACIO,
     proyectoId: proyectoInicial,
@@ -46,8 +48,6 @@ export default function FormularioDeInterrupcion({
   }));
   const { opcionesDeEtapa } = useEtapasDeProyecto(valores.proyectoId);
   const [errores, setErrores] = useState({});
-  const [fallo, setFallo] = useState(null);
-  const [confirmado, setConfirmado] = useState(null);
   const [guardando, setGuardando] = useState(false);
 
   const proyecto = proyectos.find(({ valor }) => valor === valores.proyectoId);
@@ -65,8 +65,6 @@ export default function FormularioDeInterrupcion({
 
   async function alEnviar(evento) {
     evento.preventDefault();
-    setConfirmado(null);
-    setFallo(null);
 
     const nuevosErrores = validar(valores);
     if (Object.keys(nuevosErrores).length > 0) {
@@ -84,8 +82,7 @@ export default function FormularioDeInterrupcion({
         duracionUnidad: valores.duracionUnidad,
         etapaId: Number(valores.etapaId),
       });
-      setConfirmado('La interrupcion quedo registrada y asociada al proyecto.');
-      // C02: se conserva el proyecto para registrar otra sin volver a elegirlo.
+      notificador.exito('Interrupción imputada y asociada al proyecto.', 'Interrupción guardada');
       setValores({
         ...VACIO,
         proyectoId: valores.proyectoId,
@@ -99,30 +96,17 @@ export default function FormularioDeInterrupcion({
       if (error.campos) {
         setErrores(error.campos);
       }
-      setFallo(error.message);
+      notificador.error(error.message || 'No se pudo imputar la interrupción.', 'Error');
     } finally {
       setGuardando(false);
     }
   }
 
   return (
-    <form className={estilos.ficha} onSubmit={alEnviar} noValidate>
+    <form className={estilos.ficha} onSubmit={alEnviar} noValidate data-testid="form-registrar-interrupcion">
       <p className={estilos.rotulo}>
-        <PauseCircle size={14} aria-hidden="true" /> Registrar una interrupcion
+        <PauseCircle size={14} aria-hidden="true" /> Imputar interrupción operativa
       </p>
-
-      {confirmado && (
-        <p className={estilos.avisoExito} role="status">
-          <CircleCheck size={18} aria-hidden="true" />
-          {confirmado}
-        </p>
-      )}
-      {fallo && (
-        <p className={estilos.avisoError} role="alert">
-          <TriangleAlert size={18} aria-hidden="true" />
-          {fallo}
-        </p>
-      )}
 
       {proyectoFijo ? (
         <div>
@@ -201,19 +185,20 @@ export default function FormularioDeInterrupcion({
       </div>
 
       <Campo
-        etiqueta="Etapa en que ocurrio"
+        etiqueta="Etapa en que ocurrió"
         nombre="etapaId"
         opciones={opcionesDeEtapa}
+        textoVacio={valores.proyectoId ? 'Seleccione la etapa' : 'Elija primero un proyecto'}
         obligatorio
+        disabled={!valores.proyectoId}
         value={valores.etapaId}
         onChange={alCambiar}
         error={errores.etapaId}
-        pista="Son las etapas del proyecto elegido; elija primero el proyecto."
       />
 
       <div className={estilos.accionesPerfil}>
-        <Boton type="submit" icono={Save} disabled={guardando}>
-          {guardando ? 'Guardando...' : 'Registrar interrupcion'}
+        <Boton type="submit" icono={Save} disabled={guardando} data-testid="btn-imputar-interrupcion">
+          {guardando ? 'Guardando...' : 'Imputar Interrupción'}
         </Boton>
         {alCancelar && (
           <Boton type="button" variante="texto" onClick={alCancelar} disabled={guardando}>

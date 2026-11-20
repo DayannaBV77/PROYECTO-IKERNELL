@@ -1,8 +1,8 @@
 import { useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
+  ArrowUpRight,
   BarChart3,
-  Bell,
   Bug,
   ClipboardCheck,
   ClipboardList,
@@ -19,8 +19,9 @@ import {
   Users,
 } from 'lucide-react';
 
-import { ETIQUETA_SERVICIO } from '../../api/autenticacion.js';
+import { ETIQUETA_SERVICIO, ETIQUETA_TIPO } from '../../api/autenticacion.js';
 import { obtenerAccesoCorreo } from '../../api/corporativo.js';
+import { IconoChatVectorial } from '../../componentes/chat/DockChat.jsx';
 import { usePeticion } from '../../hooks/usePeticion.js';
 import { useSesion } from '../../sesion/contexto.js';
 import PaginaMiDia from './PaginaMiDia.jsx';
@@ -198,35 +199,73 @@ export default function PaginaPanel() {
         </section>
       )}
 
-      <div className={estilos.cabeceraPrincipal}>
-        <h1 className={estilos.tituloPrincipal}>Espacio de Trabajo</h1>
-        <p className={estilos.subtituloPrincipal}>Notificaciones, herramientas de gestión y servicios corporativos</p>
-      </div>
+      <header className={estilos.cabeceraWorkspace}>
+        <div className={estilos.cabeceraTextos}>
+          <span className={estilos.cabeceraEyebrow}>ESPACIO DE TRABAJO · IKERNELL</span>
+          <h1 className={estilos.tituloPrincipal}>Espacio de Trabajo</h1>
+          <p className={estilos.subtituloPrincipal}>
+            Notificaciones, herramientas de gestión y servicios corporativos
+          </p>
+        </div>
+
+        <div className={estilos.badgeOperativo}>
+          <span className={estilos.lanzadorPingWrapper} aria-hidden="true">
+            <span className={estilos.lanzadorPingOnda} />
+            <span className={estilos.lanzadorPingCentro} />
+          </span>
+          <span>{ETIQUETA_TIPO[rolEfectivo] || rolEfectivo}</span>
+        </div>
+      </header>
 
       {/* 1. Notificaciones y Comunicación */}
       <section className={estilos.bloqueSeccion} aria-label="Notificaciones">
-        <div className={estilos.pildoraLinea}>
-          <span className={estilos.pildoraTitulo}>Notificaciones y Comunicación</span>
+        <div className={estilos.seccionCabecera}>
+          <div className={estilos.seccionTitulos}>
+            <span className={estilos.seccionCategoria}>COMUNICACIÓN</span>
+            <h2 className={estilos.seccionNombre}>Notificaciones y Comunicación</h2>
+          </div>
+          <span className={estilos.badgeContador}>{esCoordinador ? 2 : 1}</span>
         </div>
-        <div className={estilos.rejillaTarjetas}>
-          <Link to="/app/chat" className={estilos.tarjetaUnificada}>
-            <div className={estilos.iconoTarjeta}>
-              <MessagesSquare size={28} strokeWidth={1.7} aria-hidden="true" />
+
+        <div className={esCoordinador ? estilos.bentoComunicacion : estilos.bentoComunicacionUnico}>
+          <Link to="/app/chat" className={`${estilos.tarjetaBento} ${estilos.tarjetaBentoDestacada}`}>
+            <div className={estilos.tarjetaBentoCabecera}>
+              <div className={estilos.iconoBento}>
+                <MessagesSquare size={22} strokeWidth={1.7} aria-hidden="true" />
+              </div>
+              <span className={estilos.lanzadorEstado}>
+                <span className={estilos.lanzadorPingWrapper} aria-hidden="true">
+                  <span className={estilos.lanzadorPingOnda} />
+                  <span className={estilos.lanzadorPingCentro} />
+                </span>
+                Canal activo
+              </span>
             </div>
             <h3 className={estilos.tituloTarjeta}>Conversaciones del Equipo</h3>
             <p className={estilos.detalleTarjeta}>
               Canales de discusión, consultas de etapas y mensajería en tiempo real de los proyectos.
             </p>
+            <div className={estilos.tarjetaPie}>
+              <span>Abrir conversaciones</span>
+              <ArrowUpRight size={14} strokeWidth={1.8} className={estilos.tarjetaFlecha} aria-hidden="true" />
+            </div>
           </Link>
+
           {esCoordinador && (
-            <Link to="/app/consultas" className={estilos.tarjetaUnificada}>
-              <div className={estilos.iconoTarjeta}>
-                <Inbox size={28} strokeWidth={1.7} aria-hidden="true" />
+            <Link to="/app/consultas" className={estilos.tarjetaBento}>
+              <div className={estilos.tarjetaBentoCabecera}>
+                <div className={estilos.iconoBento}>
+                  <Inbox size={22} strokeWidth={1.7} aria-hidden="true" />
+                </div>
               </div>
               <h3 className={estilos.tituloTarjeta}>Consultas Recibidas</h3>
               <p className={estilos.detalleTarjeta}>
                 Preguntas y mensajes ciudadanos recibidos a través del portal público pendientes de respuesta.
               </p>
+              <div className={estilos.tarjetaPie}>
+                <span>Atender portal</span>
+                <ArrowUpRight size={14} strokeWidth={1.8} className={estilos.tarjetaFlecha} aria-hidden="true" />
+              </div>
             </Link>
           )}
         </div>
@@ -235,14 +274,28 @@ export default function PaginaPanel() {
       {/* 2. Herramientas de Gestión */}
       {gestion.length > 0 && (
         <section className={estilos.bloqueSeccion} aria-label="Gestión">
-          <div className={estilos.pildoraLinea}>
-            <span className={estilos.pildoraTitulo}>Gestión</span>
+          <div className={estilos.seccionCabecera}>
+            <div className={estilos.seccionTitulos}>
+              <span className={estilos.seccionCategoria}>OPERACIÓN</span>
+              <h2 className={estilos.seccionNombre}>Herramientas de Gestión</h2>
+            </div>
+            <span className={estilos.badgeContador}>{gestion.length}</span>
           </div>
-          <div className={estilos.rejillaTarjetas}>
-            {gestion.map(({ a, icono: Icono, titulo, detalle }) => (
-              <Link key={a} to={a} className={estilos.tarjetaUnificada}>
-                <div className={estilos.iconoTarjeta}>
-                  <Icono size={28} strokeWidth={1.7} aria-hidden="true" />
+
+          <div className={estilos.bentoGrid}>
+            {gestion.map(({ a, icono: Icono, titulo, detalle }, indice) => (
+              <Link
+                key={a}
+                to={a}
+                className={`${estilos.tarjetaBento} ${
+                  indice === 0 && gestion.length % 2 === 1 ? estilos.tarjetaBentoAncha : ''
+                }`}
+              >
+                <div className={estilos.tarjetaBentoCabecera}>
+                  <div className={estilos.iconoBento}>
+                    <Icono size={22} strokeWidth={1.7} aria-hidden="true" />
+                  </div>
+                  <ArrowUpRight size={15} strokeWidth={1.75} className={estilos.tarjetaFlecha} aria-hidden="true" />
                 </div>
                 <h3 className={estilos.tituloTarjeta}>{titulo}</h3>
                 <p className={estilos.detalleTarjeta}>{detalle}</p>
@@ -254,10 +307,15 @@ export default function PaginaPanel() {
 
       {/* 3. Servicios Internos */}
       <section className={estilos.bloqueSeccion} aria-label="Servicios Internos">
-        <div className={estilos.pildoraLinea}>
-          <span className={estilos.pildoraTitulo}>Servicios Internos</span>
+        <div className={estilos.seccionCabecera}>
+          <div className={estilos.seccionTitulos}>
+            <span className={estilos.seccionCategoria}>ECOSISTEMA</span>
+            <h2 className={estilos.seccionNombre}>Servicios Internos</h2>
+          </div>
+          <span className={estilos.badgeContador}>{servicios.length}</span>
         </div>
-        <div className={estilos.rejillaTarjetas}>
+
+        <div className={estilos.bentoGrid}>
           {servicios.map((clave) => (
             <TarjetaServicioUnificada
               key={clave}
@@ -278,11 +336,43 @@ export default function PaginaPanel() {
 function TarjetaServicioUnificada({ clave, titulo, correo }) {
   const { icono: Icono, detalle, a } = SERVICIOS[clave] || {};
 
+  if (clave === 'CHAT_CORPORATIVO' && a) {
+    return (
+      <Link
+        to={a}
+        className={estilos.lanzadorChatServicio}
+        data-testid="servicios-chat-launcher"
+      >
+        <div className={estilos.lanzadorChatCabecera}>
+          <div className={estilos.lanzadorChatIcono}>
+            <IconoChatVectorial size={24} />
+          </div>
+          <span className={estilos.lanzadorEstado}>
+            <span className={estilos.lanzadorPingWrapper} aria-hidden="true">
+              <span className={estilos.lanzadorPingOnda} />
+              <span className={estilos.lanzadorPingCentro} />
+            </span>
+            Canal activo
+          </span>
+        </div>
+        <h3 className={estilos.tituloTarjeta}>{titulo}</h3>
+        <p className={estilos.detalleTarjeta}>{detalle}</p>
+        <div className={estilos.lanzadorPie}>
+          <span>Abrir canales</span>
+          <ExternalLink size={13} strokeWidth={1.75} aria-hidden="true" />
+        </div>
+      </Link>
+    );
+  }
+
   if (a) {
     return (
-      <Link to={a} className={estilos.tarjetaUnificada}>
-        <div className={estilos.iconoTarjeta}>
-          {Icono && <Icono size={28} strokeWidth={1.7} aria-hidden="true" />}
+      <Link to={a} className={estilos.tarjetaBento}>
+        <div className={estilos.tarjetaBentoCabecera}>
+          <div className={estilos.iconoBento}>
+            {Icono && <Icono size={22} strokeWidth={1.7} aria-hidden="true" />}
+          </div>
+          <ArrowUpRight size={15} strokeWidth={1.75} className={estilos.tarjetaFlecha} aria-hidden="true" />
         </div>
         <h3 className={estilos.tituloTarjeta}>{titulo}</h3>
         <p className={estilos.detalleTarjeta}>{detalle}</p>
@@ -299,9 +389,11 @@ function TarjetaServicioUnificada({ clave, titulo, correo }) {
 
     if (cargando || sinAcceso) {
       return (
-        <div className={estilos.tarjetaUnificada}>
-          <div className={estilos.iconoTarjeta}>
-            {Icono && <Icono size={28} strokeWidth={1.7} aria-hidden="true" />}
+        <div className={estilos.tarjetaBento}>
+          <div className={estilos.tarjetaBentoCabecera}>
+            <div className={estilos.iconoBento}>
+              {Icono && <Icono size={22} strokeWidth={1.7} aria-hidden="true" />}
+            </div>
           </div>
           <h3 className={estilos.tituloTarjeta}>{titulo}</h3>
           <p className={estilos.detalleTarjeta}>
@@ -316,10 +408,13 @@ function TarjetaServicioUnificada({ clave, titulo, correo }) {
         href={correo.datos.url}
         target="_blank"
         rel="noreferrer noopener"
-        className={estilos.tarjetaUnificada}
+        className={estilos.tarjetaBento}
       >
-        <div className={estilos.iconoTarjeta}>
-          {Icono && <Icono size={28} strokeWidth={1.7} aria-hidden="true" />}
+        <div className={estilos.tarjetaBentoCabecera}>
+          <div className={estilos.iconoBento}>
+            {Icono && <Icono size={22} strokeWidth={1.7} aria-hidden="true" />}
+          </div>
+          <ExternalLink size={14} strokeWidth={1.75} className={estilos.tarjetaFlecha} aria-hidden="true" />
         </div>
         <h3 className={estilos.tituloTarjeta}>{titulo}</h3>
         <p className={estilos.detalleTarjeta}>{detalle}</p>
@@ -328,88 +423,14 @@ function TarjetaServicioUnificada({ clave, titulo, correo }) {
   }
 
   return (
-    <div className={estilos.tarjetaUnificada}>
-      <div className={estilos.iconoTarjeta}>
-        {Icono && <Icono size={28} strokeWidth={1.7} aria-hidden="true" />}
+    <div className={estilos.tarjetaBento}>
+      <div className={estilos.tarjetaBentoCabecera}>
+        <div className={estilos.iconoBento}>
+          {Icono && <Icono size={22} strokeWidth={1.7} aria-hidden="true" />}
+        </div>
       </div>
       <h3 className={estilos.tituloTarjeta}>{titulo}</h3>
       <p className={estilos.detalleTarjeta}>{detalle}</p>
     </div>
-  );
-}
-
-/**
- * Tarjeta de un servicio.
- *
- * Tres formas segun el servicio: una ruta interna, un enlace externo que
- * entrega el servidor (el correo, RF-031) o solo informacion cuando no hay a
- * donde ir.
- */
-function TarjetaServicio({ clave, titulo, correo }) {
-  const { icono, detalle, a } = SERVICIOS[clave] || {};
-
-  if (a) {
-    return (
-      <Tarjeta como={Link} to={a} interactiva icono={icono} titulo={titulo} variante="tenue">
-        {detalle}
-      </Tarjeta>
-    );
-  }
-
-  if (clave === 'CORREO_ELECTRONICO') {
-    return <TarjetaCorreo icono={icono} titulo={titulo} detalle={detalle} correo={correo} />;
-  }
-
-  return (
-    <Tarjeta icono={icono} titulo={titulo} variante="tenue">
-      {detalle}
-    </Tarjeta>
-  );
-}
-
-/**
- * Correo corporativo (RF-031, HU-20 C04 y C05).
- *
- * El enlace lo decide el servidor. Cuando no esta configurado, responde
- * `disponible: false` con su propio aviso, y ese es el texto que se muestra:
- * el cliente no redacta uno alternativo ni deja la tarjeta en blanco.
- */
-function TarjetaCorreo({ icono, titulo, detalle, correo }) {
-  if (correo.cargando) {
-    return (
-      <Tarjeta icono={icono} titulo={titulo} variante="tenue">
-        Comprobando el acceso al correo corporativo...
-      </Tarjeta>
-    );
-  }
-
-  if (correo.error || !correo.datos?.disponible) {
-    return (
-      <Tarjeta icono={icono} titulo={titulo} variante="tenue">
-        {correo.datos?.mensaje || correo.error?.message || detalle}
-      </Tarjeta>
-    );
-  }
-
-  return (
-    <Tarjeta
-      como="a"
-      href={correo.datos.url}
-      target="_blank"
-      rel="noreferrer noopener"
-      interactiva
-      icono={icono}
-      titulo={titulo}
-      variante="tenue"
-      pie={
-        <span className={estilos.externo}>
-          Abrir el correo
-          <ExternalLink size={14} aria-hidden="true" />
-          <span className="solo-lectores">(se abre en una pestana nueva)</span>
-        </span>
-      }
-    >
-      {detalle}
-    </Tarjeta>
   );
 }

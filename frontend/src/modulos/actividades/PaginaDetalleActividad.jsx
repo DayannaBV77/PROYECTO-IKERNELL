@@ -134,7 +134,7 @@ function ActividadCargada({ inicial }) {
   }
 
   return (
-    <Seccion titulo={`Actividad n.º ${actividad.id}`} id="detalle-actividad">
+    <Seccion titulo={`Actividad n.º ${actividad.id}`} id="detalle-actividad" rutaFallback="/app/actividades">
       <Volver />
 
       {registrada && (

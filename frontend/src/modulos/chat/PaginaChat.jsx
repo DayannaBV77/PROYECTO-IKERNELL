@@ -4,6 +4,7 @@ import {
   CheckCheck,
   ChevronDown,
   CircleCheck,
+  Clock,
   FolderKanban,
   Layers,
   Lock,
@@ -55,7 +56,7 @@ export default function PaginaChat() {
   );
   const misProyectos = usePeticion(cargarProyectos, [esCoordinador]);
 
-  const { opcionesDeEtapa } = useEtapasDeProyecto(proyectoId);
+  const { opcionesDeEtapa, cargando: cargandoEtapas } = useEtapasDeProyecto(proyectoId);
 
   const cargarHilos = useCallback(
     ({ senal }) =>
@@ -122,6 +123,8 @@ export default function PaginaChat() {
 
   const proyectoActual = proyectosLista.find((p) => String(p.proyectoId) === String(proyectoId));
   const hiloActual = listaDeHilos.find((h) => h.id === hiloAbierto);
+  const proyectoInhabilitado = proyectoActual?.estadoHabilitacion === 'INHABILITADO';
+  const sinEtapasConfiguradas = Boolean(proyectoId) && !cargandoEtapas && opcionesDeEtapa.length === 0;
 
   return (
     <Seccion
@@ -141,7 +144,7 @@ export default function PaginaChat() {
 
       {!misProyectos.cargando && !misProyectos.error && opcionesDeProyecto.length > 0 && (
         <div className={estilos.contenedorChat}>
-          {/* Barra superior de contexto */}
+          {/* Barra superior compacta de contexto */}
           <div className={estilos.barraFiltros}>
             <Campo
               etiqueta="Proyecto Activo"
@@ -154,23 +157,18 @@ export default function PaginaChat() {
             <Campo
               etiqueta="Filtrar por Etapa"
               nombre="etapaId"
-              textoVacio="Todas las etapas (General)"
+              textoVacio={
+                cargandoEtapas
+                  ? 'Cargando etapas...'
+                  : sinEtapasConfiguradas
+                    ? 'Sin etapas específicas (Canal General)'
+                    : 'Todas las etapas (General)'
+              }
               opciones={opcionesDeEtapa}
               value={etapaId}
               onChange={alElegirEtapa}
-              pista="Opcional: Ver conversaciones de todas las etapas o filtrar una específica."
+              disabled={!proyectoId || cargandoEtapas || sinEtapasConfiguradas}
             />
-
-            <div className={estilos.accionNuevoHilo}>
-              <Boton
-                variante="primario"
-                icono={Plus}
-                onClick={() => setModalNuevoHilo(true)}
-                disabled={!proyectoId}
-              >
-                Nueva conversación
-              </Boton>
-            </div>
           </div>
 
           {/* Panel interactivo de dos columnas */}
@@ -184,6 +182,8 @@ export default function PaginaChat() {
               hiloAbierto={hiloAbierto}
               alAbrir={setHiloAbierto}
               onAbrirModalCreacion={() => setModalNuevoHilo(true)}
+              puedeCrearHilo={Boolean(proyectoId) && !proyectoInhabilitado}
+              proyectoInhabilitado={proyectoInhabilitado}
             />
 
             <div className={estilos.columnaConversacion}>
@@ -241,6 +241,8 @@ function ColumnaDeHilos({
   hiloAbierto,
   alAbrir,
   onAbrirModalCreacion,
+  puedeCrearHilo = true,
+  proyectoInhabilitado = false,
 }) {
   const [busqueda, setBusqueda] = useState('');
   const listaSegura = Array.isArray(hilos) ? hilos : [];
@@ -262,6 +264,28 @@ function ColumnaDeHilos({
             {hilos.length}
           </span>
         </div>
+
+        <button
+          type="button"
+          className={estilos.btnIniciarHilo}
+          onClick={onAbrirModalCreacion}
+          disabled={!puedeCrearHilo}
+          title={
+            proyectoInhabilitado
+              ? 'El proyecto está inhabilitado; no se pueden iniciar nuevos hilos.'
+              : 'Iniciar un nuevo hilo de discusión en este proyecto'
+          }
+          data-testid="btn-iniciar-hilo"
+        >
+          <Plus size={15} strokeWidth={2} aria-hidden="true" />
+          <span>Iniciar Hilo de Discusión</span>
+        </button>
+
+        {proyectoInhabilitado && (
+          <p className={estilos.avisoInhabilitado}>
+            Proyecto inhabilitado: solo lectura de historial.
+          </p>
+        )}
 
         {hilos.length > 3 && (
           <div className={estilos.buscadorHilosWrapper}>
@@ -285,11 +309,13 @@ function ColumnaDeHilos({
         {!cargando && !error && hilos.length === 0 && (
           <div style={{ padding: '1.5rem 1rem', textAlign: 'center' }}>
             <EstadoVacio mensaje={mensajeVacio || 'Sin conversaciones aún.'} icono={MessagesSquare} />
-            <div style={{ marginTop: '1rem' }}>
-              <Boton variante="secundario" icono={Plus} onClick={onAbrirModalCreacion}>
-                Iniciar primer hilo
-              </Boton>
-            </div>
+            {puedeCrearHilo && (
+              <div style={{ marginTop: '1rem' }}>
+                <Boton variante="secundario" icono={Plus} onClick={onAbrirModalCreacion}>
+                  Iniciar Hilo de Discusión
+                </Boton>
+              </div>
+            )}
           </div>
         )}
 
@@ -555,6 +581,9 @@ function Conversacion({ hiloId, hilo, proyectoNombre, alEnviar }) {
     try {
       await enviarMensaje(hiloId, cuerpo);
       setTexto('');
+      if (textareaRef.current) {
+        textareaRef.current.style.height = '44px';
+      }
       setConfirmado('Mensaje enviado');
       setTimeout(() => setConfirmado(null), 2500);
       usuarioHizoScrollArribaRef.current = false;
@@ -577,6 +606,13 @@ function Conversacion({ hiloId, hilo, proyectoNombre, alEnviar }) {
     } finally {
       setEnviando(false);
     }
+  }
+
+  function alCambiarTexto(e) {
+    setTexto(e.target.value);
+    const el = e.target;
+    el.style.height = '44px';
+    el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
   }
 
   function alPresionarTecla(e) {
@@ -603,9 +639,20 @@ function Conversacion({ hiloId, hilo, proyectoNombre, alEnviar }) {
           </p>
         </div>
 
-        <div className={estilos.indicadorSeguro} title="Canal cifrado y restringido a los participantes autorizados del proyecto">
-          <Lock size={12} aria-hidden="true" />
-          <span>Canal en tiempo real verificado</span>
+        <div className={estilos.cabeceraBadges}>
+          <div
+            className={estilos.indicadorEfimero}
+            title="Política de retención automática de mensajes"
+            data-testid="chat-ephemeral-notice"
+          >
+            <Clock size={12} aria-hidden="true" />
+            <span>Historial efímero: los mensajes se depuran automáticamente tras 30 días</span>
+          </div>
+
+          <div className={estilos.indicadorSeguro} title="Canal cifrado y restringido a los participantes autorizados del proyecto">
+            <Lock size={12} aria-hidden="true" />
+            <span>Canal en tiempo real verificado</span>
+          </div>
         </div>
       </div>
 
@@ -675,9 +722,9 @@ function Conversacion({ hiloId, hilo, proyectoNombre, alEnviar }) {
             className={estilos.textareaMensaje}
             placeholder="Escriba un mensaje aquí... (Presione Enter para enviar)"
             value={texto}
-            onChange={(e) => setTexto(e.target.value)}
+            onChange={alCambiarTexto}
             onKeyDown={alPresionarTecla}
-            rows={2}
+            rows={1}
             disabled={enviando}
           />
 

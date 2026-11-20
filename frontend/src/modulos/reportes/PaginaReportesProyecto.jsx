@@ -20,12 +20,15 @@ import {
   Zap,
 } from 'lucide-react';
 
-import { obtenerEquipoCompleto } from '../../api/asignaciones.js';
+import { obtenerEquipo } from '../../api/proyectos.js';
 import { reporteDeActividades, reporteDeInterrupciones } from '../../api/reportes.js';
 import EstadoCarga from '../../componentes/estados/EstadoCarga.jsx';
 import EstadoError from '../../componentes/estados/EstadoError.jsx';
 import EstadoVacio from '../../componentes/estados/EstadoVacio.jsx';
 import { useNotificador } from '../../componentes/ui/Notificador.jsx';
+import BotonRegresar from '../../componentes/ui/BotonRegresar.jsx';
+import PaginacionTabla from '../../componentes/ui/PaginacionTabla.jsx';
+import { usePaginacionLocal } from '../../hooks/usePaginacionLocal.js';
 import { usePeticion } from '../../hooks/usePeticion.js';
 import { useSesion } from '../../sesion/contexto.js';
 import { formatearFecha } from '../../utilidades/formato.js';
@@ -71,7 +74,7 @@ export default function PaginaReportesProyecto() {
   const cargarEquipo = useCallback(
     ({ senal }) =>
       filtrosAplicados.proyectoId
-        ? obtenerEquipoCompleto(Number(filtrosAplicados.proyectoId), { senal })
+        ? obtenerEquipo(Number(filtrosAplicados.proyectoId), { senal })
         : Promise.resolve([]),
     [filtrosAplicados.proyectoId],
   );
@@ -85,10 +88,15 @@ export default function PaginaReportesProyecto() {
     const devsMap = new Map();
     raw.forEach((asig) => {
       const t = asig.trabajador || asig;
-      if (t?.id && !devsMap.has(t.id)) {
-        devsMap.set(t.id, {
-          id: t.id,
-          nombre: t.nombreCompleto || `${t.nombre || ''} ${t.apellido || ''}`.trim() || `Desarrollador #${t.id}`,
+      const devId = asig.trabajadorId || t?.id;
+      if (devId && !devsMap.has(devId)) {
+        devsMap.set(devId, {
+          id: devId,
+          nombre:
+            asig.trabajadorNombreCompleto ||
+            t.nombreCompleto ||
+            `${t.nombre || ''} ${t.apellido || ''}`.trim() ||
+            `Desarrollador #${devId}`,
         });
       }
     });
@@ -137,14 +145,21 @@ export default function PaginaReportesProyecto() {
   ]);
 
   const listaActividades = useMemo(() => {
-    const raw = actividadesReq.datos?.actividades || [];
+    const raw = actividadesReq.datos?.contenido || actividadesReq.datos?.actividades || [];
     return Array.isArray(raw) ? raw : [];
   }, [actividadesReq.datos]);
 
   const listaInterrupciones = useMemo(() => {
-    const raw = interrupcionesReq.datos?.interrupciones || [];
+    const raw = interrupcionesReq.datos?.contenido || interrupcionesReq.datos?.interrupciones || [];
     return Array.isArray(raw) ? raw : [];
   }, [interrupcionesReq.datos]);
+
+  const pagActividades = usePaginacionLocal(listaActividades, {
+    clavePersistencia: 'reporte-proyecto-act',
+  });
+  const pagInterrupciones = usePaginacionLocal(listaInterrupciones, {
+    clavePersistencia: 'reporte-proyecto-int',
+  });
 
   // Métricas calculadas
   const totalActividades = listaActividades.length;
@@ -254,6 +269,7 @@ export default function PaginaReportesProyecto() {
 
   return (
     <div className={estilos.dashboard} id="dashboard-reportes-proyecto">
+      <BotonRegresar rutaFallback="/app" />
       {/* 1. Cabecera principal idéntica a la imagen de referencia */}
       <div className={estilos.cabecera}>
         <div className={estilos.iconoCabecera}>
@@ -608,7 +624,7 @@ export default function PaginaReportesProyecto() {
                 </tr>
               </thead>
               <tbody>
-                {listaActividades.slice(0, 5).map((act, idx) => {
+                {pagActividades.itemsPaginados.map((act, idx) => {
                   const est = act.estado || (act.completada ? 'FINALIZADA' : 'PENDIENTE');
                   const esFin = est === 'FINALIZADA';
                   const esProg = est === 'EN_PROGRESO' || est === 'EN_EJECUCION';
@@ -645,6 +661,17 @@ export default function PaginaReportesProyecto() {
               </tbody>
             </table>
           </div>
+
+          {listaActividades.length > 0 && (
+            <PaginacionTabla
+              datos={pagActividades.datosPaginacion}
+              pagina={pagActividades.pagina}
+              alCambiarPagina={pagActividades.setPagina}
+              tamano={pagActividades.tamano}
+              alCambiarTamano={pagActividades.alCambiarTamano}
+              etiquetaItem="actividades"
+            />
+          )}
         </div>
 
         {/* Tabla Interrupciones */}
@@ -671,7 +698,7 @@ export default function PaginaReportesProyecto() {
                 </tr>
               </thead>
               <tbody>
-                {listaInterrupciones.slice(0, 5).map((inter, idx) => (
+                {pagInterrupciones.itemsPaginados.map((inter, idx) => (
                   <tr key={inter.id || idx}>
                     <td>{formatearFecha(inter.fecha) || '16/10/2026'}</td>
                     <td>{inter.tipo || 'Falla de conexión'}</td>
@@ -690,6 +717,17 @@ export default function PaginaReportesProyecto() {
               </tbody>
             </table>
           </div>
+
+          {listaInterrupciones.length > 0 && (
+            <PaginacionTabla
+              datos={pagInterrupciones.datosPaginacion}
+              pagina={pagInterrupciones.pagina}
+              alCambiarPagina={pagInterrupciones.setPagina}
+              tamano={pagInterrupciones.tamano}
+              alCambiarTamano={pagInterrupciones.alCambiarTamano}
+              etiquetaItem="interrupciones"
+            />
+          )}
         </div>
       </div>
 

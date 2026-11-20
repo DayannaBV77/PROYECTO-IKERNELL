@@ -1,0 +1,197 @@
+/* Dock flotante acrílico no obstructivo */
+.dockContenedor {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 850;
+  pointer-events: none;
+}
+
+.dockCapsula {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  padding: 0.6875rem;
+  border-radius: 999px;
+  text-decoration: none;
+  font-family: 'SF Pro Text', 'Inter', system-ui, -apple-system, sans-serif;
+  color: var(--c-marino-titulo, #0f172a);
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow:
+    0 8px 28px rgba(15, 23, 42, 0.1),
+    0 2px 6px rgba(15, 23, 42, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  transition:
+    transform 240ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 240ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 240ms ease,
+    padding 240ms cubic-bezier(0.16, 1, 0.3, 1),
+    gap 240ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+.dockCapsula:hover,
+.dockCapsula:focus-visible {
+  text-decoration: none;
+  gap: 0.7rem;
+  padding: 0.625rem 1rem 0.625rem 0.75rem;
+  transform: translateY(-2px);
+  border-color: rgba(2, 132, 199, 0.28);
+  box-shadow:
+    0 14px 34px rgba(15, 23, 42, 0.14),
+    0 4px 10px rgba(2, 132, 199, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+.dockCapsula:focus-visible {
+  outline: none;
+  box-shadow: var(--anillo-foco), 0 14px 34px rgba(15, 23, 42, 0.14);
+}
+
+.dockCapsula:active {
+  transform: translateY(0) scale(0.985);
+}
+
+:global(html[data-theme='dark']) .dockCapsula {
+  color: #f1f5f9;
+  background: rgba(15, 23, 42, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+:global(html[data-theme='dark']) .dockCapsula:hover,
+:global(html[data-theme='dark']) .dockCapsula:focus-visible {
+  border-color: rgba(56, 189, 248, 0.35);
+  box-shadow:
+    0 14px 36px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(56, 189, 248, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.iconoContenedor {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+/* Indicador de presencia discreto (status ping) */
+.statusPingWrapper {
+  position: absolute;
+  top: -2px;
+  right: -3px;
+  width: 9px;
+  height: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.statusPingOnda {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: #10b981;
+  opacity: 0.65;
+  animation: statusPing 2.4s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.statusPingCentro {
+  position: relative;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #10b981;
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.9);
+}
+
+:global(html[data-theme='dark']) .statusPingCentro {
+  box-shadow: 0 0 0 1.5px rgba(15, 23, 42, 0.9);
+}
+
+@keyframes statusPing {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.7;
+  }
+  70%, 100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+/* Expansión tipográfica al hover */
+.etiquetaExpansible {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  transition:
+    max-width 280ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 200ms ease;
+}
+
+.dockCapsula:hover .etiquetaExpansible,
+.dockCapsula:focus-visible .etiquetaExpansible {
+  max-width: 190px;
+  opacity: 1;
+}
+
+.etiquetaContenido {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.etiquetaTitulo {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.etiquetaSubtitulo {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--c-texto-tenue, #64748b);
+}
+
+.flecha {
+  color: var(--c-texto-tenue, #64748b);
+  flex-shrink: 0;
+  transition: transform 200ms ease, color 200ms ease;
+}
+
+.dockCapsula:hover .flecha {
+  transform: translate(1px, -1px);
+  color: var(--c-turquesa-fuerte, #0284c7);
+}
+
+@media (max-width: 600px) {
+  .dockContenedor {
+    bottom: 1rem;
+    right: 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .statusPingOnda {
+    animation: none;
+  }
+  .dockCapsula,
+  .etiquetaExpansible,
+  .flecha {
+    transition: none;
+  }
+}

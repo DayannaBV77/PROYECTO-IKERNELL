@@ -32,7 +32,10 @@ import { obtenerMisProyectos } from '../../api/asignaciones.js';
 import EstadoCarga from '../../componentes/estados/EstadoCarga.jsx';
 import EstadoError from '../../componentes/estados/EstadoError.jsx';
 import EstadoVacio from '../../componentes/estados/EstadoVacio.jsx';
+import BotonRegresar from '../../componentes/ui/BotonRegresar.jsx';
+import PaginacionTabla from '../../componentes/ui/PaginacionTabla.jsx';
 import { useNotificador } from '../../componentes/ui/Notificador.jsx';
+import { usePaginacionLocal } from '../../hooks/usePaginacionLocal.js';
 import { usePeticion } from '../../hooks/usePeticion.js';
 import { formatearFecha } from '../../utilidades/formato.js';
 import estilos from './PaginaMisActividades.module.css';
@@ -261,6 +264,18 @@ export default function PaginaMisActividades() {
       .filter(Boolean);
   }, [proyectosEstructurados, filtroProyecto, filtroEstado, filtroTexto]);
 
+  const {
+    itemsPaginados: proyectosPaginados,
+    datosPaginacion,
+    pagina,
+    setPagina,
+    tamano,
+    alCambiarTamano,
+  } = usePaginacionLocal(proyectosFiltrados, {
+    clavePersistencia: 'mis-actividades-v1',
+    tamanoInicial: 10,
+  });
+
   // Conteo de KPIs
   const totalProyectosKpi = proyectosEstructurados.length;
   const totalEtapasKpi = useMemo(() => {
@@ -287,6 +302,9 @@ export default function PaginaMisActividades() {
 
   return (
     <div className={estilos.contenedor}>
+      <div>
+        <BotonRegresar destinoPorDefecto="/app" />
+      </div>
       {/* 1. Cabecera Principal y KPIs */}
       <header className={estilos.cabecera}>
         <div className={estilos.tituloBloque}>
@@ -299,7 +317,13 @@ export default function PaginaMisActividades() {
         </div>
 
         <div className={estilos.kpis}>
-          <div className={estilos.tarjetaKpi}>
+          <button
+            type="button"
+            className={estilos.tarjetaKpi}
+            style={{ cursor: 'pointer', textAlign: 'left' }}
+            onClick={() => setFiltroEstado('')}
+            title="Mostrar todos los proyectos y actividades"
+          >
             <div className={estilos.kpiIconoAzul}>
               <Folder size={20} aria-hidden="true" />
             </div>
@@ -307,7 +331,7 @@ export default function PaginaMisActividades() {
               <span className={estilos.kpiNumero}>{totalProyectosKpi}</span>
               <span className={estilos.kpiEtiqueta}>Proyectos</span>
             </div>
-          </div>
+          </button>
 
           <div className={estilos.tarjetaKpi}>
             <div className={estilos.kpiIconoMorado}>
@@ -319,15 +343,25 @@ export default function PaginaMisActividades() {
             </div>
           </div>
 
-          <div className={estilos.tarjetaKpi}>
+          <button
+            type="button"
+            className={estilos.tarjetaKpi}
+            style={{ cursor: 'pointer', textAlign: 'left' }}
+            onClick={() =>
+              setFiltroEstado((prev) => (prev === 'PENDIENTE' ? '' : 'PENDIENTE'))
+            }
+            title="Filtrar actividades pendientes"
+          >
             <div className={estilos.kpiIconoVerde}>
               <CheckCircle2 size={20} aria-hidden="true" />
             </div>
             <div className={estilos.kpiValores}>
               <span className={estilos.kpiNumero}>{totalActividadesKpi}</span>
-              <span className={estilos.kpiEtiqueta}>Actividades</span>
+              <span className={estilos.kpiEtiqueta}>
+                {filtroEstado === 'PENDIENTE' ? 'Pendientes (filtro)' : 'Actividades'}
+              </span>
             </div>
-          </div>
+          </button>
         </div>
       </header>
 
@@ -404,8 +438,9 @@ export default function PaginaMisActividades() {
 
       {/* 3. Acordeón Agrupado por Proyecto */}
       {!cargando && !error && proyectosFiltrados.length > 0 && (
-        <div className={estilos.listaProyectos}>
-          {proyectosFiltrados.map((proy) => {
+        <>
+          <div className={estilos.listaProyectos}>
+            {proyectosPaginados.map((proy) => {
             const estaExpandido = expandidosActuales.has(String(proy.id));
             const siglaProyecto = proy.nombre
               .split(' ')
@@ -647,7 +682,16 @@ export default function PaginaMisActividades() {
               </article>
             );
           })}
-        </div>
+          </div>
+          <PaginacionTabla
+            datos={datosPaginacion}
+            pagina={pagina}
+            tamano={tamano}
+            etiquetaItem="proyectos"
+            alCambiarPagina={setPagina}
+            alCambiarTamano={alCambiarTamano}
+          />
+        </>
       )}
 
       {/* 4. Modal "Detalle de Actividad" */}

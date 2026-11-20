@@ -1,6 +1,6 @@
-import { useCallback, useState } from 'react';
-import { useLocation, useParams } from 'react-router-dom';
-import { CircleCheck, Save, TriangleAlert } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { CircleCheck, Lock, Save, ShieldCheck, TriangleAlert } from 'lucide-react';
 
 import {
   TIPOS_TRABAJADOR,
@@ -14,16 +14,23 @@ import EstadoError from '../../componentes/estados/EstadoError.jsx';
 import Boton from '../../componentes/ui/Boton.jsx';
 import Campo from '../../componentes/ui/Campo.jsx';
 import Confirmacion from '../../componentes/ui/Confirmacion.jsx';
+import Dialogo from '../../componentes/ui/Dialogo.jsx';
 import EtiquetaEstado from '../../componentes/ui/EtiquetaEstado.jsx';
 import Seccion from '../../componentes/ui/Seccion.jsx';
 import { useNotificador } from '../../componentes/ui/Notificador.jsx';
 import estilos from '../../estilos/gestion.module.css';
 import { usePeticion } from '../../hooks/usePeticion.js';
 import { formatearFecha } from '../../utilidades/formato.js';
+import AsistenteDireccion from './componentes/AsistenteDireccion.jsx';
 import SelectorEspecialidades from './componentes/SelectorEspecialidades.jsx';
 import SelectorProfesiones from './componentes/SelectorProfesiones.jsx';
 import SubidaFotografia from './componentes/SubidaFotografia.jsx';
-import { esFormatoDireccionColombiana, validarCampoTrabajador } from './validaciones.js';
+import {
+  REGLAS_DOCUMENTO,
+  esFormatoDireccionColombiana,
+  normalizarTipoDocumento,
+  validarCampoTrabajador,
+} from './validaciones.js';
 
 /** Los tres campos que RF-005 autoriza a modificar. */
 function editablesDe(trabajador) {
@@ -54,7 +61,7 @@ export default function PaginaPerfilTrabajador() {
 
   if (cargando) {
     return (
-      <Seccion titulo="Perfil del trabajador" id="perfil-trabajador">
+      <Seccion titulo="Perfil del trabajador" id="perfil-trabajador" rutaFallback="/app/trabajadores">
         <EstadoCarga mensaje="Cargando el perfil..." />
       </Seccion>
     );
@@ -62,8 +69,7 @@ export default function PaginaPerfilTrabajador() {
 
   if (error) {
     return (
-      <Seccion titulo="Perfil del trabajador" id="perfil-trabajador">
-        <VolverALaBusqueda />
+      <Seccion titulo="Perfil del trabajador" id="perfil-trabajador" rutaFallback="/app/trabajadores">
         <EstadoError error={error} alReintentar={reintentar} />
       </Seccion>
     );
@@ -74,16 +80,6 @@ export default function PaginaPerfilTrabajador() {
   }
 
   return <PerfilCargado key={id} inicial={datos} />;
-}
-
-function VolverALaBusqueda() {
-  return (
-    <div className={estilos.barraSuperior}>
-      <Boton a="/app/trabajadores" variante="texto">
-        Volver a la busqueda
-      </Boton>
-    </div>
-  );
 }
 
 /**
@@ -102,6 +98,7 @@ function VolverALaBusqueda() {
  */
 function PerfilCargado({ inicial }) {
   const ubicacion = useLocation();
+  const navigate = useNavigate();
   const notificador = useNotificador();
 
   const [trabajador, setTrabajador] = useState(inicial);
@@ -114,6 +111,73 @@ function PerfilCargado({ inicial }) {
   const [inhabilitando, setInhabilitando] = useState(false);
   const [confirmandoHabilitacion, setConfirmandoHabilitacion] = useState(false);
   const [habilitando, setHabilitando] = useState(false);
+  const [modalCambiosAbierto, setModalCambiosAbierto] = useState(false);
+  const [destinoPendiente, setDestinoPendiente] = useState(null);
+
+  const inicialesActuales = useMemo(() => editablesDe(trabajador), [trabajador]);
+  const isDirty = useMemo(
+    () =>
+      editables.direccion !== inicialesActuales.direccion ||
+      editables.profesion !== inicialesActuales.profesion ||
+      editables.especialidadDesarrollo !== inicialesActuales.especialidadDesarrollo ||
+      editables.tipoTrabajador !== inicialesActuales.tipoTrabajador,
+    [editables, inicialesActuales],
+  );
+
+  // Protege contra recarga/cierre de pestaña y enlaces internos cuando hay cambios sin guardar.
+  useEffect(() => {
+    if (!isDirty) return undefined;
+
+    function alAntesDeDescargar(e) {
+      e.preventDefault();
+      e.returnValue = '';
+    }
+
+    function alHacerClicEnlace(e) {
+      const ancla = e.target.closest('a[href]');
+      if (!ancla) return;
+      const href = ancla.getAttribute('href');
+      if (!href || href.startsWith('#') || ancla.target === '_blank') return;
+      if (href.startsWith('http://') || href.startsWith('https://')) return;
+      if (href === ubicacion.pathname) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+      setDestinoPendiente(href);
+      setModalCambiosAbierto(true);
+    }
+
+    window.addEventListener('beforeunload', alAntesDeDescargar);
+    document.addEventListener('click', alHacerClicEnlace, true);
+    return () => {
+      window.removeEventListener('beforeunload', alAntesDeDescargar);
+      document.removeEventListener('click', alHacerClicEnlace, true);
+    };
+  }, [isDirty, ubicacion.pathname]);
+
+  function ejecutarNavegacion(destino) {
+    if (destino) {
+      navigate(destino);
+      return;
+    }
+    const tieneHistorial =
+      typeof window !== 'undefined' &&
+      ((window.history.state && window.history.state.idx > 0) || window.history.length > 2);
+    if (tieneHistorial) {
+      navigate(-1);
+    } else {
+      navigate('/app/trabajadores');
+    }
+  }
+
+  function manejarRegresar() {
+    if (isDirty) {
+      setDestinoPendiente(null);
+      setModalCambiosAbierto(true);
+      return;
+    }
+    ejecutarNavegacion(null);
+  }
 
   // Avisos del registro recien hecho, que llegan en el estado de la navegacion
   // (HU-04 C01 y C05).
@@ -142,8 +206,7 @@ function PerfilCargado({ inicial }) {
     setConfirmado(null);
   }
 
-  async function alGuardar(evento) {
-    evento.preventDefault();
+  async function guardarCambios() {
     setFallo(null);
     setConfirmado(null);
 
@@ -169,7 +232,7 @@ function PerfilCargado({ inicial }) {
       const mensajeError = erroresValidacion.profesion || 'Corrija los campos señalados antes de guardar los cambios.';
       setFallo(mensajeError);
       notificador.error(mensajeError, 'Validación de perfil');
-      return;
+      return false;
     }
 
     setGuardando(true);
@@ -180,6 +243,7 @@ function PerfilCargado({ inicial }) {
         await modificarTrabajador(trabajador.id, editables),
         'Los cambios se guardaron correctamente.',
       );
+      return true;
     } catch (error) {
       // C04: se indica que corregir y el perfil conserva los datos que tenia,
       // porque solo se reemplaza cuando el servidor confirma.
@@ -187,8 +251,22 @@ function PerfilCargado({ inicial }) {
         setErrores(error.campos);
       }
       setFallo(error.message);
+      return false;
     } finally {
       setGuardando(false);
+    }
+  }
+
+  async function alGuardar(evento) {
+    evento.preventDefault();
+    await guardarCambios();
+  }
+
+  async function alGuardarYSalir() {
+    const ok = await guardarCambios();
+    setModalCambiosAbierto(false);
+    if (ok) {
+      ejecutarNavegacion(destinoPendiente);
     }
   }
 
@@ -231,8 +309,12 @@ function PerfilCargado({ inicial }) {
   const habilitado = trabajador.estado !== 'INHABILITADO';
 
   return (
-    <Seccion titulo={`${trabajador.nombre} ${trabajador.apellido}`} id="perfil-trabajador">
-      <VolverALaBusqueda />
+    <Seccion
+      titulo={`${trabajador.nombre} ${trabajador.apellido}`}
+      id="perfil-trabajador"
+      rutaFallback="/app/trabajadores"
+      onRegresar={manejarRegresar}
+    >
 
       {registrado && (
         <p className={estilos.avisoExito} role="status">
@@ -264,39 +346,66 @@ function PerfilCargado({ inicial }) {
 
       <div className={estilos.perfil}>
         <div className={estilos.ficha}>
-          <p className={estilos.rotulo}>Datos no modificables</p>
-          <dl className={estilos.datos}>
-            <div>
-              <dt>Tipo de identificación</dt>
-              <dd>
-                {trabajador.tipoIdentificacion === 'CEDULA_EXTRANJERIA'
-                  ? 'Cédula de extranjería'
-                  : 'Cédula de ciudadanía'}
+          <div className={estilos.fichaCabecera}>
+            <p className={estilos.rotulo}>Datos no modificables</p>
+            <span className={estilos.badgeAuditoria} title="Campos inmutables protegidos por trazabilidad de auditoría">
+              <ShieldCheck size={12} aria-hidden="true" />
+              <span>Dato protegido por auditoría</span>
+            </span>
+          </div>
+
+          <dl className={estilos.datosAuditGrid}>
+            <div className={estilos.datoAuditCard}>
+              <dt className={estilos.datoAuditEtiqueta}>
+                <Lock size={11} aria-hidden="true" />
+                <span>Tipo de identificación</span>
+              </dt>
+              <dd className={estilos.datoAuditValor}>
+                {REGLAS_DOCUMENTO[normalizarTipoDocumento(trabajador.tipoIdentificacion)].etiqueta}
               </dd>
             </div>
-            <div>
-              <dt>Identificacion</dt>
-              <dd>{trabajador.identificacion}</dd>
+
+            <div className={estilos.datoAuditCard}>
+              <dt className={estilos.datoAuditEtiqueta}>
+                <Lock size={11} aria-hidden="true" />
+                <span>Identificación</span>
+              </dt>
+              <dd className={estilos.datoAuditValor}>{trabajador.identificacion}</dd>
             </div>
-            <div>
-              <dt>Nombre completo</dt>
-              <dd>
+
+            <div className={estilos.datoAuditCard}>
+              <dt className={estilos.datoAuditEtiqueta}>
+                <Lock size={11} aria-hidden="true" />
+                <span>Nombre completo</span>
+              </dt>
+              <dd className={estilos.datoAuditValor}>
                 {trabajador.nombre} {trabajador.apellido}
               </dd>
             </div>
-            <div>
-              <dt>Fecha de nacimiento</dt>
-              <dd>{formatearFecha(trabajador.fechaNacimiento)}</dd>
+
+            <div className={estilos.datoAuditCard}>
+              <dt className={estilos.datoAuditEtiqueta}>
+                <Lock size={11} aria-hidden="true" />
+                <span>Fecha de nacimiento</span>
+              </dt>
+              <dd className={estilos.datoAuditValor}>{formatearFecha(trabajador.fechaNacimiento)}</dd>
             </div>
+
             {trabajador.correoCorporativo && (
-              <div>
-                <dt>Correo corporativo</dt>
-                <dd>{trabajador.correoCorporativo}</dd>
+              <div className={estilos.datoAuditCard}>
+                <dt className={estilos.datoAuditEtiqueta}>
+                  <Lock size={11} aria-hidden="true" />
+                  <span>Correo corporativo</span>
+                </dt>
+                <dd className={estilos.datoAuditValor}>{trabajador.correoCorporativo}</dd>
               </div>
             )}
-            <div>
-              <dt>Estado</dt>
-              <dd>
+
+            <div className={estilos.datoAuditCard}>
+              <dt className={estilos.datoAuditEtiqueta}>
+                <span>Estado actual</span>
+              </dt>
+              <dd className={estilos.datoAuditValor}>
                 <EtiquetaEstado estado={trabajador.estado} />
               </dd>
             </div>
@@ -311,15 +420,20 @@ function PerfilCargado({ inicial }) {
         </div>
 
         <form className={estilos.ficha} onSubmit={alGuardar} noValidate>
-          <p className={estilos.rotulo}>Datos modificables</p>
+          <div className={estilos.fichaCabecera}>
+            <p className={estilos.rotulo}>Datos modificables</p>
+            {isDirty && (
+              <span className={estilos.badgePendiente} data-testid="dirty-state-badge">
+                Cambios pendientes
+              </span>
+            )}
+          </div>
 
-          <Campo
-            etiqueta="Direccion"
-            nombre="direccion"
-            obligatorio
+          <AsistenteDireccion
             value={editables.direccion}
             onChange={alCambiar}
             error={errores.direccion}
+            obligatorio
           />
           <SelectorProfesiones
             value={editables.profesion}
@@ -366,7 +480,13 @@ function PerfilCargado({ inicial }) {
           />
 
           <div className={estilos.accionesPerfil}>
-            <Boton type="submit" icono={Save} disabled={guardando}>
+            <Boton
+              type="submit"
+              icono={Save}
+              disabled={!isDirty || guardando}
+              title={!isDirty ? 'Sin cambios pendientes' : 'Guardar modificaciones del perfil'}
+              data-testid="save-profile-button"
+            >
               {guardando ? 'Guardando...' : 'Guardar cambios'}
             </Boton>
 
@@ -424,6 +544,44 @@ function PerfilCargado({ inicial }) {
           El trabajador volverá al estado habilitado y podrá operar y recibir asignaciones a proyectos nuevamente.
         </p>
       </Confirmacion>
+      <Dialogo
+        abierto={modalCambiosAbierto}
+        titulo="Cambios sin guardar"
+        descripcion="Tienes modificaciones pendientes en este perfil. Si sales ahora, se perderán los cambios realizados."
+        alCerrar={() => setModalCambiosAbierto(false)}
+      >
+        <div className={estilos.accionesDialogoTriple} data-testid="unsaved-changes-dialog">
+          <Boton
+            type="button"
+            variante="texto"
+            onClick={() => setModalCambiosAbierto(false)}
+            data-testid="unsaved-continue-editing"
+          >
+            Continuar editando
+          </Boton>
+          <Boton
+            type="button"
+            variante="peligro"
+            onClick={() => {
+              setModalCambiosAbierto(false);
+              ejecutarNavegacion(destinoPendiente);
+            }}
+            data-testid="unsaved-discard-exit"
+          >
+            Salir sin guardar
+          </Boton>
+          <Boton
+            type="button"
+            variante="primario"
+            icono={Save}
+            disabled={guardando}
+            onClick={alGuardarYSalir}
+            data-testid="unsaved-save-exit"
+          >
+            {guardando ? 'Guardando...' : 'Guardar y salir'}
+          </Boton>
+        </div>
+      </Dialogo>
     </Seccion>
   );
 }

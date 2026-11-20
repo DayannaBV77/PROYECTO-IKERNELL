@@ -42,7 +42,7 @@ export default function AccionesSesion() {
       await salir();
       notificador.info('Ha cerrado su sesión de forma segura.', 'Sesión finalizada');
       setModalSalir(false);
-      navegar('/');
+      navegar('/ingresar', { replace: true, state: { sesionCerrada: true } });
     } catch {
       notificador.error('Ocurrió un inconveniente al cerrar la sesión.', 'Error');
     } finally {

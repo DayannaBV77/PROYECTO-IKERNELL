@@ -14,14 +14,14 @@
   gap: 0.85rem;
 }
 
-/* Barra superior de contexto y filtros rápidos */
+/* Barra superior compacta de contexto y filtros */
 .barraFiltros {
   display: grid;
-  grid-template-columns: minmax(220px, 1.2fr) minmax(200px, 1fr) auto;
+  grid-template-columns: minmax(220px, 1.2fr) minmax(200px, 1fr);
   gap: 0.85rem;
   align-items: end;
   background: var(--c-superficie);
-  padding: 0.75rem 1.25rem;
+  padding: 0.7rem 1.1rem;
   border-radius: 0.85rem;
   border: 1px solid var(--c-borde);
   box-shadow: var(--sombra-suave, 0 2px 8px rgba(0, 0, 0, 0.04));
@@ -104,6 +104,47 @@
   background: var(--c-borde);
   color: var(--c-texto-secundario);
   border-radius: 999px;
+}
+
+.btnIniciarHilo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  width: 100%;
+  padding: 0.55rem 0.85rem;
+  border-radius: 0.65rem;
+  border: 1px solid rgba(2, 132, 199, 0.25);
+  background: var(--c-enlace, #0284c7);
+  color: #ffffff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.2s ease;
+}
+
+.btnIniciarHilo:hover:not(:disabled) {
+  background: #0369a1;
+  transform: translateY(-1px);
+}
+
+.btnIniciarHilo:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: var(--c-borde);
+  color: var(--c-texto-secundario);
+  border-color: var(--c-borde);
+}
+
+.avisoInhabilitado {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--c-texto-secundario);
+  line-height: 1.3;
 }
 
 .buscadorHilosWrapper {
@@ -264,11 +305,33 @@
   padding: 0.85rem 1.5rem;
   border-bottom: 1px solid var(--c-borde);
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
+  gap: 0.75rem;
   background: var(--c-superficie);
   z-index: 2;
   flex-shrink: 0;
+}
+
+.cabeceraBadges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.indicadorEfimero {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 500;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: var(--c-fondo-franja, #eef2f6);
+  color: var(--c-texto, #334155);
+  border: 1px solid var(--c-borde, #e2e8f0);
 }
 
 .infoConversacion {
@@ -476,13 +539,15 @@
   border: none;
   background: transparent;
   resize: none;
-  padding: 0.35rem 0.2rem;
+  padding: 0.5rem 0.25rem;
   font-size: 0.92rem;
   font-family: inherit;
   color: var(--c-texto-principal);
-  min-height: 36px;
-  max-height: 90px;
+  min-height: 44px;
+  max-height: 120px;
+  overflow-y: auto;
   line-height: 1.45;
+  transition: height 120ms ease;
 }
 
 .textareaMensaje:focus {

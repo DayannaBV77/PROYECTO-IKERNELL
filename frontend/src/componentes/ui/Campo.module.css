@@ -9,6 +9,8 @@
   font-size: var(--t-xs);
   font-weight: var(--p-semi);
   letter-spacing: 0.02em;
+  line-height: 1.25;
+  min-height: 15px;
   text-transform: uppercase;
   color: var(--c-marino-titulo);
 }
@@ -25,7 +27,9 @@
 
 .control {
   width: 100%;
-  padding: 10px 14px;
+  min-height: 42px;
+  box-sizing: border-box;
+  padding: 9px 14px;
   border: 1px solid var(--c-borde-campo);
   border-radius: var(--r-md);
   background: var(--c-superficie);
@@ -120,7 +124,11 @@
  */
 .lista {
   appearance: none;
+  height: 42px;
   padding-inline-end: 36px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%230284c7' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 12px center;
@@ -129,4 +137,116 @@
 
 :global(html[data-theme='dark']) .lista {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2338bdf8' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+.controlWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.conIconoDerecho {
+  padding-inline-end: 36px;
+}
+
+.iconoEstado {
+  position: absolute;
+  right: 11px;
+  display: inline-flex;
+  align-items: center;
+  pointer-events: none;
+  color: var(--c-turquesa-fuerte);
+}
+
+.iconoValido {
+  color: var(--c-exito, #16a34a);
+}
+
+.girando {
+  animation: girarCampo 850ms linear infinite;
+}
+
+@keyframes girarCampo {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.chipsBarra {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.chipAtajo {
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid var(--c-borde);
+  background: var(--c-fondo-franja);
+  color: var(--c-texto);
+  font-size: 0.7rem;
+  font-weight: var(--p-semi);
+  cursor: pointer;
+  transition:
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.chipAtajo:hover {
+  border-color: var(--c-turquesa-fuerte);
+  background: var(--c-superficie-tenue);
+  color: var(--c-turquesa-fuerte);
+  transform: translateY(-1px);
+}
+
+.slotFeedback {
+  position: relative;
+  min-height: 24px;
+  width: 100%;
+}
+
+.error,
+.exito,
+.validando,
+.guiaDinamica,
+.guiaExito,
+.guiaAviso {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.25;
+  z-index: 2;
+  animation: aparecerSuave 180ms ease;
+}
+
+.guiaDinamica {
+  color: var(--c-info-texto, #0369a1);
+}
+
+.guiaExito {
+  color: var(--c-exito-texto, #16a34a);
+}
+
+.guiaAviso {
+  color: var(--c-alerta-texto, #78350f);
+}
+
+@keyframes aparecerSuave {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

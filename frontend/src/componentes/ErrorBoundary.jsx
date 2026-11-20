@@ -1,61 +1,94 @@
 import { Component } from 'react';
+import { RefreshCw, Home, ShieldAlert } from 'lucide-react';
 import Boton from './ui/Boton.jsx';
 
 /**
  * Captura excepciones no controladas en el árbol de componentes
- * evitando pantallas blancas completas.
+ * evitando pantallas blancas completas y ocultando trazas técnicas internas.
  */
 export default class ErrorBoundary extends Component {
   constructor(props) {
     super(props);
-    this.state = { tieneError: false, error: null };
+    this.state = { tieneError: false };
   }
 
-  static getDerivedStateFromError(error) {
-    return { tieneError: true, error };
+  static getDerivedStateFromError() {
+    return { tieneError: true };
   }
 
   componentDidCatch(error, info) {
-    console.error('Error no controlado en la interfaz:', error, info);
+    // Registro interno silencioso para diagnóstico sin exponer detalles al usuario final.
+    if (import.meta.env.DEV) {
+      console.error('ErrorBoundary interceptó un fallo de renderizado:', error, info?.componentStack);
+    }
   }
 
   render() {
     if (this.state.tieneError) {
       return (
-        <div style={{
-          padding: '3rem 1.5rem',
-          maxWidth: '600px',
-          margin: '2rem auto',
-          textAlign: 'center',
-          backgroundColor: '#fff',
-          borderRadius: '12px',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-          border: '1px solid #fee2e2'
-        }}>
-          <h2 style={{ color: '#b91c1c', marginBottom: '0.75rem', fontSize: '1.4rem' }}>
-            Ocurrió un problema inesperado
+        <div
+          role="alert"
+          style={{
+            padding: '2.5rem 1.75rem',
+            maxWidth: '540px',
+            margin: '3.5rem auto',
+            textAlign: 'center',
+            backgroundColor: 'var(--c-superficie, #ffffff)',
+            color: 'var(--c-texto, #111827)',
+            borderRadius: '14px',
+            border: '1px solid var(--c-borde, #e5e7eb)',
+            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.12)',
+          }}
+        >
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '48px',
+              height: '48px',
+              borderRadius: '12px',
+              backgroundColor: 'rgba(220, 38, 38, 0.1)',
+              color: '#ef4444',
+              marginBottom: '1rem',
+            }}
+          >
+            <ShieldAlert size={24} aria-hidden="true" />
+          </div>
+          <h2 style={{ margin: '0 0 0.65rem', fontSize: '1.3rem', fontWeight: 700 }}>
+            Ocurrió un inconveniente inesperado
           </h2>
-          <p style={{ color: '#4b5563', fontSize: '0.95rem', marginBottom: '1.5rem', lineHeight: '1.5' }}>
-            Se presentó un error al procesar esta vista. Puede reintentar cargarla o regresar al panel de control.
+          <p
+            style={{
+              color: 'var(--c-texto-tenue, #6b7280)',
+              fontSize: '0.94rem',
+              margin: '0 0 1.5rem',
+              lineHeight: 1.55,
+            }}
+          >
+            La vista actual encontró un error al procesarse. Por seguridad, los detalles técnicos
+            han sido resguardados. Puede recargar la pantalla o volver al inicio seguro.
           </p>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
             <Boton
               variante="primario"
+              icono={RefreshCw}
               onClick={() => {
-                this.setState({ tieneError: false, error: null });
+                this.setState({ tieneError: false });
                 window.location.reload();
               }}
             >
-              Recargar página
+              Recargar pantalla
             </Boton>
             <Boton
               variante="secundario"
+              icono={Home}
               onClick={() => {
-                this.setState({ tieneError: false, error: null });
-                window.location.href = '/app';
+                this.setState({ tieneError: false });
+                window.location.assign('/app');
               }}
             >
-              Volver al panel
+              Volver al inicio seguro
             </Boton>
           </div>
         </div>

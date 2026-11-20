@@ -1,67 +1,129 @@
-import { useCallback, useState } from 'react';
-import { Bug, CircleCheck, Save, TriangleAlert } from 'lucide-react';
+import { useCallback, useMemo, useState } from 'react';
+import { Bug, CheckCircle2, PauseCircle, Save } from 'lucide-react';
 
 import { obtenerMisProyectos } from '../../api/asignaciones.js';
-import { registrarError } from '../../api/incidencias.js';
+import {
+  ETIQUETA_UNIDAD,
+  etiquetaDeFase,
+  obtenerMisErrores,
+  obtenerMisInterrupciones,
+  registrarError,
+} from '../../api/incidencias.js';
 import EstadoCarga from '../../componentes/estados/EstadoCarga.jsx';
 import EstadoError from '../../componentes/estados/EstadoError.jsx';
 import EstadoVacio from '../../componentes/estados/EstadoVacio.jsx';
 import Boton from '../../componentes/ui/Boton.jsx';
 import Campo from '../../componentes/ui/Campo.jsx';
+import PaginacionTabla from '../../componentes/ui/PaginacionTabla.jsx';
 import Seccion from '../../componentes/ui/Seccion.jsx';
-import estilos from '../../estilos/gestion.module.css';
+import { useNotificador } from '../../componentes/ui/Notificador.jsx';
 import { useEtapasDeProyecto } from '../../hooks/useEtapasDeProyecto.js';
+import { usePaginacionLocal } from '../../hooks/usePaginacionLocal.js';
 import { usePeticion } from '../../hooks/usePeticion.js';
+import { formatearFecha } from '../../utilidades/formato.js';
 import FormularioDeInterrupcion from './componentes/FormularioDeInterrupcion.jsx';
+import estilos from './PaginaIncidencias.module.css';
+
+const SEVERIDADES = [
+  { valor: 'BAJA', texto: 'Baja' },
+  { valor: 'MEDIA', texto: 'Media' },
+  { valor: 'ALTA', texto: 'Alta' },
+  { valor: 'CRITICA', texto: 'Crítica' },
+];
+
+const ERROR_VACIO = {
+  proyectoId: '',
+  etapaId: '',
+  tipoError: '',
+  severidad: 'MEDIA',
+  fecha: '',
+  descripcion: '',
+};
+
+function hoyLocal() {
+  const ahora = new Date();
+  const mes = String(ahora.getMonth() + 1).padStart(2, '0');
+  const dia = String(ahora.getDate()).padStart(2, '0');
+  return `${ahora.getFullYear()}-${mes}-${dia}`;
+}
 
 /**
- * Registro de errores e interrupciones de un proyecto (RF-023, RF-024; HU-17, HU-18).
- *
- * Quien registra es el desarrollador, y el servidor no se conforma con el tipo
- * global: exige una asignacion activa como desarrollador en ESE proyecto. Por
- * eso la pantalla se ofrece tambien al lider, que puede estar asignado como
- * desarrollador en otro proyecto (RN-05); quien decide es el servidor.
- *
- * Los proyectos salen de /api/mis-proyectos, que entrega las asignaciones
- * activas de quien pregunta. Antes se deducian de las actividades propias, de
- * modo que un desarrollador recien asignado, sin actividades todavia, no podia
- * elegir su proyecto; esa limitacion queda resuelta.
- *
- * Se ofrecen solo los proyectos donde tiene el rol DESARROLLADOR, porque es el
- * que el servidor exige para registrar (nivel 2): ofrecer los demas seria
- * ofrecer un 403.
- *
- * D-36: la fase que se indica es una ETAPA del proyecto, no un valor de un
- * catalogo comun. Por eso el desplegable de etapa depende del proyecto elegido
- * en el mismo formulario, y cada uno carga las suyas.
- *
- * El formulario de interrupcion vive en su propio archivo porque el acceso
- * rapido del panel «Mi Dia» usa el mismo (RF-038).
+ * Módulo de Registro y Seguimiento de Incidencias (RF-023, RF-024; HU-17, HU-18).
  */
 export default function PaginaIncidencias() {
+  const [tabActiva, setTabActiva] = useState('errores'); // 'errores' | 'interrupciones'
+  const [recargaHistorial, setRecargaHistorial] = useState(0);
+
   const cargarProyectos = useCallback(({ senal }) => obtenerMisProyectos({ senal }), []);
   const misProyectos = usePeticion(cargarProyectos, []);
 
-  // El servidor ya entrega una fila por proyecto, sin repetirlos.
+  const cargarMisErrores = useCallback(({ senal }) => obtenerMisErrores({ senal }), []);
+  const misErroresReq = usePeticion(cargarMisErrores, [recargaHistorial]);
+
+  const cargarMisInterrupciones = useCallback(
+    ({ senal }) => obtenerMisInterrupciones({ senal }),
+    [],
+  );
+  const misInterrupcionesReq = usePeticion(cargarMisInterrupciones, [recargaHistorial]);
+
   const proyectos = (misProyectos.datos?.contenido || [])
     .filter(({ roles }) => roles.includes('DESARROLLADOR'))
     .map(({ proyectoId, proyectoNombre, estadoHabilitacion }) => ({
       valor: String(proyectoId),
-      // El proyecto inhabilitado se ofrece igualmente -el servidor no lo
-      // rechaza al registrar- pero se senala para que no pase inadvertido.
       texto:
         estadoHabilitacion === 'INHABILITADO'
           ? `${proyectoNombre} (inhabilitado)`
           : proyectoNombre,
     }));
 
+  const incidenciasRecientes = useMemo(() => {
+    const listaErrores = (misErroresReq.datos?.contenido || []).map((e) => ({
+      clave: `err-${e.id}`,
+      id: e.id,
+      clase: 'DEFECTO',
+      fecha: e.fecha || '',
+      proyecto: e.proyectoNombre || 'Proyecto',
+      etapa: etiquetaDeFase(e) || 'Sin etapa',
+      resumen: e.tipoError,
+      detalle: e.descripcion || 'Sin descripción adicional',
+    }));
+
+    const listaInterrupciones = (misInterrupcionesReq.datos?.contenido || []).map((i) => ({
+      clave: `int-${i.id}`,
+      id: i.id,
+      clase: 'INTERRUPCION',
+      fecha: i.fecha || '',
+      proyecto: i.proyectoNombre || 'Proyecto',
+      etapa: etiquetaDeFase(i) || 'Sin etapa',
+      resumen: i.tipoInterrupcion,
+      detalle: `${i.duracionValor} ${ETIQUETA_UNIDAD[i.duracionUnidad] || i.duracionUnidad}`,
+    }));
+
+    return [...listaErrores, ...listaInterrupciones].sort((a, b) => {
+      if (a.fecha !== b.fecha) return (b.fecha || '').localeCompare(a.fecha || '');
+      return b.id - a.id;
+    });
+  }, [misErroresReq.datos, misInterrupcionesReq.datos]);
+
+  const {
+    itemsPaginados: incidenciasPaginadas,
+    datosPaginacion,
+    pagina,
+    setPagina,
+    tamano,
+    alCambiarTamano,
+  } = usePaginacionLocal(incidenciasRecientes, {
+    clavePersistencia: 'mis-incidencias-v1',
+    tamanoInicial: 5,
+  });
+
   const cargando = misProyectos.cargando;
   const error = misProyectos.error;
 
   return (
     <Seccion
-      titulo="Errores e interrupciones"
-      descripcion="Deje documentadas las incidencias de los proyectos en los que trabaja."
+      titulo="Errores e Interrupciones"
+      descripcion="Registre defectos técnicos o bloqueos operativos y consulte su historial reciente."
       id="incidencias"
     >
       {cargando && <EstadoCarga mensaje="Cargando sus proyectos..." />}
@@ -72,205 +134,279 @@ export default function PaginaIncidencias() {
 
       {!cargando && !error && proyectos.length === 0 && (
         <EstadoVacio
-          mensaje="No esta asignado como desarrollador en ningun proyecto, de modo que no hay proyecto sobre el que registrar incidencias."
+          mensaje="No tiene asignaciones activas como desarrollador para registrar incidencias."
           icono={Bug}
         />
       )}
 
       {!cargando && !error && proyectos.length > 0 && (
-        <div className={estilos.perfil}>
-          <FormularioDeError proyectos={proyectos} />
-          <FormularioDeInterrupcion proyectos={proyectos} />
+        <div className={estilos.contenedor}>
+          <div className={estilos.tabsBarra} role="tablist" aria-label="Tipo de incidencia">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tabActiva === 'errores'}
+              data-testid="tab-errores"
+              className={`${estilos.tabBoton} ${tabActiva === 'errores' ? estilos.tabActiva : ''}`}
+              onClick={() => setTabActiva('errores')}
+            >
+              <Bug size={16} aria-hidden="true" />
+              <span>Errores de Software (RF-023)</span>
+            </button>
+
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tabActiva === 'interrupciones'}
+              data-testid="tab-interrupciones"
+              className={`${estilos.tabBoton} ${tabActiva === 'interrupciones' ? estilos.tabActiva : ''}`}
+              onClick={() => setTabActiva('interrupciones')}
+            >
+              <PauseCircle size={16} aria-hidden="true" />
+              <span>Interrupciones (RF-024)</span>
+            </button>
+          </div>
+
+          {tabActiva === 'errores' ? (
+            <FormularioDeError
+              proyectos={proyectos}
+              alRegistrar={() => setRecargaHistorial((n) => n + 1)}
+            />
+          ) : (
+            <FormularioDeInterrupcion
+              proyectos={proyectos}
+              alRegistrar={() => setRecargaHistorial((n) => n + 1)}
+            />
+          )}
+
+          <section className={estilos.panelHistorial} data-testid="incidencias-recientes-tabla">
+            <div className={estilos.historialCabecera}>
+              <div>
+                <h2 className={estilos.historialTitulo}>Mis incidencias recientes</h2>
+                <span className={estilos.historialSub}>
+                  {incidenciasRecientes.length} registro(s) documentados
+                </span>
+              </div>
+            </div>
+
+            {incidenciasRecientes.length === 0 ? (
+              <EstadoVacio
+                icono={CheckCircle2}
+                mensaje="Aún no ha registrado errores ni interrupciones."
+              />
+            ) : (
+              <>
+                <div className={estilos.tablaWrap}>
+                  <table className={estilos.tabla}>
+                    <thead>
+                      <tr>
+                        <th>Fecha</th>
+                        <th>Proyecto y Etapa</th>
+                        <th>Tipo</th>
+                        <th>Detalle / Duración</th>
+                        <th>Estado</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {incidenciasPaginadas.map((item) => (
+                        <tr key={item.clave}>
+                          <td>{item.fecha ? formatearFecha(item.fecha) : 'Hoy'}</td>
+                          <td>
+                            <strong>{item.proyecto}</strong>
+                            <div className={estilos.historialSub}>{item.etapa}</div>
+                          </td>
+                          <td>
+                            <span
+                              className={`${estilos.badgeTipo} ${
+                                item.clase === 'DEFECTO'
+                                  ? estilos.badgeDefecto
+                                  : estilos.badgeInterrupcion
+                              }`}
+                            >
+                              {item.clase === 'DEFECTO' ? (
+                                <Bug size={12} aria-hidden="true" />
+                              ) : (
+                                <PauseCircle size={12} aria-hidden="true" />
+                              )}
+                              <span>{item.clase === 'DEFECTO' ? 'Defecto' : 'Interrupción'}</span>
+                            </span>
+                          </td>
+                          <td>
+                            <strong>{item.resumen}</strong>
+                            <div className={estilos.historialSub}>{item.detalle}</div>
+                          </td>
+                          <td>
+                            <span className={`${estilos.badgeTipo} ${estilos.badgeRegistrado}`}>
+                              Registrado
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <PaginacionTabla
+                  datos={datosPaginacion}
+                  pagina={pagina}
+                  tamano={tamano}
+                  etiquetaItem="incidencias"
+                  opcionesTamano={[5, 10, 25]}
+                  alCambiarPagina={setPagina}
+                  alCambiarTamano={alCambiarTamano}
+                />
+              </>
+            )}
+          </section>
         </div>
       )}
     </Seccion>
   );
 }
 
-/** Mensajes de confirmacion y de fallo, compartidos por los dos formularios. */
-function Avisos({ confirmado, fallo }) {
-  return (
-    <>
-      {confirmado && (
-        <p className={estilos.avisoExito} role="status">
-          <CircleCheck size={18} aria-hidden="true" />
-          {confirmado}
-        </p>
-      )}
-      {fallo && (
-        <p className={estilos.avisoError} role="alert">
-          <TriangleAlert size={18} aria-hidden="true" />
-          {fallo}
-        </p>
-      )}
-    </>
-  );
-}
-
-const ERROR_VACIO = { proyectoId: '', tipoError: '', etapaId: '', descripcion: '', fecha: '' };
-
-/** Fecha local en formato ISO corto (YYYY-MM-DD) */
-function hoyLocal() {
-  const ahora = new Date();
-  const mes = String(ahora.getMonth() + 1).padStart(2, '0');
-  const dia = String(ahora.getDate()).padStart(2, '0');
-  return `${ahora.getFullYear()}-${mes}-${dia}`;
-}
-
-/**
- * Registro de un error (RF-023, HU-17).
- *
- * El proyecto va en la ruta, no en el cuerpo: si no se eligio, la peticion ni
- * siquiera se puede formar, asi que ese unico caso -C03- lo comprueba el
- * cliente. Los demas datos los valida el servidor (C02 y C04), que es quien
- * sabe cuales son obligatorios.
- */
-function FormularioDeError({ proyectos }) {
-  const [valores, setValores] = useState(ERROR_VACIO);
+function FormularioDeError({ proyectos, alRegistrar }) {
+  const notificador = useNotificador();
+  const [valores, setValores] = useState(() => ({ ...ERROR_VACIO, fecha: hoyLocal() }));
   const { opcionesDeEtapa } = useEtapasDeProyecto(valores.proyectoId);
   const [errores, setErrores] = useState({});
-  const [fallo, setFallo] = useState(null);
-  const [confirmado, setConfirmado] = useState(null);
   const [guardando, setGuardando] = useState(false);
 
   function alCambiar(evento) {
     const { name, value } = evento.target;
-    setValores((previos) => ({ ...previos, [name]: value }));
+    setValores((previos) => ({
+      ...previos,
+      [name]: value,
+      ...(name === 'proyectoId' ? { etapaId: '' } : {}),
+    }));
     setErrores((previos) => (previos[name] ? { ...previos, [name]: undefined } : previos));
   }
 
-  function validarError({ fecha, descripcion }) {
-    const erroresLocales = {};
-    const fechaLimpia = String(fecha || '').trim();
-    const descripcionLimpia = String(descripcion || '').trim();
-
-    if (!fechaLimpia) {
-      erroresLocales.fecha = 'Debe indicar la fecha del error.';
-    } else {
-      const fechaNormalizada = new Date(`${fechaLimpia}T00:00:00`);
-      if (Number.isNaN(fechaNormalizada.getTime())) {
-        erroresLocales.fecha = 'La fecha del error no es válida.';
-      } else if (fechaLimpia > hoyLocal()) {
-        erroresLocales.fecha = 'La fecha del error no puede ser posterior a hoy.';
-      }
+  function validar() {
+    const e = {};
+    if (!valores.proyectoId) e.proyectoId = 'Seleccione el proyecto.';
+    if (!valores.etapaId) e.etapaId = 'Seleccione la etapa del proyecto.';
+    if (!valores.tipoError.trim()) e.tipoError = 'Indique el tipo de defecto.';
+    if (valores.fecha && valores.fecha > hoyLocal()) {
+      e.fecha = 'La fecha no puede ser posterior a hoy.';
     }
-
-    if (!descripcionLimpia) {
-      erroresLocales.descripcion = 'Debe describir el error encontrado.';
-    } else if (descripcionLimpia.length < 5) {
-      erroresLocales.descripcion = 'La descripcion del error debe tener al menos 5 caracteres.';
+    if (!valores.descripcion.trim() || valores.descripcion.trim().length < 5) {
+      e.descripcion = 'Describa el defecto (mínimo 5 caracteres).';
     }
-
-    return erroresLocales;
+    return e;
   }
 
   async function alEnviar(evento) {
     evento.preventDefault();
-    setConfirmado(null);
-    setFallo(null);
-
-    // C03: sin proyecto no hay a donde enviar el registro.
-    if (!valores.proyectoId) {
-      setErrores({ proyectoId: 'Debe elegir el proyecto al que pertenece el error.' });
-      return;
-    }
-
-    const erroresLocales = validarError(valores);
-    if (Object.keys(erroresLocales).length > 0) {
-      setErrores((previos) => ({ ...previos, ...erroresLocales }));
-      setFallo('Debe corregir la fecha y la descripcion antes de registrar el error.');
+    const e = validar();
+    if (Object.keys(e).length > 0) {
+      setErrores(e);
       return;
     }
 
     setGuardando(true);
-    setErrores({});
     try {
+      const descripcionConSeveridad = `[Severidad: ${valores.severidad}] ${valores.descripcion.trim()}`;
       await registrarError(valores.proyectoId, {
-        tipoError: valores.tipoError,
-        etapaId: valores.etapaId ? Number(valores.etapaId) : null,
-        descripcion: valores.descripcion,
-        fecha: valores.fecha || null,
+        tipoError: valores.tipoError.trim(),
+        etapaId: Number(valores.etapaId),
+        descripcion: descripcionConSeveridad,
+        fecha: valores.fecha || hoyLocal(),
       });
-      setConfirmado('El error quedo registrado y asociado al proyecto.');
-      setValores({ ...ERROR_VACIO, proyectoId: valores.proyectoId });
-    } catch (error) {
-      if (error.campos) {
-        setErrores(error.campos);
-      }
-      setFallo(error.message);
+      notificador.exito('Defecto técnico registrado correctamente.', 'Defecto guardado');
+      setValores({
+        ...ERROR_VACIO,
+        proyectoId: valores.proyectoId,
+        fecha: hoyLocal(),
+      });
+      setErrores({});
+      if (alRegistrar) alRegistrar();
+    } catch (err) {
+      if (err.campos) setErrores(err.campos);
+      notificador.error(err.message || 'No se pudo registrar el defecto.', 'Error');
     } finally {
       setGuardando(false);
     }
   }
 
   return (
-    <form className={estilos.ficha} onSubmit={alEnviar} noValidate>
-      <p className={estilos.rotulo}>
-        <Bug size={14} aria-hidden="true" /> Registrar un error
-      </p>
+    <form className={estilos.fichaFormulario} onSubmit={alEnviar} noValidate data-testid="form-registrar-error">
+      <div className={estilos.gridCampos}>
+        <Campo
+          etiqueta="Proyecto"
+          nombre="proyectoId"
+          obligatorio
+          opciones={proyectos}
+          textoVacio="Seleccione un proyecto"
+          value={valores.proyectoId}
+          onChange={alCambiar}
+          error={errores.proyectoId}
+        />
 
-      <Avisos confirmado={confirmado} fallo={fallo} />
+        <Campo
+          etiqueta="Etapa del proyecto"
+          nombre="etapaId"
+          obligatorio
+          opciones={opcionesDeEtapa}
+          textoVacio={valores.proyectoId ? 'Seleccione la etapa' : 'Elija primero un proyecto'}
+          value={valores.etapaId}
+          onChange={alCambiar}
+          disabled={!valores.proyectoId}
+          error={errores.etapaId}
+        />
+
+        <Campo
+          etiqueta="Tipo de defecto"
+          nombre="tipoError"
+          obligatorio
+          placeholder="Ej: Bug de lógica, Fallo SQL, Error de UI"
+          value={valores.tipoError}
+          onChange={alCambiar}
+          error={errores.tipoError}
+        />
+
+        <Campo
+          etiqueta="Fecha de detección"
+          nombre="fecha"
+          tipo="date"
+          max={hoyLocal()}
+          value={valores.fecha}
+          onChange={alCambiar}
+          error={errores.fecha}
+        />
+      </div>
+
+      <div className={estilos.severidadGrupo}>
+        <span className={estilos.microEtiqueta}>Severidad</span>
+        <div className={estilos.severidadPildoras}>
+          {SEVERIDADES.map((sev) => (
+            <button
+              key={sev.valor}
+              type="button"
+              className={`${estilos.severidadBtn} ${
+                valores.severidad === sev.valor ? estilos.severidadActiva : ''
+              }`}
+              onClick={() => setValores((prev) => ({ ...prev, severidad: sev.valor }))}
+            >
+              {sev.texto}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <Campo
-        etiqueta="Proyecto"
-        nombre="proyectoId"
-        opciones={proyectos}
-        obligatorio
-        value={valores.proyectoId}
-        onChange={alCambiar}
-        error={errores.proyectoId}
-      />
-      <Campo
-        etiqueta="Tipo de error"
-        nombre="tipoError"
-        obligatorio
-        value={valores.tipoError}
-        onChange={alCambiar}
-        error={errores.tipoError}
-        pista="Elija el tipo de error estandarizado para esta incidencia."
-        opciones={[
-          { valor: 'Error de lógica / Algoritmo', texto: 'Error de lógica / Algoritmo' },
-          { valor: 'Fallas en librerías o dependencias', texto: 'Fallas en librerías o dependencias' },
-          { valor: 'Problemas de infraestructura o servidores', texto: 'Problemas de infraestructura o servidores' },
-          { valor: 'Deuda técnica', texto: 'Deuda técnica' },
-          { valor: 'Limitaciones de las herramientas de desarrollo', texto: 'Limitaciones de las herramientas de desarrollo' },
-          { valor: 'Especificaciones poco claras', texto: 'Especificaciones poco claras' },
-          { valor: 'Errores en la estimación de tiempos', texto: 'Errores en la estimación de tiempos' },
-          { valor: 'Cuellos de botella por dependencias de tareas', texto: 'Cuellos de botella por dependencias de tareas' },
-        ]}
-      />
-      <Campo
-        etiqueta="Etapa en que lo encontro"
-        nombre="etapaId"
-        opciones={opcionesDeEtapa}
-        obligatorio
-        value={valores.etapaId}
-        onChange={alCambiar}
-        error={errores.etapaId}
-        pista="Son las etapas del proyecto elegido; elija primero el proyecto."
-      />
-      <Campo
-        etiqueta="Fecha"
-        nombre="fecha"
-        tipo="date"
-        max={hoyLocal()}
-        value={valores.fecha}
-        onChange={alCambiar}
-        error={errores.fecha}
-      />
-      <Campo
-        etiqueta="Descripcion"
+        etiqueta="Descripción y pasos para reproducir"
         nombre="descripcion"
         area
-        rows={4}
+        obligatorio
+        placeholder="Describa brevemente el comportamiento inesperado..."
         value={valores.descripcion}
         onChange={alCambiar}
         error={errores.descripcion}
       />
 
-      <div className={estilos.accionesPerfil}>
-        <Boton type="submit" icono={Save} disabled={guardando}>
-          {guardando ? 'Guardando...' : 'Registrar error'}
+      <div className={estilos.accionesForm}>
+        <Boton type="submit" variante="primario" icono={Save} disabled={guardando} data-testid="btn-registrar-defecto">
+          {guardando ? 'Registrando...' : 'Registrar Defecto'}
         </Boton>
       </div>
     </form>

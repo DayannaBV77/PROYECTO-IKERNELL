@@ -1,15 +1,34 @@
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
-import Boton from './Boton.jsx';
 import estilos from './PaginacionTabla.module.css';
 
 /**
- * Control avanzado y profesional de paginación y cantidad de registros para tablas.
+ * Calcula la ventana de numeros de pagina a mostrar (maximo 5 botones numericos).
+ */
+function calcularVentanaPaginas(paginaActual, totalPaginas) {
+  const total = Math.max(1, totalPaginas);
+  if (total <= 5) {
+    return Array.from({ length: total }, (_, i) => i);
+  }
+  let inicio = Math.max(0, paginaActual - 2);
+  let fin = Math.min(total - 1, inicio + 4);
+  if (fin - inicio < 4) {
+    inicio = Math.max(0, fin - 4);
+  }
+  const paginas = [];
+  for (let i = inicio; i <= fin; i += 1) {
+    paginas.push(i);
+  }
+  return paginas;
+}
+
+/**
+ * Control avanzado y estandarizado de paginacion y cantidad de registros para tablas.
  *
- * @param {Object}   datos             Respuesta paginada del backend (totalPaginas, totalElementos, tamano, pagina)
- * @param {number}   pagina            Página actual (índice 0-based)
- * @param {Function} alCambiarPagina   Función para alternar la página
- * @param {number}   [tamano]          Cantidad actual de filas por página
- * @param {Function} [alCambiarTamano] Callback al cambiar cantidad por página (opcional)
+ * @param {Object}   datos             Respuesta paginada (totalPaginas, totalElementos, tamano, pagina)
+ * @param {number}   pagina            Pagina actual (indice 0-based)
+ * @param {Function} alCambiarPagina   Funcion para alternar la pagina
+ * @param {number}   [tamano]          Cantidad actual de filas por pagina
+ * @param {Function} [alCambiarTamano] Callback al cambiar cantidad por pagina
  * @param {string}   [etiquetaItem]    Nombre del elemento en plural ("proyectos", "actividades", etc.)
  */
 export default function PaginacionTabla({
@@ -19,13 +38,19 @@ export default function PaginacionTabla({
   tamano = 10,
   alCambiarTamano,
   etiquetaItem = 'registros',
+  opciones = [10, 25, 50, 100],
 }) {
-  const { totalPaginas = 1, totalElementos = 0 } = datos || {};
+  const totalPaginas = Math.max(1, datos?.totalPaginas ?? 1);
+  const totalElementos = datos?.totalElementos ?? 0;
 
   const inicio = totalElementos === 0 ? 0 : pagina * tamano + 1;
   const fin = Math.min((pagina + 1) * tamano, totalElementos);
 
-  const opcionesTamano = [5, 10, 20, 50];
+  const opcionesTamano = opciones.includes(tamano)
+    ? opciones
+    : [...opciones, tamano].sort((a, b) => a - b);
+
+  const ventanaPaginas = calcularVentanaPaginas(pagina, totalPaginas);
 
   return (
     <div className={estilos.contenedor} aria-label="Controles de tabla y paginación">
@@ -52,8 +77,14 @@ export default function PaginacionTabla({
         )}
 
         <p className={estilos.recuento} aria-live="polite">
-          Mostrando <strong>{inicio}</strong> a <strong>{fin}</strong> de{' '}
-          <strong>{totalElementos}</strong> {etiquetaItem}
+          {totalElementos === 0 ? (
+            <>Mostrando <strong>0</strong> de <strong>0</strong> {etiquetaItem}</>
+          ) : (
+            <>
+              Mostrando registros del <strong>{inicio}</strong> al <strong>{fin}</strong> de{' '}
+              <strong>{totalElementos}</strong> {etiquetaItem}
+            </>
+          )}
         </p>
       </div>
 
@@ -66,7 +97,7 @@ export default function PaginacionTabla({
           title="Primera página"
           aria-label="Ir a la primera página"
         >
-          <ChevronsLeft size={16} aria-hidden="true" />
+          <ChevronsLeft size={15} aria-hidden="true" />
         </button>
 
         <button
@@ -77,12 +108,26 @@ export default function PaginacionTabla({
           title="Página anterior"
           aria-label="Ir a la página anterior"
         >
-          <ChevronLeft size={16} aria-hidden="true" />
+          <ChevronLeft size={15} aria-hidden="true" />
         </button>
 
-        <span className={estilos.indicadorPagina}>
-          Página <strong>{pagina + 1}</strong> de <strong>{Math.max(totalPaginas, 1)}</strong>
-        </span>
+        <div className={estilos.numerosPagina}>
+          {ventanaPaginas.map((num) => {
+            const activa = num === pagina;
+            return (
+              <button
+                key={num}
+                type="button"
+                className={`${estilos.botonNumero} ${activa ? estilos.botonNumeroActivo : ''}`}
+                onClick={() => alCambiarPagina(num)}
+                aria-current={activa ? 'page' : undefined}
+                aria-label={`Página ${num + 1}`}
+              >
+                {num + 1}
+              </button>
+            );
+          })}
+        </div>
 
         <button
           type="button"
@@ -92,7 +137,7 @@ export default function PaginacionTabla({
           title="Página siguiente"
           aria-label="Ir a la página siguiente"
         >
-          <ChevronRight size={16} aria-hidden="true" />
+          <ChevronRight size={15} aria-hidden="true" />
         </button>
 
         <button
@@ -103,7 +148,7 @@ export default function PaginacionTabla({
           title="Última página"
           aria-label="Ir a la última página"
         >
-          <ChevronsRight size={16} aria-hidden="true" />
+          <ChevronsRight size={15} aria-hidden="true" />
         </button>
       </nav>
     </div>

@@ -229,7 +229,7 @@ function ProyectoCargado({ inicial }) {
   const habilitado = proyecto.estadoHabilitacion !== 'INHABILITADO';
 
   return (
-    <Seccion titulo={proyecto.nombre} id="detalle-proyecto">
+    <Seccion titulo={proyecto.nombre} id="detalle-proyecto" rutaFallback="/app/proyectos">
       <VolverALaBusqueda />
 
       {registrado && (

@@ -80,6 +80,7 @@ export default function AppRouter() {
 
             {/* RF-003, HU-06: asignar trabajadores a proyectos. */}
             <Route path="asignaciones" element={<PaginaAsignaciones />} />
+            <Route path="asignaciones/:id" element={<PaginaAsignaciones />} />
 
             {/* RF-006, HU-07: desempeno de un desarrollador. */}
             <Route path="reportes/desempeno" element={<PaginaReporteDesempeno />} />
@@ -125,6 +126,9 @@ export default function AppRouter() {
               por la misma razon: el permiso es la asignacion en el proyecto,
               con cualquier rol, y lo comprueba el servidor. */}
           <Route path="chat" element={<PaginaChat />} />
+
+          {/* Cualquier subruta desconocida dentro de /app muestra 404 corporativo sin romper el layout. */}
+          <Route path="*" element={<PaginaNoEncontrada />} />
         </Route>
 
         <Route path="*" element={<PaginaNoEncontrada />} />
