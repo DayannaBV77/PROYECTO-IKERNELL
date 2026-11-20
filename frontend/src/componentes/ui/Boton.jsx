@@ -15,10 +15,11 @@ export default function Boton({
   href,
   icono: Icono,
   completo = false,
+  className = '',
   children,
   ...resto
 }) {
-  const clases = [estilos.boton, estilos[variante], completo ? estilos.completo : '']
+  const clases = [estilos.boton, estilos[variante], completo ? estilos.completo : '', className]
     .filter(Boolean)
     .join(' ');
 

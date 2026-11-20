@@ -1,4 +1,4 @@
-import { Search, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, X, ChevronDown, ChevronUp, TriangleAlert } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import {
@@ -155,11 +155,14 @@ export default function SelectorEspecialidades({
         </div>
       )}
 
-      {error && (
-        <p className={estilos.error} role="alert">
-          {error}
-        </p>
-      )}
+      <div className={estilos.slotFeedback} aria-live="polite">
+        {error && (
+          <p className={estilos.error} role="alert">
+            <TriangleAlert size={14} aria-hidden="true" />
+            <span>{error}</span>
+          </p>
+        )}
+      </div>
     </div>
   );
 }

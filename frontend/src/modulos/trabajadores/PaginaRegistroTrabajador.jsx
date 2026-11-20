@@ -381,6 +381,7 @@ export default function PaginaRegistroTrabajador() {
             max={FECHA_MAXIMA_NACIMIENTO}
           />
           <AsistenteDireccion
+            className={estilos.columnaDireccion}
             value={valores.direccion}
             onChange={alCambiar}
             onBlur={() => {
@@ -401,6 +402,15 @@ export default function PaginaRegistroTrabajador() {
             error={errores.profesion}
             obligatorio
           />
+          <Campo
+            etiqueta="Tipo de trabajador"
+            nombre="tipoTrabajador"
+            opciones={TIPOS_TRABAJADOR}
+            obligatorio
+            value={valores.tipoTrabajador}
+            onChange={alCambiar}
+            error={errores.tipoTrabajador}
+          />
           <SelectorEspecialidades
             value={valores.especialidadDesarrollo}
             onChange={(valor) => {
@@ -411,15 +421,6 @@ export default function PaginaRegistroTrabajador() {
             }}
             error={errores.especialidadDesarrollo}
             obligatorio
-          />
-          <Campo
-            etiqueta="Tipo de trabajador"
-            nombre="tipoTrabajador"
-            opciones={TIPOS_TRABAJADOR}
-            obligatorio
-            value={valores.tipoTrabajador}
-            onChange={alCambiar}
-            error={errores.tipoTrabajador}
           />
         </div>
 

@@ -15,7 +15,6 @@ import {
   Folder,
   ListChecks,
   RotateCcw,
-  Search,
   User,
   Zap,
 } from 'lucide-react';
@@ -51,14 +50,6 @@ export default function PaginaReportesProyecto() {
   const [fechaDesde, setFechaDesde] = useState('');
   const [fechaHasta, setFechaHasta] = useState('');
 
-  // Filtros aplicados
-  const [filtrosAplicados, setFiltrosAplicados] = useState({
-    proyectoId: '',
-    desarrolladorId: '',
-    desde: '',
-    hasta: '',
-  });
-
   // Autoseleccionar proyecto si no hay uno seleccionado
   useEffect(() => {
     if (!proyectoId && opcionesDeProyecto.length > 0) {
@@ -66,19 +57,18 @@ export default function PaginaReportesProyecto() {
         ? String(sesion.proyectoActivoId)
         : opcionesDeProyecto[0].valor;
       setProyectoId(inicial);
-      setFiltrosAplicados((prev) => ({ ...prev, proyectoId: inicial }));
     }
   }, [opcionesDeProyecto, sesion, proyectoId]);
 
   // Cargar equipo de desarrolladores del proyecto
   const cargarEquipo = useCallback(
     ({ senal }) =>
-      filtrosAplicados.proyectoId
-        ? obtenerEquipo(Number(filtrosAplicados.proyectoId), { senal })
+      proyectoId
+        ? obtenerEquipo(Number(proyectoId), { senal })
         : Promise.resolve([]),
-    [filtrosAplicados.proyectoId],
+    [proyectoId],
   );
-  const equipoReq = usePeticion(cargarEquipo, [filtrosAplicados.proyectoId]);
+  const equipoReq = usePeticion(cargarEquipo, [proyectoId]);
   const listaDesarrolladores = useMemo(() => {
     const raw = Array.isArray(equipoReq.datos)
       ? equipoReq.datos
@@ -106,42 +96,42 @@ export default function PaginaReportesProyecto() {
   // Cargar reporte de actividades
   const cargarActividades = useCallback(
     ({ senal }) =>
-      filtrosAplicados.proyectoId
+      proyectoId
         ? reporteDeActividades(
-            Number(filtrosAplicados.proyectoId),
+            Number(proyectoId),
             {
-              desarrolladorId: filtrosAplicados.desarrolladorId ? Number(filtrosAplicados.desarrolladorId) : undefined,
+              desarrolladorId: desarrolladorId ? Number(desarrolladorId) : undefined,
               tamano: 100,
             },
             { senal },
           )
         : Promise.resolve(null),
-    [filtrosAplicados.proyectoId, filtrosAplicados.desarrolladorId],
+    [proyectoId, desarrolladorId],
   );
   const actividadesReq = usePeticion(cargarActividades, [
-    filtrosAplicados.proyectoId,
-    filtrosAplicados.desarrolladorId,
+    proyectoId,
+    desarrolladorId,
   ]);
 
   // Cargar reporte de interrupciones
   const cargarInterrupciones = useCallback(
     ({ senal }) =>
-      filtrosAplicados.proyectoId
+      proyectoId
         ? reporteDeInterrupciones(
-            Number(filtrosAplicados.proyectoId),
+            Number(proyectoId),
             {
-              desde: filtrosAplicados.desde || undefined,
-              hasta: filtrosAplicados.hasta || undefined,
+              desde: fechaDesde || undefined,
+              hasta: fechaHasta || undefined,
             },
             { senal },
           )
         : Promise.resolve(null),
-    [filtrosAplicados.proyectoId, filtrosAplicados.desde, filtrosAplicados.hasta],
+    [proyectoId, fechaDesde, fechaHasta],
   );
   const interrupcionesReq = usePeticion(cargarInterrupciones, [
-    filtrosAplicados.proyectoId,
-    filtrosAplicados.desde,
-    filtrosAplicados.hasta,
+    proyectoId,
+    fechaDesde,
+    fechaHasta,
   ]);
 
   const listaActividades = useMemo(() => {
@@ -172,16 +162,10 @@ export default function PaginaReportesProyecto() {
   const pctPendientes = totalActividades > 0 ? Math.round((pendientes / totalActividades) * 100) : 0;
   const pctEnProgreso = totalActividades > 0 ? Math.round((enProgreso / totalActividades) * 100) : 0;
 
-  // Manejo de filtros
-  function alAplicarFiltros(e) {
-    if (e) e.preventDefault();
-    setFiltrosAplicados({
-      proyectoId,
-      desarrolladorId,
-      desde: fechaDesde,
-      hasta: fechaHasta,
-    });
-    notificador.exito('Filtros aplicados correctamente al dashboard.', 'Reportes actualizados');
+  // Manejo de filtros en tiempo real
+  function alCambiarProyecto(e) {
+    setProyectoId(e.target.value);
+    setDesarrolladorId('');
   }
 
   function alLimpiarFiltros() {
@@ -190,17 +174,17 @@ export default function PaginaReportesProyecto() {
     setDesarrolladorId('');
     setFechaDesde('');
     setFechaHasta('');
-    setFiltrosAplicados({
-      proyectoId: proyDefecto,
-      desarrolladorId: '',
-      desde: '',
-      hasta: '',
-    });
+    notificador.info('Filtros restablecidos.', 'Valores iniciales');
   }
+
+  const reintentarCargas = useCallback(() => {
+    actividadesReq.reintentar();
+    interrupcionesReq.reintentar();
+  }, [actividadesReq, interrupcionesReq]);
 
   // Nombre del proyecto actual
   const proyectoActualNombre =
-    opcionesDeProyecto.find((p) => p.valor === String(filtrosAplicados.proyectoId))?.texto ||
+    opcionesDeProyecto.find((p) => p.valor === String(proyectoId))?.texto ||
     'Proyecto en Selección';
 
   // Exportar Actividades a CSV/Excel compatible
@@ -290,7 +274,7 @@ export default function PaginaReportesProyecto() {
           <span>Filtros</span>
         </div>
 
-        <form className={estilos.formularioFiltros} onSubmit={alAplicarFiltros}>
+        <div className={estilos.formularioFiltros}>
           {/* Selector de Proyecto */}
           <div className={estilos.campoGrupo}>
             <label className={estilos.etiquetaCampo} htmlFor="filtro-proyecto-rep">
@@ -302,7 +286,7 @@ export default function PaginaReportesProyecto() {
                 id="filtro-proyecto-rep"
                 className={estilos.selectBase}
                 value={proyectoId}
-                onChange={(e) => setProyectoId(e.target.value)}
+                onChange={alCambiarProyecto}
               >
                 {opcionesDeProyecto.map((p) => (
                   <option key={p.valor} value={p.valor}>
@@ -329,6 +313,7 @@ export default function PaginaReportesProyecto() {
                 title="Fecha inicio"
               />
               <input
+                id="filtro-rango-rep-fin"
                 type="date"
                 className={estilos.inputBase}
                 value={fechaHasta}
@@ -361,21 +346,16 @@ export default function PaginaReportesProyecto() {
             </div>
           </div>
 
-          {/* Botones de acción */}
-          <button type="submit" className={estilos.btnAplicarFiltros}>
-            <Search size={15} />
-            <span>Aplicar filtros</span>
-          </button>
-
+          {/* Botón de limpiar filtros */}
           <button type="button" className={estilos.btnLimpiarFiltros} onClick={alLimpiarFiltros}>
             <RotateCcw size={15} />
             <span>Limpiar</span>
           </button>
-        </form>
+        </div>
       </div>
 
       {cargando && <EstadoCarga mensaje="Actualizando métricas y reportes del proyecto..." />}
-      {!cargando && error && <EstadoError error={error} alReintentar={() => alAplicarFiltros()} />}
+      {!cargando && error && <EstadoError error={error} alReintentar={reintentarCargas} />}
 
       {/* 3. Cuatro Tarjetas Métricas */}
       <div className={estilos.metricasGrid}>

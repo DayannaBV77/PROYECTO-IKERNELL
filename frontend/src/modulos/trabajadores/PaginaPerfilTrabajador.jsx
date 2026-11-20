@@ -452,6 +452,15 @@ function PerfilCargado({ inicial }) {
             error={errores.profesion}
             obligatorio
           />
+          <Campo
+            etiqueta="Tipo de trabajador"
+            nombre="tipoTrabajador"
+            opciones={TIPOS_TRABAJADOR}
+            obligatorio
+            value={editables.tipoTrabajador}
+            onChange={alCambiar}
+            error={errores.tipoTrabajador}
+          />
           <SelectorEspecialidades
             value={editables.especialidadDesarrollo}
             onChange={(valor) => {
@@ -468,15 +477,6 @@ function PerfilCargado({ inicial }) {
             }}
             error={errores.especialidadDesarrollo}
             obligatorio
-          />
-          <Campo
-            etiqueta="Tipo de trabajador"
-            nombre="tipoTrabajador"
-            opciones={TIPOS_TRABAJADOR}
-            obligatorio
-            value={editables.tipoTrabajador}
-            onChange={alCambiar}
-            error={errores.tipoTrabajador}
           />
 
           <div className={estilos.accionesPerfil}>

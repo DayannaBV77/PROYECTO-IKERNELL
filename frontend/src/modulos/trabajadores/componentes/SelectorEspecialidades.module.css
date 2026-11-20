@@ -12,6 +12,8 @@
   letter-spacing: 0.02em;
   text-transform: uppercase;
   font-weight: var(--p-semi);
+  line-height: 1.25;
+  min-height: 15px;
   color: var(--c-marino-titulo);
 }
 
@@ -268,13 +270,37 @@
   cursor: pointer;
 }
 
+.slotFeedback {
+  position: relative;
+  min-height: 24px;
+  width: 100%;
+}
+
 .error {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
   margin: 0;
-  font-size: var(--t-sm);
-  color: var(--c-error);
+  font-size: 0.72rem;
+  line-height: 1.25;
+  color: var(--c-error-texto, var(--c-error));
   display: flex;
-  align-items: center;
-  gap: var(--s-2);
+  align-items: flex-start;
+  gap: 0.35rem;
+  z-index: 2;
+  animation: aparecerSuave 180ms ease;
+}
+
+@keyframes aparecerSuave {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (max-width: 720px) {

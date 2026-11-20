@@ -584,8 +584,8 @@ export default function PaginaConsultas() {
                       />
                     </div>
 
-                    <div className={estilos.filaDestino}>
-                      <div>
+                    <div className={estilos.bloqueDestino}>
+                      <div className={estilos.filaDestino}>
                         <Campo
                           etiqueta="Correo de destino"
                           nombre="correoDestino"
@@ -600,20 +600,22 @@ export default function PaginaConsultas() {
                           }
                           placeholder="cliente@ejemplo.com"
                         />
-                        <p className={estilos.confirmacionDestino}>
-                          Se enviará copia oficial al correo: <strong>{correoActivo || 'sin definir'}</strong>
-                        </p>
+
+                        <Boton
+                          type="submit"
+                          variante="primario"
+                          icono={Send}
+                          disabled={enviando}
+                          data-testid="consultas-send-btn"
+                          className={estilos.botonEnviarRespuesta}
+                        >
+                          {enviando ? 'Enviando...' : 'Enviar respuesta'}
+                        </Boton>
                       </div>
 
-                      <Boton
-                        type="submit"
-                        variante="primario"
-                        icono={Send}
-                        disabled={enviando}
-                        data-testid="consultas-send-btn"
-                      >
-                        {enviando ? 'Enviando...' : 'Enviar Respuesta al Cliente'}
-                      </Boton>
+                      <p className={estilos.confirmacionDestino}>
+                        Se enviará copia oficial al correo: <strong>{correoActivo || 'sin definir'}</strong>
+                      </p>
                     </div>
                   </form>
                 </div>

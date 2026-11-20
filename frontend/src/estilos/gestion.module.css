@@ -75,6 +75,47 @@
   align-items: end;
 }
 
+.formulario .criterios {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--s-4);
+  align-items: start;
+}
+
+.columnaDireccion {
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .formulario .criterios {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .columnaDireccion {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 1024px) {
+  .formulario .criterios {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .columnaDireccion {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 767px) {
+  .formulario .criterios {
+    grid-template-columns: 1fr;
+  }
+
+  .columnaDireccion {
+    grid-column: span 1;
+  }
+}
+
 .accionesBuscador {
   display: flex;
   align-items: center;

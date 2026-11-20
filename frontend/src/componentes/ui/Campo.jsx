@@ -25,6 +25,8 @@ export default function Campo({
   textoVacio = 'Seleccione una opcion',
   compacto = false,
   className = '',
+  accionEtiqueta,
+  chipActivo,
   ...resto
 }) {
   const idGenerado = useId();
@@ -72,29 +74,39 @@ export default function Campo({
 
   return (
     <div className={estilos.campo}>
-      <label className={estilos.etiqueta} htmlFor={idControl}>
-        {etiqueta}
-        {obligatorio && (
-          <span className={estilos.obligatorio} aria-hidden="true">
-            *
-          </span>
-        )}
-        {obligatorio && <span className="solo-lectores"> (obligatorio)</span>}
-      </label>
+      <div className={estilos.cabeceraEtiqueta}>
+        <label className={estilos.etiqueta} htmlFor={idControl}>
+          {etiqueta}
+          {obligatorio && (
+            <span className={estilos.obligatorio} aria-hidden="true">
+              *
+            </span>
+          )}
+          {obligatorio && <span className="solo-lectores"> (obligatorio)</span>}
+        </label>
+        {accionEtiqueta}
+      </div>
 
       {Array.isArray(chipsSugeridos) && chipsSugeridos.length > 0 && (
         <div className={estilos.chipsBarra} role="group" aria-label={`Atajos para ${etiqueta}`}>
-          {chipsSugeridos.map((chip) => (
-            <button
-              key={chip}
-              type="button"
-              className={estilos.chipAtajo}
-              onClick={() => manejarChip(chip)}
-              data-testid={`chip-${nombre}-${chip.toLowerCase()}`}
-            >
-              {chip}
-            </button>
-          ))}
+          {chipsSugeridos.map((chip) => {
+            const valorActual = String(resto.value ?? '').trim();
+            const esActivo = chipActivo
+              ? chipActivo === chip
+              : valorActual.toLowerCase().startsWith(chip.toLowerCase());
+            return (
+              <button
+                key={chip}
+                type="button"
+                className={`${estilos.chipAtajo} ${esActivo ? estilos.chipActivo : ''}`}
+                onClick={() => manejarChip(chip)}
+                aria-pressed={esActivo}
+                data-testid={`chip-${nombre}-${chip.toLowerCase()}`}
+              >
+                {chip}
+              </button>
+            );
+          })}
         </div>
       )}
 

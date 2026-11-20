@@ -3,12 +3,12 @@
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
+  width: 100%;
 }
 
 .cabeceraAccion {
   display: flex;
   justify-content: flex-end;
-  margin-bottom: -1.45rem;
   position: relative;
   z-index: 2;
 }
@@ -24,7 +24,10 @@
   color: var(--c-turquesa-fuerte);
   font-size: 0.7rem;
   font-weight: var(--p-semi);
+  line-height: 1.2;
   cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 

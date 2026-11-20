@@ -71,7 +71,7 @@
 
 .formularioFiltros {
   display: grid;
-  grid-template-columns: minmax(220px, 1.4fr) minmax(220px, 1.3fr) minmax(180px, 1.1fr) auto auto;
+  grid-template-columns: minmax(220px, 1.4fr) minmax(220px, 1.3fr) minmax(180px, 1.1fr) auto;
   gap: 1rem;
   align-items: end;
 }

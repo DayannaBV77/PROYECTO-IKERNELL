@@ -36,6 +36,7 @@ export default function AsistenteDireccion({
   error,
   obligatorio = false,
   nombre = 'direccion',
+  className = '',
 }) {
   const [abierto, setAbierto] = useState(false);
   const [via, setVia] = useState('Calle');
@@ -56,24 +57,25 @@ export default function AsistenteDireccion({
     setAbierto(false);
   }
 
-  return (
-    <div className={estilos.contenedor}>
-      <div className={estilos.cabeceraAccion}>
-        <button
-          type="button"
-          className={estilos.botonAsistente}
-          onClick={() => setAbierto((prev) => !prev)}
-          data-testid="toggle-address-assistant"
-        >
-          {abierto ? <X size={13} aria-hidden="true" /> : <SlidersHorizontal size={13} aria-hidden="true" />}
-          <span>{abierto ? 'Cerrar asistente' : 'Estructurar dirección'}</span>
-        </button>
-      </div>
+  const botonAsistente = (
+    <button
+      type="button"
+      className={estilos.botonAsistente}
+      onClick={() => setAbierto((prev) => !prev)}
+      data-testid="toggle-address-assistant"
+    >
+      {abierto ? <X size={13} aria-hidden="true" /> : <SlidersHorizontal size={13} aria-hidden="true" />}
+      <span>{abierto ? 'Cerrar asistente' : 'Estructurar dirección'}</span>
+    </button>
+  );
 
+  return (
+    <div className={`${estilos.contenedor} ${className}`}>
       <Campo
         etiqueta="Dirección"
         nombre={nombre}
         obligatorio={obligatorio}
+        accionEtiqueta={botonAsistente}
         placeholder="Ej.: Calle 45 # 12-30 Apto 302 o Vereda San Isidro"
         chipsSugeridos={CHIPS_VIAS}
         guiaDinamica={analizarProgresoDireccion}
